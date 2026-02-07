@@ -21,7 +21,7 @@
                     required 
                     autofocus 
                     autocomplete="username"
-                    placeholder="responsable@labo.tn">
+                    placeholder="Email">
                 <div class="login-input-icon">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
@@ -46,7 +46,7 @@
                 <button 
                     type="button"
                     id="togglePassword"
-                    class="login-toggle-password absolute right-3 z-10 flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none rounded-md p-1.5"
+                    class="login-toggle-password absolute z-10 flex items-center justify-center transition-all duration-200 focus:outline-none rounded-md"
                     aria-label="Afficher/Masquer le mot de passe">
                     <!-- Eye icon (show) -->
                     <svg id="eyeIcon" 
