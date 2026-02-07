@@ -46,7 +46,7 @@
                 <button 
                     type="button"
                     id="togglePassword"
-                    class="absolute right-3 top-[2.8rem] z-10 flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none rounded-md p-1.5"
+                    class="login-toggle-password absolute right-3 z-10 flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none rounded-md p-1.5"
                     aria-label="Afficher/Masquer le mot de passe">
                     <!-- Eye icon (show) -->
                     <svg id="eyeIcon" 
