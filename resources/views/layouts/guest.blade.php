@@ -18,7 +18,7 @@
         <!-- Styles -->
         @livewireStyles
     </head>
-    <body class="bg-[#0a0e1a] overflow-hidden" style="background-color: #0a0e1a !important;">
+    <body class="bg-[#0a0e1a]" style="background-color: #0a0e1a !important; overflow-x: hidden;">
         <div class="font-sans antialiased">
             {{ $slot }}
         </div>
