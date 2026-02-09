@@ -69,6 +69,7 @@
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Statut</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden lg:table-cell">Urgent</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden lg:table-cell">Créé par</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden md:table-cell">Date</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -137,6 +138,12 @@
                                             @endif
                                         </div>
                                     </td>
+                                    <td class="px-3 sm:px-6 py-4 hidden md:table-cell">
+                                        <div class="flex flex-col">
+                                            <span class="text-sm text-secondary">{{ $commande->created_at->format('d/m/Y') }}</span>
+                                            <span class="text-xs text-secondary/70 mt-0.5">{{ $commande->created_at->format('H:i') }}</span>
+                                        </div>
+                                    </td>
                                     <td class="px-3 sm:px-6 py-4 text-sm font-medium">
                                         <div class="flex items-center space-x-2">
                                             <a href="{{ route('admin.commandes.show', $commande) }}" class="text-primary hover:text-primary/80 transition-colors" title="Voir">
@@ -186,7 +193,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ auth()->user()->hasRole('dentist') ? '5' : '7' }}" class="px-6 py-12 text-center">
+                                    <td colspan="{{ auth()->user()->hasRole('dentist') ? '6' : '8' }}" class="px-6 py-12 text-center">
                                         <div class="flex flex-col items-center">
                                             <svg class="w-16 h-16 text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -204,7 +211,7 @@
                                     })"
                                     style="display: none;"
                                 >
-                                    <td colspan="{{ auth()->user()->hasRole('dentist') ? '5' : '7' }}" class="px-6 py-12 text-center">
+                                    <td colspan="{{ auth()->user()->hasRole('dentist') ? '6' : '8' }}" class="px-6 py-12 text-center">
                                         <div class="flex flex-col items-center">
                                             <svg class="w-16 h-16 text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
