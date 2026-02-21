@@ -35,6 +35,7 @@ class Echeance extends Model
         return [
             'especes' => 'Espèces',
             'virement_bancaire' => 'Virement bancaire',
+            'cheque' => 'Chèque',
             'lettre_change' => 'Lettre de change (كمبيالة)',
         ];
     }
@@ -47,6 +48,7 @@ class Echeance extends Model
         return [
             'Espèces' => 'especes',
             'Virement bancaire' => 'virement_bancaire',
+            'Chèque' => 'cheque',
             'Lettre de change (كمبيالة)' => 'lettre_change',
         ];
     }

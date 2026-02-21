@@ -159,7 +159,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'prénom' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'nullable|string|email|max:255|unique:users',
             'gouvernorat' => 'nullable|string|max:255',
             'ville' => 'nullable|string|max:255',
             'adresse' => 'nullable|string',
@@ -375,7 +375,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'prénom' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'nullable|string|email|max:255|unique:users,email,' . $user->id,
             'gouvernorat' => 'nullable|string|max:255',
             'ville' => 'nullable|string|max:255',
             'adresse' => 'nullable|string',

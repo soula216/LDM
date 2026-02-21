@@ -44,7 +44,7 @@
 
                         <div>
                             <x-label for="email" value="{{ __('Email') }}" class="text-primary font-medium mb-2" />
-                            <x-input id="email" name="email" type="email" class="block w-full input-field" required />
+                            <x-input id="email" name="email" type="email" class="block w-full input-field" />
                             <x-input-error for="email" class="mt-2" />
                         </div>
 

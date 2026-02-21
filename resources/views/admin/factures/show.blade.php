@@ -336,6 +336,7 @@
                                 <option value="">Sélectionner un mode</option>
                                 <option value="Espèces">Espèces</option>
                                 <option value="Virement bancaire">Virement bancaire</option>
+                                <option value="Chèque">Chèque</option>
                                 <option value="Lettre de change (كمبيالة)">Lettre de change (كمبيالة)</option>
                             </select>
                         </div>
@@ -680,7 +681,7 @@
 
         function updateStatutPaiement(modeReglement) {
             const statutSelect = document.getElementById('statut_paiement');
-            if (modeReglement === 'Espèces' || modeReglement === 'Virement bancaire') {
+            if (modeReglement === 'Espèces' || modeReglement === 'Virement bancaire' || modeReglement === 'Chèque') {
                 statutSelect.value = 'Payé';
             } else if (modeReglement === 'Lettre de change (كمبيالة)') {
                 statutSelect.value = 'A encaisser';
