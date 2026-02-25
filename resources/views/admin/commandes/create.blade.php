@@ -67,8 +67,8 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                 </svg>
                             </button>
-                            <div class="tache-item-fields flex flex-row gap-4 items-end">
-                                <div class="flex-1 min-w-0">
+                            <div class="tache-fields-row flex flex-col gap-4 pt-10 md:pt-0">
+                                <div class="w-full">
                                     <x-label for="taches[0][service_id]" value="{{ __('Service') }}" class="text-primary font-medium mb-2" />
                                     <select name="taches[0][service_id]" id="taches[0][service_id]" class="block w-full input-field tache-service-select" required>
                                         <option value="">Sélectionner un service</option>
@@ -78,19 +78,19 @@
                                     </select>
                                 </div>
 
-                                <div class="tache-nb-teinte-group flex gap-4" style="width: 30%;">
-                                    <div class="flex-1 min-w-0">
+                                <div class="flex flex-col sm:flex-row gap-4 w-full tache-nb-teinte">
+                                    <div class="w-full sm:flex-1 min-w-0">
                                         <x-label for="taches[0][nb_elem]" value="Nombre d'éléments" class="text-primary font-medium mb-2" />
                                         <x-input id="taches[0][nb_elem]" name="taches[0][nb_elem]" type="number" min="1" class="block w-full input-field" required />
                                     </div>
 
-                                    <div class="flex-1 min-w-0">
+                                    <div class="w-full sm:flex-1 min-w-0">
                                         <x-label for="taches[0][teinte]" value="{{ __('Teinte') }}" class="text-primary font-medium mb-2" />
                                         <x-input id="taches[0][teinte]" name="taches[0][teinte]" type="text" class="block w-full input-field" />
                                     </div>
                                 </div>
 
-                                <div class="flex-1 min-w-0">
+                                <div class="w-full">
                                     <x-label for="taches[0][date_livraison]" value="{{ __('Date de livraison') }}" class="text-primary font-medium mb-2" />
                                     <x-input id="taches[0][date_livraison]" name="taches[0][date_livraison]" type="text" class="block w-full input-field tache-date-livraison" placeholder="Sélectionner date et heure" />
                                 </div>
