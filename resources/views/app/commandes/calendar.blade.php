@@ -343,6 +343,15 @@
             font-weight: 600 !important;
         }
 
+        /* Popover "+X en plus" : grande hauteur pour afficher tous les événements sans scroll (ou avec un scroll confortable) */
+        .fc-popover {
+            max-height: 90vh !important;
+        }
+        .fc-popover-body {
+            max-height: 85vh !important;
+            overflow-y: auto !important;
+        }
+
         /* Animation pour la notification de mise à jour */
         @keyframes slideInRight {
             from {
