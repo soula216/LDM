@@ -102,26 +102,6 @@ class RolePermissionSeeder extends Seeder
             'delete_fiche_controle_quality',
         ]);
 
-        // Secrétaire / Prothésiste
-        foreach (['secretaire', 'prothesiste'] as $roleName) {
-            $role = Role::firstOrCreate(['name' => $roleName]);
-            $role->syncPermissions([
-                'view_commandes',
-                'create_commandes',
-                'edit_commandes',
-                'upload_commande_files',
-                'view_commandes_calendar',
-                'view_commande_details',
-                'change_commande_status',
-                'manage_service_pricing',
-                'view_bons_livraison',
-                'print_bons_livraison',
-                'view_fiche_controle_quality',
-                'create_fiche_controle_quality',
-                'edit_fiche_controle_quality',
-            ]);
-        }
-
         // Employer
         $employer = Role::firstOrCreate(['name' => 'employer']);
         $employer->syncPermissions([
