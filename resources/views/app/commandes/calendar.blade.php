@@ -326,6 +326,11 @@
             z-index: 10 !important;
         }
 
+        /* Masquer le popover FullCalendar "+X en plus" (on utilise notre modale à la place) */
+        .fc-popover {
+            display: none !important;
+        }
+
         /* Cellules du calendrier */
         .fc-daygrid-day {
             border-color: #E5E7EB !important;
