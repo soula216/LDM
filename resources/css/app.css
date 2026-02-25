@@ -63,6 +63,32 @@
     }
 }
 
+/* Bloc Tâches (create/edit commande) : empiler les champs uniquement en vue mobile */
+@media (max-width: 767px) {
+    .tache-item .tache-item-fields.flex {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding-top: 2.5rem;
+    }
+    .tache-item .tache-item-fields > * {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+        min-width: 0 !important;
+    }
+    .tache-item .tache-nb-teinte-group.flex {
+        width: 100% !important;
+        max-width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    .tache-item .tache-nb-teinte-group > * {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
 /* Animations personnalisées */
 @keyframes fade-in {
     from {
