@@ -322,14 +322,26 @@
                     const firstTache = document.querySelector('.tache-item');
                     if (!firstTache) return;
                     
+                    // Détruire Flatpickr sur la première tâche avant de cloner pour éviter de dupliquer les éléments injectés par Flatpickr
+                    const firstDateInput = firstTache.querySelector('.tache-date-livraison');
+                    if (firstDateInput && firstDateInput._flatpickr) {
+                        firstDateInput._flatpickr.destroy();
+                        firstDateInput._flatpickr = null;
+                    }
+                    
                     const newTache = firstTache.cloneNode(true);
                     newTache.innerHTML = newTache.innerHTML.replace(/\[(\d+)\]/g, '[' + tacheIndex + ']');
+                    
+                    // Supprimer les doublons d'input "date de livraison" (le clone peut contenir l'input + une copie laissée par Flatpickr)
+                    const duplicateDateInputs = newTache.querySelectorAll('.tache-date-livraison');
+                    for (let i = 1; i < duplicateDateInputs.length; i++) {
+                        duplicateDateInputs[i].remove();
+                    }
                     
                     // Réinitialiser les valeurs des inputs et selects
                     newTache.querySelectorAll('input, select').forEach(input => {
                         if (input.classList.contains('tache-date-livraison')) {
                             input.value = deliveryDate;
-                            // Détruire toute instance Flatpickr existante
                             if (input._flatpickr) {
                                 input._flatpickr.destroy();
                             }
@@ -364,6 +376,12 @@
                         // Si aucune tâche n'existe, insérer avant le bouton
                         const addButtonContainer = addTacheBtn.parentElement;
                         addButtonContainer.insertBefore(newTache, addTacheBtn);
+                    }
+                    
+                    // Ré-initialiser Flatpickr sur la première tâche
+                    const firstInputAgain = document.querySelector('.tache-item .tache-date-livraison');
+                    if (firstInputAgain && !firstInputAgain._flatpickr) {
+                        initFlatpickr(firstInputAgain);
                     }
                     
                     // Initialiser Flatpickr pour le nouvel input de date
