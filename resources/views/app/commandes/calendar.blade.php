@@ -14,7 +14,7 @@
         </div>
     </x-slot>
 
-    <div class="py-4 sm:py-8 bg-app min-h-screen" x-data="{ showTaskModal: false, taskData: {} }" x-on:open-task-modal.window="showTaskModal = true; taskData = $event.detail" x-cloak>
+    <div class="py-4 sm:py-8 bg-app min-h-screen" x-data="{ showTaskModal: false, taskData: {}, showDayEventsModal: false, dayEventsDate: '', dayEvents: [] }" x-on:open-task-modal.window="showTaskModal = true; taskData = $event.detail" x-on:open-day-events-modal.window="showDayEventsModal = true; dayEventsDate = $event.detail.dateFormatted; dayEvents = $event.detail.events" x-cloak>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Légende -->
             <div class="card mb-6 bg-gradient-to-br from-card via-neutral-50 to-card">
@@ -126,6 +126,51 @@
                             Fermer
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal "Tous les événements du jour" (clic sur "+X en plus") -->
+        <div x-show="showDayEventsModal"
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 flex items-center justify-center p-4"
+             style="display: none;"
+             @click.self="showDayEventsModal = false">
+            <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" x-on:click="showDayEventsModal = false"></div>
+            <div class="bg-white rounded-2xl w-full sm:max-w-lg max-h-[90vh] flex flex-col shadow-xl border border-gray-100 relative z-10 overflow-hidden"
+                 style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);"
+                 @click.stop>
+                <div class="px-4 py-5 sm:px-6 sm:py-6 border-b border-gray-100 flex-shrink-0">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-primary" x-text="'Événements du ' + dayEventsDate"></h3>
+                        <button type="button" @click="showDayEventsModal = false" class="p-2 text-secondary hover:text-primary hover:bg-neutral-100 rounded-lg transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto px-4 pb-5 sm:px-6 sm:pb-6">
+                    <template x-if="dayEvents.length === 0">
+                        <p class="text-secondary text-sm py-4">Aucun événement.</p>
+                    </template>
+                    <ul class="space-y-2" x-show="dayEvents.length > 0">
+                        <template x-for="(ev, index) in dayEvents" :key="index">
+                            <li>
+                                <button type="button"
+                                        @click="showDayEventsModal = false; $dispatch('open-task-modal', ev.payload)"
+                                        class="w-full text-left rounded-lg border border-gray-200 p-3 hover:border-primary hover:bg-primary/5 transition-colors"
+                                        :style="'border-left: 4px solid ' + (ev.backgroundColor || '#0EA5E9')">
+                                    <div class="font-semibold text-primary" x-text="ev.title"></div>
+                                    <div class="text-sm text-secondary mt-1" x-text="ev.heure"></div>
+                                    <div class="text-sm text-secondary" x-text="ev.display_name"></div>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -341,15 +386,6 @@
         /* Tooltip personnalisé */
         .fc-event-title {
             font-weight: 600 !important;
-        }
-
-        /* Popover "+X en plus" : grande hauteur pour afficher tous les événements sans scroll (ou avec un scroll confortable) */
-        .fc-popover {
-            max-height: 90vh !important;
-        }
-        .fc-popover-body {
-            max-height: 85vh !important;
-            overflow-y: auto !important;
         }
 
         /* Animation pour la notification de mise à jour */
@@ -615,7 +651,23 @@
                     }
                 },
                 dayMaxEvents: 3,
-                moreLinkClick: 'popover',
+                moreLinkClick: function(info) {
+                    info.jsEvent.preventDefault();
+                    var dateFormatted = info.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                    dateFormatted = dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1);
+                    var events = (info.allSegs || []).map(function(seg) {
+                        var ev = seg.event;
+                        var props = ev.extendedProps || {};
+                        return {
+                            title: (props.urgent ? '⚡ ' : '') + (props.service || ev.title || 'N/A'),
+                            heure: props.heure || '',
+                            display_name: props.display_name || '',
+                            backgroundColor: ev.backgroundColor || ev.backgroundColor,
+                            payload: Object.assign({}, props, { url: ev.url })
+                        };
+                    });
+                    window.dispatchEvent(new CustomEvent('open-day-events-modal', { detail: { dateFormatted: dateFormatted, events: events } }));
+                },
                 eventDisplay: 'block',
                 displayEventTime: false,
             });
