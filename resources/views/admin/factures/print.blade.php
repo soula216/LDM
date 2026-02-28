@@ -60,8 +60,7 @@
         .header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #000;
+            margin-bottom: 0;
             padding-bottom: 20px;
         }
         .header h1 {
