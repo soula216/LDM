@@ -20,7 +20,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 70px;
+            margin-bottom: 0;
         }
         .top-header .logo-container {
             flex-shrink: 0;
@@ -34,13 +34,14 @@
             color: #00008B;
             margin-bottom: 0;
             font-size: 18px;
-            line-height: 1.8;
+            line-height: 1.3;
         }
         .labo-title .labo-email {
             font-weight: normal;
         }
         .document-title-box {
             text-align: center;
+            margin-top: -12px;
             margin-bottom: 20px;
         }
         .document-title-box span {
@@ -196,9 +197,8 @@
         <div class="labo-title">
             Laboratoire Jdidi Souhaieb de prothése dentaire<br>
             Rue de la liberté Sahloul Sousse<br>
-            Gsm : 21 000 041 - 54 767 109<br>
-            <span class="labo-email">E-mail : ldm.communicate@gmail.com</span><br>
-            <span class="labo-email">Diplomé de l'école de la santé - Monastir</span>
+            Gsm : 21 000 041<br>
+<span class="labo-email">E-mail : ldm.communicate@gmail.com</span>
         </div>
         <div class="logo-container">
             <img src="{{ asset('logo_ldm.png') }}" alt="LDM">
