@@ -183,6 +183,10 @@
             @page {
                 margin: 1cm;
             }
+            /* Signature et 4 montants uniquement sur la dernière page quand le tableau tient sur plusieurs pages */
+            tfoot {
+                display: table-row-group !important;
+            }
             /* Bloc en haut à gauche : taille réduite en PDF */
             .labo-title {
                 font-size: 13px;
