@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\BonLivraison;
 use App\Models\Commande;
 use App\Events\CommandeUpdated;
+use App\Support\MontantEnLettres;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -229,8 +230,10 @@ class FactureController extends Controller
             'bonsLivraison.lignes.service',
             'echeances'
         ]);
+
+        $montant_restant_lettres = MontantEnLettres::toWords((float) ($facture->montant_restant ?? 0));
         
-        return view('admin.factures.print', compact('facture'));
+        return view('admin.factures.print', compact('facture', 'montant_restant_lettres'));
     }
 
     /**
