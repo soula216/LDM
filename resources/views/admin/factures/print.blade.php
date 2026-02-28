@@ -213,7 +213,9 @@
             <p><strong>Date :</strong> {{ $facture->date->format('d/m/Y') }}</p>
         </div>
         <div>
-            <p><strong>Code Client :</strong> {{ $facture->dentist->num_dentist ?? '-' }}</p>
+            @if(!empty(trim($facture->dentist->num_dentist ?? '')))
+                <p><strong>Code Client :</strong> {{ $facture->dentist->num_dentist }}</p>
+            @endif
             <p><strong>Nom & Prénom :</strong> {{ $facture->dentist->full_name ?? $facture->dentist->name }}</p>
             <p><strong>Adresse :</strong> {{ $facture->dentist->ville ?? '-' }}</p>
         </div>
