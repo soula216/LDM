@@ -83,9 +83,9 @@
             <div class="card mb-6">
                 <div class="p-4 sm:p-6">
                     <h3 class="text-lg font-semibold text-primary mb-4">Tâches</h3>
-                    <div class="overflow-x-auto -mx-4 sm:mx-0">
-                        <div class="inline-block min-w-full align-middle">
-                            <table class="min-w-full divide-y divide-border">
+                    <div class="overflow-x-visible">
+                        <div class="w-full align-middle">
+                            <table class="w-full divide-y divide-border">
                                 <thead class="bg-neutral-50">
                                     <tr>
                                         @unless(auth()->user()->hasRole('dentist'))
@@ -650,9 +650,14 @@
             typeOrder.forEach(type => {
                 if (!criteres[type] || criteres[type].length === 0) return;
                 
-                html += '<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">';
+                html += '<div class="fiche-qualite-block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">';
                 html += '<div class="bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3 border-b border-gray-200">';
                 html += '<h4 class="text-base font-semibold text-primary">' + type + '</h4>';
+                html += '</div>';
+                html += '<div class="px-4 py-2 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center gap-2">';
+                html += '<span class="text-xs font-medium text-gray-600">Appliquer à tout le bloc :</span>';
+                html += '<button type="button" class="fiche-apply-block px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors" data-value="1">Conforme</button>';
+                html += '<button type="button" class="fiche-apply-block px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors" data-value="0">Non conforme</button>';
                 html += '</div>';
                 html += '<div class="overflow-x-auto">';
                 html += '<table class="w-full">';
@@ -703,6 +708,19 @@
             
             content.innerHTML = html;
         }
+        
+        // Délégation : appliquer Conforme / Non conforme à tout un bloc au clic
+        document.getElementById('ficheModalContent').addEventListener('click', function(e) {
+            const btn = e.target.closest('.fiche-apply-block');
+            if (!btn) return;
+            e.preventDefault();
+            const value = btn.getAttribute('data-value');
+            const block = btn.closest('.fiche-qualite-block');
+            if (!block || value === null) return;
+            block.querySelectorAll('input[type="radio"][value="' + value + '"]').forEach(function(radio) {
+                if (!radio.disabled) radio.checked = true;
+            });
+        });
         
         // Fonction pour sauvegarder la fiche
         async function saveFiche() {
