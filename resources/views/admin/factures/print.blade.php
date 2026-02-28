@@ -37,7 +37,7 @@
             font-weight: bold;
             color: #00008B;
             margin-bottom: 0;
-            font-size: 18px;
+            font-size: 14px;
             line-height: 1.3;
         }
         .labo-title .labo-email {
@@ -182,6 +182,10 @@
             }
             @page {
                 margin: 1cm;
+            }
+            /* Bloc en haut à gauche : taille réduite en PDF */
+            .labo-title {
+                font-size: 13px;
             }
             /* Forcer la bordure droite colonne Montant en PDF (même couleur #ddd que les autres) */
             table th:last-child,
