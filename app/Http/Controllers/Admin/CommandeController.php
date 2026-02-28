@@ -54,13 +54,14 @@ class CommandeController extends Controller
     {
         $validated = $request->validate([
             'dentiste_id' => 'required|exists:users,id',
-            'num_cmd' => 'nullable|string|max:50|unique:commandes,num_cmd',
+            'num_cmd' => 'required|string|max:50',
             'nom_patient' => 'nullable|string|max:255',
             'urgent' => 'boolean',
             'commentaire' => 'nullable|string',
             'taches' => 'required|array|min:1',
             'taches.*.service_id' => 'required|exists:services,id',
             'taches.*.nb_elem' => 'required|integer|min:1',
+            'taches.*.dents' => 'nullable|string|max:255',
             'taches.*.teinte' => 'nullable|string|max:100',
             'taches.*.date_livraison' => 'required|date',
         ]);
@@ -235,6 +236,7 @@ class CommandeController extends Controller
             return [
                 'service_id' => (int)$tache->service_id,
                 'nb_elem' => (int)$tache->nb_elem,
+                'dents' => $tache->dents ?? null,
                 'teinte' => $tache->teinte ?? null,
                 'date_livraison' => $tache->date_livraison ? $tache->date_livraison->format('Y-m-d H:i:s') : null,
             ];
@@ -242,7 +244,7 @@ class CommandeController extends Controller
 
         $validated = $request->validate([
             'dentiste_id' => 'required|exists:users,id',
-            'num_cmd' => 'nullable|string|max:50|unique:commandes,num_cmd,' . $commande->id,
+            'num_cmd' => 'required|string|max:50',
             'nom_patient' => 'nullable|string|max:255',
             'status' => 'required|in:Reçue,En cours,Terminée,Livrée',
             'urgent' => 'nullable|boolean',
@@ -250,6 +252,7 @@ class CommandeController extends Controller
             'taches' => 'required|array|min:1',
             'taches.*.service_id' => 'required|exists:services,id',
             'taches.*.nb_elem' => 'required|integer|min:1',
+            'taches.*.dents' => 'nullable|string|max:255',
             'taches.*.teinte' => 'nullable|string|max:100',
             'taches.*.date_livraison' => 'required|date',
         ]);
@@ -262,6 +265,7 @@ class CommandeController extends Controller
             return [
                 'service_id' => (int)$tacheData['service_id'],
                 'nb_elem' => (int)$tacheData['nb_elem'],
+                'dents' => $tacheData['dents'] ?? null,
                 'teinte' => $tacheData['teinte'] ?? null,
                 'date_livraison' => Carbon::parse($tacheData['date_livraison'])->format('Y-m-d H:i:s'),
             ];

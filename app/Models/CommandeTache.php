@@ -15,6 +15,7 @@ class CommandeTache extends Model
         'commande_id',
         'service_id',
         'nb_elem',
+        'dents',
         'teinte',
         'date_livraison',
         'prix_unitaire_ttc_snapshot',

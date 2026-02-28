@@ -93,6 +93,7 @@
                                         @endunless
                                         <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">Service</th>
                                         <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">Nb Éléments</th>
+                                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">Dents</th>
                                         <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider hidden sm:table-cell">Teinte</th>
                                         <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">Date Livraison</th>
                                         @unless(auth()->user()->hasRole('employer'))
@@ -112,6 +113,7 @@
                                             @endunless
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary">{{ $tache->service->nom ?? '-' }}</td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary">{{ $tache->nb_elem }}</td>
+                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary">{{ $tache->dents ?? '-' }}</td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary hidden sm:table-cell">{{ $tache->teinte ?? '-' }}</td>
                                             <td class="px-3 sm:px-6 py-4 text-sm">
                                                 <div class="font-medium text-primary">{{ $tache->date_livraison->format('d/m/Y') }}</div>

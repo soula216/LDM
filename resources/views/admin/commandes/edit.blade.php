@@ -47,7 +47,7 @@
 
                         <div>
                             <x-label for="num_cmd" value="{{ __('Numéro Commande') }}" class="text-primary font-medium mb-2" />
-                            <x-input id="num_cmd" name="num_cmd" type="text" class="block w-full input-field" value="{{ $commande->num_cmd }}" />
+                            <x-input id="num_cmd" name="num_cmd" type="text" class="block w-full input-field" value="{{ $commande->num_cmd }}" required />
                             <x-input-error for="num_cmd" class="mt-2" />
                         </div>
 
@@ -84,27 +84,42 @@
                         </div>
 
                         @foreach($commande->taches as $index => $tache)
-                            <div class="tache-item card border-l-4 border-primary relative overflow-hidden">
+                            <div class="tache-item card border-l-4 border-primary relative">
                                 <button type="button" class="delete-tache absolute top-0 right-0 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-bl-lg transition-colors duration-200 z-10" title="Supprimer cette tâche">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                     </svg>
                                 </button>
                                 <div class="tache-fields-row flex flex-col gap-4 pt-10 md:pt-0">
-                                    <div class="w-full">
+                                    <div class="w-full service-combobox-wrapper">
                                         <x-label for="taches[{{ $index }}][service_id]" value="{{ __('Service') }}" class="text-primary font-medium mb-2" />
-                                        <select name="taches[{{ $index }}][service_id]" id="taches[{{ $index }}][service_id]" class="block w-full input-field tache-service-select" required>
+                                        <select name="taches[{{ $index }}][service_id]" id="taches[{{ $index }}][service_id]" class="tache-service-select sr-only" required aria-hidden="true" tabindex="-1">
                                             <option value="">Sélectionner un service</option>
                                             @foreach($services as $service)
                                                 <option value="{{ $service->id }}" {{ $tache->service_id == $service->id ? 'selected' : '' }}>{{ $service->nom }}</option>
                                             @endforeach
                                         </select>
+                                        <div class="service-combobox relative">
+                                            <button type="button" class="service-combobox-trigger w-full input-field text-left flex items-center justify-between" aria-haspopup="listbox" aria-expanded="false">
+                                                <span class="service-combobox-trigger-text truncate">{{ $tache->service->nom ?? 'Sélectionner un service' }}</span>
+                                                <svg class="w-4 h-4 flex-shrink-0 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                            <div class="service-combobox-dropdown absolute left-0 right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg overflow-hidden flex-col max-h-72" data-open="false">
+                                                <input type="text" class="service-combobox-filter px-3 py-2 text-sm flex-shrink-0" placeholder="Filtrer les services..." autocomplete="off">
+                                                <ul class="service-combobox-list overflow-y-auto py-1 text-sm text-primary flex-1 min-h-0" role="listbox"></ul>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="flex flex-col sm:flex-row gap-4 w-full tache-nb-teinte">
                                         <div class="w-full sm:flex-1 min-w-0">
                                             <x-label for="taches[{{ $index }}][nb_elem]" value="Nombre d'éléments" class="text-primary font-medium mb-2" />
                                             <x-input id="taches[{{ $index }}][nb_elem]" name="taches[{{ $index }}][nb_elem]" type="number" min="1" class="block w-full input-field" value="{{ $tache->nb_elem }}" required />
+                                        </div>
+
+                                        <div class="w-full sm:flex-1 min-w-0">
+                                            <x-label for="taches[{{ $index }}][dents]" value="{{ __('Dents') }}" class="text-primary font-medium mb-2" />
+                                            <x-input id="taches[{{ $index }}][dents]" name="taches[{{ $index }}][dents]" type="text" class="block w-full input-field" value="{{ $tache->dents }}" />
                                         </div>
 
                                         <div class="w-full sm:flex-1 min-w-0">
@@ -559,6 +574,80 @@
             // Initialiser les boutons de suppression existants
             setupDeleteButtons();
 
+            // Combobox Service avec filtre
+            function initServiceCombobox(wrapperEl) {
+                if (!wrapperEl) return;
+                const select = wrapperEl.querySelector('select.tache-service-select');
+                const trigger = wrapperEl.querySelector('.service-combobox-trigger');
+                const triggerText = wrapperEl.querySelector('.service-combobox-trigger-text');
+                const dropdown = wrapperEl.querySelector('.service-combobox-dropdown');
+                const filterInput = wrapperEl.querySelector('.service-combobox-filter');
+                const listEl = wrapperEl.querySelector('.service-combobox-list');
+                if (!select || !trigger || !dropdown || !filterInput || !listEl) return;
+
+                function buildList(filter) {
+                    const term = (filter || '').toLowerCase().trim();
+                    listEl.innerHTML = '';
+                    for (let i = 0; i < select.options.length; i++) {
+                        const opt = select.options[i];
+                        const text = (opt.textContent || opt.innerText || '').trim();
+                        if (term && text && !text.toLowerCase().includes(term)) continue;
+                        const li = document.createElement('li');
+                        li.className = 'service-combobox-option px-3 py-2 cursor-pointer hover:bg-neutral-100 rounded';
+                        li.setAttribute('data-value', opt.value);
+                        li.textContent = text;
+                        li.setAttribute('role', 'option');
+                        listEl.appendChild(li);
+                    }
+                }
+                function updateTriggerText() {
+                    const opt = select.options[select.selectedIndex];
+                    triggerText.textContent = opt ? (opt.textContent || opt.innerText || '').trim() : 'Sélectionner un service';
+                }
+                function closeDropdown() {
+                    dropdown.setAttribute('data-open', 'false');
+                    trigger.setAttribute('aria-expanded', 'false');
+                    document.removeEventListener('click', closeDropdown);
+                }
+                function openDropdown() {
+                    dropdown.setAttribute('data-open', 'true');
+                    trigger.setAttribute('aria-expanded', 'true');
+                    filterInput.value = '';
+                    buildList('');
+                    filterInput.focus();
+                }
+                // Fermé par défaut : ne jamais ouvrir au chargement
+                dropdown.setAttribute('data-open', 'false');
+                updateTriggerText();
+
+                trigger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const isOpen = dropdown.getAttribute('data-open') === 'true';
+                    if (isOpen) {
+                        closeDropdown();
+                        return;
+                    }
+                    openDropdown();
+                    setTimeout(() => document.addEventListener('click', closeDropdown), 0);
+                });
+                dropdown.addEventListener('click', e => e.stopPropagation());
+                filterInput.addEventListener('input', function() {
+                    buildList(this.value);
+                });
+                filterInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') closeDropdown();
+                });
+                listEl.addEventListener('click', function(e) {
+                    const li = e.target.closest('.service-combobox-option');
+                    if (!li) return;
+                    const val = li.getAttribute('data-value');
+                    select.value = val;
+                    updateTriggerText();
+                    closeDropdown();
+                });
+            }
+            document.querySelectorAll('.service-combobox-wrapper').forEach(initServiceCombobox);
+
             // Fonction pour ajouter une nouvelle tâche
             if (addTacheBtn && tachesContainer) {
                 addTacheBtn.addEventListener('click', function() {
@@ -638,6 +727,10 @@
                             newDateInput._flatpickr.setDate(deliveryDate, false);
                         }
                     }
+
+                    // Initialiser le combobox Service pour la nouvelle tâche
+                    const newComboboxWrapper = newTache.querySelector('.service-combobox-wrapper');
+                    if (newComboboxWrapper) initServiceCombobox(newComboboxWrapper);
 
                     // Initialiser le bouton de suppression pour la nouvelle tâche
                     const deleteBtn = newTache.querySelector('.delete-tache');

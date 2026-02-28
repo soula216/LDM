@@ -44,6 +44,98 @@
     .tache-item.card {
         @apply bg-card border border-border rounded-xl shadow-sm p-6;
     }
+
+    /* Select Service : un seul champ visible (comme Select2) — le select natif est caché pour l'envoi du formulaire */
+    .service-combobox-wrapper select.tache-service-select {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    /* Conteneur combobox : même bordure et style que les autres inputs */
+    .service-combobox-wrapper .service-combobox {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        background-color: #fff;
+        min-height: 2.5rem;
+    }
+    .service-combobox-wrapper .service-combobox-trigger {
+        appearance: none;
+        cursor: pointer;
+        border: none;
+        border-radius: 0.5rem;
+        background: transparent;
+    }
+    /* Dropdown : visible uniquement quand data-open="true" (au clic) */
+    .service-combobox-dropdown[data-open="false"] {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+    .service-combobox-dropdown[data-open="true"] {
+        display: flex !important;
+        flex-direction: column !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    }
+    .service-combobox-dropdown[data-open="true"] .service-combobox-filter {
+        width: 100% !important;
+        max-width: 100% !important;
+        display: block !important;
+        flex-shrink: 0;
+        border: none;
+        border-bottom: 1px solid #e5e7eb;
+        border-radius: 0;
+        margin: 0;
+        box-sizing: border-box;
+    }
+    .service-combobox-dropdown[data-open="true"] .service-combobox-filter:focus {
+        outline: none;
+        ring: 0;
+    }
+    .service-combobox-dropdown[data-open="true"] .service-combobox-list {
+        width: 100% !important;
+        max-width: 100% !important;
+        display: block !important;
+        flex: 1 1 auto;
+        min-height: 12rem;
+        max-height: 16rem;
+        overflow-y: auto;
+        list-style: none;
+        margin: 0;
+        padding: 0.25rem 0;
+    }
+    .service-combobox-dropdown[data-open="true"] .service-combobox-option {
+        display: block;
+        width: 100%;
+        text-align: left;
+    }
+
+    /* Grille tâche : Service (grand) | Nb/Dents/Teinte (petits) | Date (moyen) - tout tient dans la largeur */
+    .tache-fields-row {
+        box-sizing: border-box;
+    }
+    .tache-field-cell {
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+    .tache-field-cell .input-field,
+    .tache-field-cell select.input-field,
+    .tache-field-cell .tache-service-select {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
     
     /* Assurer que les champs dans les blocs de tâches fonctionnent correctement en flexbox */
     .tache-item .flex:not(.tache-fields-row) {
@@ -63,7 +155,7 @@
     }
 }
 
-/* Desktop uniquement : bloc Tâches (create/edit commande) sur une seule ligne */
+/* Desktop / Tablette (md+) : une ligne — Service (grand) | Nb+Dents+Teinte (petits) | Date (moyen) */
 @media (min-width: 768px) {
     .tache-item .tache-fields-row {
         display: flex !important;
@@ -71,22 +163,45 @@
         flex-wrap: nowrap !important;
         align-items: flex-end !important;
         padding-top: 0 !important;
-        gap: 1rem;
+        padding-right: 3rem !important;
+        gap: 1rem 1.5rem !important;
     }
+    /* Service */
     .tache-item .tache-fields-row > *:first-child {
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-        width: auto !important;
-    }
-    .tache-item .tache-fields-row .tache-nb-teinte {
         flex: 0 0 30% !important;
-        width: 30% !important;
         min-width: 0 !important;
     }
-    .tache-item .tache-fields-row > *:last-child {
-        flex: 1 1 0% !important;
+    .tache-item .tache-fields-row > *:first-child .input-field,
+    .tache-item .tache-fields-row > *:first-child select,
+    .tache-item .tache-fields-row > *:first-child .service-combobox-trigger {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    /* Bloc Nb + Dents + Teinte */
+    .tache-item .tache-fields-row .tache-nb-teinte {
+        flex: 0 0 40% !important;
+        width: 40% !important;
         min-width: 0 !important;
-        width: auto !important;
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 0.5rem !important;
+    }
+    .tache-item .tache-fields-row .tache-nb-teinte > div {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+    }
+    .tache-item .tache-fields-row .tache-nb-teinte .input-field {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    /* Date de livraison : largeur moyenne (~22 %) */
+    .tache-item .tache-fields-row > *:last-child {
+        flex: 0 0 22% !important;
+        min-width: 0 !important;
+    }
+    .tache-item .tache-fields-row > *:last-child .input-field {
+        width: 100% !important;
+        max-width: 100% !important;
     }
 }
 
