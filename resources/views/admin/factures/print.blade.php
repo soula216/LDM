@@ -24,10 +24,14 @@
         }
         .top-header .logo-container {
             flex-shrink: 0;
-            margin-top: -10px;
+            margin-top: -55px;
+            align-self: flex-start;
+            line-height: 0;
         }
         .top-header .logo-container img {
             width: auto;
+            vertical-align: top;
+            display: block;
         }
         .labo-title {
             font-weight: bold;
