@@ -6,8 +6,11 @@
     deleteFormAction: '',
     editingFactureId: null,
     selectedDentist: '',
+    titreDocument: 'bon_livraison',
     factureDate: '{{ now()->format('Y-m-d') }}',
     numFacture: '',
+    ancienSolde: '',
+    avance: '',
     factureStatus: 'pending',
     montantPaye: '',
     bonsLivraison: [],
@@ -45,8 +48,11 @@
     openEditModal(facture) {
         this.editingFactureId = facture.id;
         this.selectedDentist = facture.dentist_id;
+        this.titreDocument = facture.titre_document || 'bon_livraison';
         this.factureDate = facture.date;
         this.numFacture = facture.num_facture;
+        this.ancienSolde = facture.ancien_solde ?? '';
+        this.avance = facture.avance ?? '';
         this.factureStatus = facture.status || 'pending';
         this.montantPaye = facture.montant_paye || '';
         this.selectedBLs = facture.bons_livraison_ids || [];
@@ -57,8 +63,11 @@
         this.showEditModal = false;
         this.editingFactureId = null;
         this.selectedDentist = '';
+        this.titreDocument = 'bon_livraison';
         this.factureDate = '{{ now()->format('Y-m-d') }}';
         this.numFacture = '';
+        this.ancienSolde = '';
+        this.avance = '';
         this.factureStatus = 'pending';
         this.montantPaye = '';
         this.selectedBLs = [];
@@ -85,7 +94,7 @@
             </div>
             @can('create_factures')
             <button 
-                @click="showCreateModal = true"
+                @click="showCreateModal = true; titreDocument = 'bon_livraison'; ancienSolde = ''; avance = ''"
                 class="btn-primary inline-flex items-center w-full sm:w-auto justify-center"
             >
                 <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,8 +190,11 @@
                                             <button @click="openEditModal({
                                                 id: {{ $facture->id }},
                                                 dentist_id: {{ $facture->dentist_id }},
+                                                titre_document: '{{ $facture->titre_document ?? 'bon_livraison' }}',
                                                 date: '{{ $facture->date->format('Y-m-d') }}',
-                                                num_facture: '{{ $facture->num_facture }}',
+                                                num_facture: '{{ addslashes($facture->num_facture) }}',
+                                                ancien_solde: {{ $facture->ancien_solde ?? 0 }},
+                                                avance: {{ $facture->avance ?? 0 }},
                                                 status: '{{ $facture->status }}',
                                                 montant_paye: {{ $facture->montant_paye ?? 'null' }},
                                                 bons_livraison_ids: [{{ $facture->bonsLivraison->pluck('id')->implode(',') }}]
@@ -256,6 +268,21 @@
                     
                     <div class="space-y-4 mb-6">
                         <div>
+                            <label for="titre_document" class="block text-sm font-medium text-primary mb-2">Titre du document</label>
+                            <select 
+                                name="titre_document" 
+                                id="titre_document" 
+                                x-model="titreDocument"
+                                class="block w-full input-field"
+                                required
+                            >
+                                @foreach(\App\Models\Facture::getTitreDocumentOptions() as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
                             <label for="dentist_id" class="block text-sm font-medium text-primary mb-2">Dentiste</label>
                             <select 
                                 name="dentist_id" 
@@ -298,6 +325,33 @@
                             </div>
                         </div>
 
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="ancien_solde" class="block text-sm font-medium text-primary mb-2">Ancien Solde</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01"
+                                    name="ancien_solde" 
+                                    id="ancien_solde" 
+                                    x-model="ancienSolde"
+                                    class="block w-full input-field"
+                                    placeholder="0.00"
+                                >
+                            </div>
+                            <div>
+                                <label for="avance" class="block text-sm font-medium text-primary mb-2">Avance</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01"
+                                    name="avance" 
+                                    id="avance" 
+                                    x-model="avance"
+                                    class="block w-full input-field"
+                                    placeholder="0.00"
+                                >
+                            </div>
+                        </div>
+
                         <div>
                             <label for="status" class="block text-sm font-medium text-primary mb-2">Statut</label>
                             <select 
@@ -333,7 +387,7 @@
                                     <input 
                                         type="text" 
                                         id="montant_restant" 
-                                        :value="montantPaye && bonsLivraison.length > 0 ? Math.max(0, (bonsLivraison.filter(bl => selectedBLs.includes(bl.id)).reduce((sum, bl) => sum + parseFloat(bl.total_ttc), 0) - parseFloat(montantPaye || 0))).toFixed(2) : '0.00'"
+                                        :value="bonsLivraison.length > 0 ? Math.max(0, (bonsLivraison.filter(bl => selectedBLs.includes(bl.id)).reduce((sum, bl) => sum + parseFloat(bl.total_ttc), 0) + parseFloat(ancienSolde || 0) - parseFloat(avance || 0) - parseFloat(montantPaye || 0))).toFixed(2) : '0.00'"
                                         class="block w-full input-field bg-neutral-100"
                                         readonly
                                     >
@@ -427,6 +481,21 @@
                     
                     <div class="space-y-4 mb-6">
                         <div>
+                            <label for="edit_titre_document" class="block text-sm font-medium text-primary mb-2">Titre du document</label>
+                            <select 
+                                name="titre_document" 
+                                id="edit_titre_document" 
+                                x-model="titreDocument"
+                                class="block w-full input-field"
+                                required
+                            >
+                                @foreach(\App\Models\Facture::getTitreDocumentOptions() as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
                             <label for="edit_dentist_id" class="block text-sm font-medium text-primary mb-2">Dentiste</label>
                             <select 
                                 name="dentist_id" 
@@ -465,6 +534,33 @@
                                     x-model="numFacture"
                                     class="block w-full input-field"
                                     required
+                                >
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="edit_ancien_solde" class="block text-sm font-medium text-primary mb-2">Ancien Solde</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01"
+                                    name="ancien_solde" 
+                                    id="edit_ancien_solde" 
+                                    x-model="ancienSolde"
+                                    class="block w-full input-field"
+                                    placeholder="0.00"
+                                >
+                            </div>
+                            <div>
+                                <label for="edit_avance" class="block text-sm font-medium text-primary mb-2">Avance</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01"
+                                    name="avance" 
+                                    id="edit_avance" 
+                                    x-model="avance"
+                                    class="block w-full input-field"
+                                    placeholder="0.00"
                                 >
                             </div>
                         </div>

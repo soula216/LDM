@@ -14,7 +14,10 @@ class Facture extends Model
         'num_facture',
         'date',
         'dentist_id',
+        'titre_document',
         'montant',
+        'ancien_solde',
+        'avance',
         'status',
         'montant_paye',
         'montant_restant',
@@ -23,6 +26,8 @@ class Facture extends Model
     protected $casts = [
         'date' => 'date',
         'montant' => 'decimal:2',
+        'ancien_solde' => 'decimal:2',
+        'avance' => 'decimal:2',
         'montant_paye' => 'decimal:2',
         'montant_restant' => 'decimal:2',
     ];
@@ -45,6 +50,25 @@ class Facture extends Model
     public function echeances()
     {
         return $this->hasMany(Echeance::class);
+    }
+
+    /**
+     * Get the document title label (Facture or Bon De Livraison)
+     */
+    public function getTitreDocumentLabelAttribute()
+    {
+        return self::getTitreDocumentOptions()[$this->titre_document ?? 'bon_livraison'] ?? 'Bon De Livraison';
+    }
+
+    /**
+     * Get all available document title options
+     */
+    public static function getTitreDocumentOptions()
+    {
+        return [
+            'facture' => 'Facture',
+            'bon_livraison' => 'Bon De Livraison',
+        ];
     }
 
     /**

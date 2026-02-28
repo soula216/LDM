@@ -84,6 +84,20 @@
                     
                     <div class="space-y-4 mb-6">
                         <div>
+                            <label for="titre_document" class="block text-sm font-medium text-primary mb-2">Titre du document</label>
+                            <select 
+                                name="titre_document" 
+                                id="titre_document" 
+                                class="block w-full input-field"
+                                required
+                            >
+                                @foreach(\App\Models\Facture::getTitreDocumentOptions() as $value => $label)
+                                    <option value="{{ $value }}" {{ ($facture->titre_document ?? 'bon_livraison') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
                             <label for="dentist_id" class="block text-sm font-medium text-primary mb-2">Dentiste</label>
                             <select 
                                 name="dentist_id" 
@@ -122,6 +136,33 @@
                                     x-model="numFacture"
                                     class="block w-full input-field"
                                     required
+                                >
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="ancien_solde" class="block text-sm font-medium text-primary mb-2">Ancien Solde</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01"
+                                    name="ancien_solde" 
+                                    id="ancien_solde" 
+                                    value="{{ $facture->ancien_solde ?? 0 }}"
+                                    class="block w-full input-field"
+                                    placeholder="0.00"
+                                >
+                            </div>
+                            <div>
+                                <label for="avance" class="block text-sm font-medium text-primary mb-2">Avance</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01"
+                                    name="avance" 
+                                    id="avance" 
+                                    value="{{ $facture->avance ?? 0 }}"
+                                    class="block w-full input-field"
+                                    placeholder="0.00"
                                 >
                             </div>
                         </div>

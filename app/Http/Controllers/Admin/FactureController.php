@@ -93,6 +93,9 @@ class FactureController extends Controller
             'num_facture' => 'required|string|max:255|unique:factures,num_facture',
             'date' => 'required|date',
             'dentist_id' => 'required|exists:users,id',
+            'titre_document' => 'required|in:facture,bon_livraison',
+            'ancien_solde' => 'nullable|numeric|min:0',
+            'avance' => 'nullable|numeric|min:0',
             'status' => 'required|in:pending,delivered,paid,partially_paid,rejected',
             'bon_livraison_ids' => 'required|array|min:1',
             'bon_livraison_ids.*' => 'exists:bons_livraison,id',
@@ -101,10 +104,11 @@ class FactureController extends Controller
         // Calculer le montant total pour la validation
         $montant = BonLivraison::whereIn('id', $request->bon_livraison_ids ?? [])
             ->sum('total_ttc');
+        $maxPaye = $montant + (float) ($request->input('ancien_solde', 0)) - (float) ($request->input('avance', 0));
 
-        // Si le statut est "partially_paid", montant_paye est requis et ne doit pas dépasser le montant total
+        // Si le statut est "partially_paid", montant_paye est requis et ne doit pas dépasser (Montant Facture + Ancien Solde - Avance)
         if ($request->status === 'partially_paid') {
-            $rules['montant_paye'] = ['required', 'numeric', 'min:0', 'max:' . $montant];
+            $rules['montant_paye'] = ['required', 'numeric', 'min:0', 'max:' . max(0, $maxPaye)];
         } else {
             $rules['montant_paye'] = 'nullable|numeric|min:0';
         }
@@ -114,15 +118,32 @@ class FactureController extends Controller
         DB::beginTransaction();
         try {
             // Calculer montant_paye et montant_restant
-            $montantPaye = $validated['status'] === 'partially_paid' ? $validated['montant_paye'] : null;
-            $montantRestant = $validated['status'] === 'partially_paid' ? ($montant - $montantPaye) : null;
+            // Montant restant = Montant Facture + Ancien Solde - Avance - Montant payé
+            // Si statut = Payée : Montant payé = Montant Facture
+            // Si statut = En attente, Envoyé, Rejetée : Montant payé = 0.00
+            $ancienSolde = (float) ($validated['ancien_solde'] ?? 0);
+            $avance = (float) ($validated['avance'] ?? 0);
+            if ($validated['status'] === 'paid') {
+                $montantPaye = $montant;
+                $montantRestant = $montant + $ancienSolde - $avance - $montantPaye;
+            } elseif ($validated['status'] === 'partially_paid') {
+                $montantPaye = $validated['montant_paye'];
+                $montantRestant = $montant + $ancienSolde - $avance - $montantPaye;
+            } else {
+                // En attente, Envoyé, Rejetée
+                $montantPaye = 0;
+                $montantRestant = $montant + $ancienSolde - $avance;
+            }
 
             // Créer la facture
             $facture = Facture::create([
                 'num_facture' => $validated['num_facture'],
                 'date' => $validated['date'],
                 'dentist_id' => $validated['dentist_id'],
+                'titre_document' => $validated['titre_document'],
                 'montant' => $montant,
+                'ancien_solde' => $validated['ancien_solde'] ?? 0,
+                'avance' => $validated['avance'] ?? 0,
                 'status' => $validated['status'],
                 'montant_paye' => $montantPaye,
                 'montant_restant' => $montantRestant,
@@ -204,6 +225,7 @@ class FactureController extends Controller
         $facture->load([
             'dentist', 
             'bonsLivraison.commande.dentiste', 
+            'bonsLivraison.commande.taches',
             'bonsLivraison.lignes.service',
             'echeances'
         ]);
@@ -248,6 +270,9 @@ class FactureController extends Controller
             'num_facture' => 'required|string|max:255|unique:factures,num_facture,' . $facture->id,
             'date' => 'required|date',
             'dentist_id' => 'required|exists:users,id',
+            'titre_document' => 'required|in:facture,bon_livraison',
+            'ancien_solde' => 'nullable|numeric|min:0',
+            'avance' => 'nullable|numeric|min:0',
             'status' => 'required|in:pending,delivered,paid,partially_paid,rejected',
             'bon_livraison_ids' => 'required|array|min:1',
             'bon_livraison_ids.*' => 'exists:bons_livraison,id',
@@ -256,9 +281,10 @@ class FactureController extends Controller
         // Calculer le montant total pour la validation
         $montant = BonLivraison::whereIn('id', $request->bon_livraison_ids ?? [])
             ->sum('total_ttc');
+        $maxPaye = $montant + (float) ($request->input('ancien_solde', 0)) - (float) ($request->input('avance', 0));
 
-        // Pour l'édition, montant_paye est optionnel (on garde les valeurs existantes si non fournies)
-        $rules['montant_paye'] = 'nullable|numeric|min:0|max:' . $montant;
+        // Pour l'édition, montant_paye est optionnel ; max = Montant Facture + Ancien Solde - Avance
+        $rules['montant_paye'] = 'nullable|numeric|min:0|max:' . max(0, $maxPaye);
 
         $validated = $request->validate($rules);
 
@@ -268,26 +294,29 @@ class FactureController extends Controller
             $facture->load('bonsLivraison');
             
             // Calculer montant_paye et montant_restant
-            // Si le statut est "partially_paid" et qu'un montant_paye est fourni, l'utiliser
-            // Sinon, si le statut est "partially_paid" et qu'il existe déjà un montant_paye, le garder
-            // Sinon, mettre à null
-            if ($validated['status'] === 'partially_paid') {
+            // Montant restant = Montant Facture + Ancien Solde - Avance - Montant payé
+            // Si statut = Payée : Montant payé = Montant Facture
+            // Si statut = En attente, Envoyé, Rejetée : Montant payé = 0.00
+            $ancienSolde = (float) ($validated['ancien_solde'] ?? 0);
+            $avance = (float) ($validated['avance'] ?? 0);
+            if ($validated['status'] === 'paid') {
+                $montantPaye = $montant;
+                $montantRestant = $montant + $ancienSolde - $avance - $montantPaye;
+            } elseif ($validated['status'] === 'partially_paid') {
                 if (isset($validated['montant_paye']) && $validated['montant_paye'] !== null) {
                     $montantPaye = $validated['montant_paye'];
-                    $montantRestant = $montant - $montantPaye;
+                    $montantRestant = $montant + $ancienSolde - $avance - $montantPaye;
                 } elseif ($facture->montant_paye !== null) {
-                    // Garder les valeurs existantes si pas de nouvelle valeur fournie
                     $montantPaye = $facture->montant_paye;
-                    $montantRestant = $facture->montant_restant;
+                    $montantRestant = $montant + $ancienSolde - $avance - $montantPaye;
                 } else {
-                    // Si pas de valeur existante et pas de nouvelle valeur, mettre à null
                     $montantPaye = null;
                     $montantRestant = null;
                 }
             } else {
-                // Si le statut n'est pas "partially_paid", mettre à null
-                $montantPaye = null;
-                $montantRestant = null;
+                // En attente, Envoyé, Rejetée
+                $montantPaye = 0;
+                $montantRestant = $montant + $ancienSolde - $avance;
             }
 
             // Mettre à jour la facture
@@ -295,18 +324,19 @@ class FactureController extends Controller
                 'num_facture' => $validated['num_facture'],
                 'date' => $validated['date'],
                 'dentist_id' => $validated['dentist_id'],
+                'titre_document' => $validated['titre_document'],
                 'montant' => $montant,
+                'ancien_solde' => $validated['ancien_solde'] ?? 0,
+                'avance' => $validated['avance'] ?? 0,
                 'status' => $validated['status'],
             ];
 
-            // Ajouter montant_paye et montant_restant seulement si le statut est "partially_paid"
-            if ($validated['status'] === 'partially_paid') {
-                $updateData['montant_paye'] = $montantPaye;
-                $updateData['montant_restant'] = $montantRestant;
-            } else {
-                // Si le statut n'est pas "partially_paid", mettre à null
+            if ($validated['status'] === 'partially_paid' && $montantPaye === null) {
                 $updateData['montant_paye'] = null;
                 $updateData['montant_restant'] = null;
+            } else {
+                $updateData['montant_paye'] = $montantPaye;
+                $updateData['montant_restant'] = $montantRestant;
             }
 
             $facture->update($updateData);

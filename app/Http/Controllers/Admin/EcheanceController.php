@@ -32,8 +32,10 @@ class EcheanceController extends Controller
             ->where('statut_paiement', 'Payé')
             ->sum('montant');
 
-        // Calculer le montant restant
-        $montantRestant = $facture->montant - $montantPaye;
+        // Montant restant = Montant Facture + Ancien Solde - Avance - Montant payé
+        $ancienSolde = (float) ($facture->ancien_solde ?? 0);
+        $avance = (float) ($facture->avance ?? 0);
+        $montantRestant = $facture->montant + $ancienSolde - $avance - $montantPaye;
 
         // Mettre à jour la facture
         $facture->update([

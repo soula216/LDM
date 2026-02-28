@@ -1,0 +1,62 @@
+# Dependencies
+/node_modules
+/vendor
+
+# Build files
+/public/build
+/public/hot
+/public/storage
+
+# Environment files
+.env
+.env.backup
+.env.production
+.env.local
+.env.*.local
+
+# Storage
+/storage/*.key
+/storage/pail
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+
+# Cache
+/.phpunit.cache
+/.phpunit.result.cache
+/bootstrap/cache/*
+
+# IDE files
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+.phpactor.json
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Database
+*.sqlite
+*.sqlite-journal
+
+# Homestead
+Homestead.json
+Homestead.yaml
+
+# Auth
+/auth.json
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

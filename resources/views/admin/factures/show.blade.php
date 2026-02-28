@@ -54,7 +54,7 @@
                     </svg>
                 </div>
                 <h2 class="text-xl sm:text-2xl font-semibold text-primary">
-                    Facture #{{ $facture->num_facture }}
+                    {{ $facture->titre_document_label }} #{{ $facture->num_facture }}
                 </h2>
             </div>
             <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -111,8 +111,16 @@
                         <p class="font-medium text-primary">{{ $facture->dentist->full_name ?? $facture->dentist->name }}</p>
                     </div>
                     <div>
-                        <p class="text-sm text-secondary mb-1">Montant Total</p>
+                        <p class="text-sm text-secondary mb-1">Montant Facture</p>
                         <p class="font-medium text-primary text-lg">{{ number_format($facture->montant, 2, ',', ' ') }} TND</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-secondary mb-1">Ancien Solde</p>
+                        <p class="font-medium text-primary">{{ number_format($facture->ancien_solde ?? 0, 2, ',', ' ') }} TND</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-secondary mb-1">Avance</p>
+                        <p class="font-medium text-primary">{{ number_format($facture->avance ?? 0, 2, ',', ' ') }} TND</p>
                     </div>
                     <div>
                         <p class="text-sm text-secondary mb-1">Statut</p>
@@ -127,16 +135,14 @@
                             {{ $facture->status_label }}
                         </span>
                     </div>
-                    @if($facture->status === 'partially_paid')
                     <div>
                         <p class="text-sm text-secondary mb-1">Montant payé</p>
-                        <p class="font-medium text-primary" x-text="new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(montantPaye) + ' TND'">{{ number_format($facture->montant_paye ?? 0, 2, ',', ' ') }} TND</p>
+                        <p class="font-medium text-primary">{{ number_format($facture->montant_paye ?? 0, 2, ',', ' ') }} TND</p>
                     </div>
                     <div>
                         <p class="text-sm text-secondary mb-1">Montant restant</p>
-                        <p class="font-medium text-primary" x-text="new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(montantRestant) + ' TND'">{{ number_format($facture->montant_restant ?? 0, 2, ',', ' ') }} TND</p>
+                        <p class="font-medium text-primary">{{ number_format($facture->montant_restant ?? 0, 2, ',', ' ') }} TND</p>
                     </div>
-                    @endif
                 </div>
             </div>
 
@@ -455,6 +461,20 @@
                     
                     <div class="space-y-4 mb-6">
                         <div>
+                            <label for="edit_titre_document" class="block text-sm font-medium text-primary mb-2">Titre du document</label>
+                            <select 
+                                name="titre_document" 
+                                id="edit_titre_document" 
+                                class="block w-full input-field"
+                                required
+                            >
+                                @foreach(\App\Models\Facture::getTitreDocumentOptions() as $value => $label)
+                                    <option value="{{ $value }}" {{ ($facture->titre_document ?? 'bon_livraison') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
                             <label for="edit_dentist_id" class="block text-sm font-medium text-primary mb-2">Dentiste</label>
                             <select 
                                 name="dentist_id" 
@@ -493,6 +513,33 @@
                                     x-model="numFacture"
                                     class="block w-full input-field"
                                     required
+                                >
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="edit_ancien_solde" class="block text-sm font-medium text-primary mb-2">Ancien Solde</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01"
+                                    name="ancien_solde" 
+                                    id="edit_ancien_solde" 
+                                    value="{{ $facture->ancien_solde ?? 0 }}"
+                                    class="block w-full input-field"
+                                    placeholder="0.00"
+                                >
+                            </div>
+                            <div>
+                                <label for="edit_avance" class="block text-sm font-medium text-primary mb-2">Avance</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01"
+                                    name="avance" 
+                                    id="edit_avance" 
+                                    value="{{ $facture->avance ?? 0 }}"
+                                    class="block w-full input-field"
+                                    placeholder="0.00"
                                 >
                             </div>
                         </div>
