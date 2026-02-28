@@ -233,9 +233,9 @@
     </div>
 
     <div class="content">
-        <div class="section">
+        <div class="section" style="margin-bottom: 0;">
             @if($facture->bonsLivraison->count() > 0)
-                <table>
+                <table style="margin-bottom: 0;">
                     <thead>
                         <tr>
                             <th>N° BL</th>
@@ -289,7 +289,7 @@
             @endif
         </div>
 
-        <div class="facture-arretee-block" style="margin-top: 8px;">
+        <div class="facture-arretee-block" style="margin-top: -10px;">
             <p class="facture-arretee" style="margin: 0; text-align: left; font-size: 14px;">Arrétee la présente facture à la somme:</p>
             <p class="montant-lettres" style="margin: 8px 0 0 0; text-align: left; font-size: 14px; font-weight: bold; background-color: #f5f5dc; padding: 8px 1.2em; display: inline-block; min-width: 28em;">{{ ucfirst($montant_restant_lettres) }}</p>
         </div>
