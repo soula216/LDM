@@ -1,12 +1,7 @@
 <div x-data="{ 
     showDeleteModal: false, 
     commandeToDelete: null, 
-    deleteFormAction: '', 
-    searchQuery: '',
-    matchesSearch(rowSearchText) {
-        if (!this.searchQuery) return true;
-        return rowSearchText.toLowerCase().includes(this.searchQuery.toLowerCase());
-    }
+    deleteFormAction: ''
 }" x-cloak>
 <x-app-layout>
     <x-slot name="header">
@@ -45,17 +40,61 @@
                     </div>
                 @endif
 
-                <!-- Barre de filtre -->
-                <div class="mb-4 sm:mb-6">
-                    <div class="w-1/2">
-                        <input 
-                            type="text" 
-                            x-model="searchQuery"
-                            placeholder="Filter par dentiste ou par patient"
-                            class="block w-full px-3 py-2 sm:py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm sm:text-base input-field"
-                        />
+                <!-- Barre de filtre (GET : filtrage côté backend, toutes les pages de pagination) -->
+                <form method="GET" action="{{ route('admin.commandes.index') }}" class="mb-4 sm:mb-6">
+                    <div class="flex flex-wrap items-end gap-3">
+                        <div class="w-full max-w-xs">
+                            <input 
+                                type="text" 
+                                name="search"
+                                value="{{ request('search') }}"
+                                placeholder="Filter par dentiste ou par patient"
+                                class="block w-full px-3 py-2 sm:py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm sm:text-base input-field h-10 sm:h-11"
+                            />
+                        </div>
+                        <div class="w-full min-w-[140px] max-w-[180px]">
+                            <x-label for="filter-date-debut" value="{{ __('Date début') }}" class="text-primary font-medium mb-2" />
+                            <input 
+                                id="filter-date-debut"
+                                type="date" 
+                                name="date_debut"
+                                value="{{ request('date_debut') }}"
+                                x-on:click="if ($el.showPicker) $el.showPicker()"
+                                class="block w-full input-field cursor-pointer"
+                            />
+                        </div>
+                        <div class="w-full min-w-[140px] max-w-[180px]">
+                            <x-label for="filter-date-fin" value="{{ __('Date fin') }}" class="text-primary font-medium mb-2" />
+                            <input 
+                                id="filter-date-fin"
+                                type="date" 
+                                name="date_fin"
+                                value="{{ request('date_fin') }}"
+                                x-on:click="if ($el.showPicker) $el.showPicker()"
+                                class="block w-full input-field cursor-pointer"
+                            />
+                        </div>
+                        <div class="w-full min-w-[140px] max-w-[180px]">
+                            <x-label for="filter-status" value="{{ __('Statut') }}" class="text-primary font-medium mb-2" />
+                            <select 
+                                id="filter-status"
+                                name="status"
+                                class="block w-full input-field h-10 sm:h-11"
+                            >
+                                <option value="">Tous les statuts</option>
+                                @foreach(\App\Enums\CommandeStatus::cases() as $status)
+                                    <option value="{{ $status->value }}" {{ request('status') === $status->value ? 'selected' : '' }}>{{ $status->label() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary h-10 sm:h-11 px-4">
+                            Filtrer
+                        </button>
+                        <a href="{{ route('admin.commandes.index') }}" class="inline-flex items-center justify-center h-10 sm:h-11 px-4 rounded-lg border border-border bg-card text-secondary hover:bg-neutral-100 font-medium text-sm transition-colors duration-200">
+                            Réinitialiser
+                        </a>
                     </div>
-                </div>
+                </form>
 
                 <div class="overflow-x-auto -mx-4 sm:mx-0">
                     <table class="min-w-full divide-y divide-border">
@@ -75,16 +114,7 @@
                         </thead>
                         <tbody class="bg-card divide-y divide-border">
                             @forelse($commandes as $commande)
-                                @php
-                                    $dentistName = $commande->dentiste->full_name ?? $commande->dentiste->name ?? '';
-                                    $patientName = $commande->nom_patient ?? '';
-                                    $searchText = strtolower($dentistName . ' ' . $patientName);
-                                @endphp
-                                <tr 
-                                    class="hover:bg-neutral-100/50 transition-colors"
-                                    x-show="matchesSearch('{{ $searchText }}')"
-                                    data-search="{{ $searchText }}"
-                                >
+                                <tr class="hover:bg-neutral-100/50 transition-colors">
                                     <td class="px-3 sm:px-6 py-4">
                                         <span class="text-sm font-semibold text-primary">{{ $commande->num_cmd }}</span>
                                     </td>
@@ -203,24 +233,6 @@
                                     </td>
                                 </tr>
                             @endforelse
-                            @if(count($commandes) > 0)
-                                <tr 
-                                    x-show="searchQuery && Array.from(document.querySelectorAll('tbody tr[data-search]')).every(tr => {
-                                        const searchText = tr.getAttribute('data-search') || '';
-                                        return !matchesSearch(searchText);
-                                    })"
-                                    style="display: none;"
-                                >
-                                    <td colspan="{{ auth()->user()->hasRole('dentist') ? '6' : '8' }}" class="px-6 py-12 text-center">
-                                        <div class="flex flex-col items-center">
-                                            <svg class="w-16 h-16 text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                            </svg>
-                                            <p class="text-secondary text-base font-medium">Aucun résultat pour "<span x-text="searchQuery"></span>"</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endif
                         </tbody>
                     </table>
                 </div>

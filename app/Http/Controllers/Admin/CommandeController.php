@@ -21,7 +21,7 @@ use Carbon\Carbon;
 
 class CommandeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         $query = Commande::with(['dentiste', 'taches', 'createdBy', 'finishedBy']);
@@ -32,12 +32,37 @@ class CommandeController extends Controller
                 $q->where('groupe_id', $user->groupe_id);
             });
         } elseif ($user->hasRole('dentist')) {
-            // Filtrer par dentiste si l'utilisateur est un dentiste
             $query->where('dentiste_id', $user->id);
         }
-        // admin, responsable, secretaire, prothesiste voient toutes les commandes
 
-        $commandes = $query->latest()->paginate(10);
+        // Filtre texte : dentiste ou patient
+        $search = $request->filled('search') ? trim($request->input('search')) : null;
+        if ($search !== null && $search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('nom_patient', 'like', '%' . $search . '%')
+                    ->orWhereHas('dentiste', function ($q2) use ($search) {
+                        $q2->where('nom', 'like', '%' . $search . '%')
+                            ->orWhere('prénom', 'like', '%' . $search . '%')
+                            ->orWhere('name', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        // Filtre date début (created_at >= date_debut)
+        if ($request->filled('date_debut')) {
+            $query->whereDate('created_at', '>=', $request->input('date_debut'));
+        }
+        // Filtre date fin (created_at <= date_fin)
+        if ($request->filled('date_fin')) {
+            $query->whereDate('created_at', '<=', $request->input('date_fin'));
+        }
+
+        // Filtre par statut
+        if ($request->filled('status') && in_array($request->input('status'), \App\Enums\CommandeStatus::values(), true)) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $commandes = $query->latest()->paginate(10)->withQueryString();
 
         return view('admin.commandes.index', compact('commandes'));
     }
