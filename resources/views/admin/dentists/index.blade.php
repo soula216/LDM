@@ -25,7 +25,7 @@
     </x-slot>
 
     <div class="py-4 sm:py-8 bg-app min-h-screen">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="card">
                 @if(session('success'))
                     <div class="mb-4 sm:mb-6 p-3 sm:p-4 bg-accent-secondary/10 border-l-4 border-accent-secondary rounded-lg flex items-center">
@@ -45,16 +45,17 @@
                     </div>
                 @endif
 
-                <div class="overflow-x-auto -mx-4 sm:mx-0">
-                    <table class="min-w-full divide-y divide-border">
+                <div class="overflow-x-visible">
+                    <table class="w-full divide-y divide-border">
                         <thead class="bg-neutral-100">
                             <tr>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Nom</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Numéro</th>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden sm:table-cell">Email</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden md:table-cell">Téléphone</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden lg:table-cell">Gouvernorat</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden lg:table-cell">Ville</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Commandes</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Factures</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -75,9 +76,6 @@
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-primary font-medium">{{ $user->num_dentist ?? '-' }}</div>
                                     </td>
-                                    <td class="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                                        <div class="text-sm text-secondary">{{ $user->email }}</div>
-                                    </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                                         <div class="text-sm text-secondary">{{ $user->tél ?? '-' }}</div>
                                     </td>
@@ -86,6 +84,12 @@
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                                         <div class="text-sm text-secondary">{{ $user->ville ?? '-' }}</div>
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <a href="{{ route('admin.dentists.commandes.index', $user) }}" class="text-blue-600 hover:text-blue-700 font-medium">Voir Commandes</a>
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <a href="{{ route('admin.dentists.factures.index', $user) }}" class="text-blue-600 hover:text-blue-700 font-medium">Voir Factures</a>
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div class="flex items-center space-x-2">
@@ -119,7 +123,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-6 py-12 text-center">
+                                    <td colspan="8" class="px-6 py-12 text-center">
                                         <div class="flex flex-col items-center">
                                             <svg class="w-16 h-16 text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>

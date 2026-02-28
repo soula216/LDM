@@ -19,10 +19,10 @@ class FactureController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('view_factures');
-        
+
         $user = auth()->user();
         $query = Facture::with(['dentist', 'bonsLivraison']);
 
@@ -31,9 +31,73 @@ class FactureController extends Controller
             $query->where('dentist_id', $user->id);
         }
 
-        $factures = $query->latest()->paginate(10);
+        // Filtre texte : numéro de facture ou dentiste
+        $search = $request->filled('search') ? trim($request->input('search')) : null;
+        if ($search !== null && $search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('num_facture', 'like', '%' . $search . '%')
+                    ->orWhereHas('dentist', function ($q2) use ($search) {
+                        $q2->where('nom', 'like', '%' . $search . '%')
+                            ->orWhere('prénom', 'like', '%' . $search . '%')
+                            ->orWhere('name', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        // Filtre date début (date facture >= date_debut)
+        if ($request->filled('date_debut')) {
+            $query->whereDate('date', '>=', $request->input('date_debut'));
+        }
+        // Filtre date fin (date facture <= date_fin)
+        if ($request->filled('date_fin')) {
+            $query->whereDate('date', '<=', $request->input('date_fin'));
+        }
+
+        // Filtre par statut
+        $validStatuses = array_keys(Facture::getStatuses());
+        if ($request->filled('status') && in_array($request->input('status'), $validStatuses, true)) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $factures = $query->latest('date')->paginate(10)->withQueryString();
         $dentists = User::role('dentist')->orderBy('order')->get();
+
         return view('admin.factures.index', compact('factures', 'dentists'));
+    }
+
+    /**
+     * Liste des factures d'un dentiste (page dédiée, identique à index mais filtrée).
+     */
+    public function dentistFactures(Request $request, User $user)
+    {
+        $this->authorize('view_factures');
+
+        $query = Facture::with(['dentist', 'bonsLivraison'])
+            ->where('dentist_id', $user->id);
+
+        // Filtre texte : numéro de facture uniquement (dentiste déjà fixé)
+        $search = $request->filled('search') ? trim($request->input('search')) : null;
+        if ($search !== null && $search !== '') {
+            $query->where('num_facture', 'like', '%' . $search . '%');
+        }
+
+        if ($request->filled('date_debut')) {
+            $query->whereDate('date', '>=', $request->input('date_debut'));
+        }
+        if ($request->filled('date_fin')) {
+            $query->whereDate('date', '<=', $request->input('date_fin'));
+        }
+
+        $validStatuses = array_keys(Facture::getStatuses());
+        if ($request->filled('status') && in_array($request->input('status'), $validStatuses, true)) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $factures = $query->latest('date')->paginate(10)->withQueryString();
+        $dentists = User::role('dentist')->orderBy('order')->get();
+        $dentist = $user;
+
+        return view('admin.factures.index', compact('factures', 'dentists', 'dentist'));
     }
 
     /**

@@ -71,7 +71,15 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
     Route::patch('dentists/{user}', [UserController::class, 'updateDentist'])
         ->name('admin.dentists.update')
         ->middleware('can:edit_users');
-    
+
+    Route::get('dentists/{user}/commandes', [CommandeController::class, 'dentistCommandes'])
+        ->name('admin.dentists.commandes.index')
+        ->middleware('can:view_commandes');
+
+    Route::get('dentists/{user}/factures', [FactureController::class, 'dentistFactures'])
+        ->name('admin.dentists.factures.index')
+        ->middleware('can:view_factures');
+
     // Gestion équipes
     Route::get('teams', [UserController::class, 'teams'])
         ->name('admin.teams.index')

@@ -67,6 +67,41 @@ class CommandeController extends Controller
         return view('admin.commandes.index', compact('commandes'));
     }
 
+    /**
+     * Liste des commandes d'un dentiste (page dédiée, identique à index mais filtrée).
+     */
+    public function dentistCommandes(Request $request, User $user)
+    {
+        $authUser = auth()->user();
+        $query = Commande::with(['dentiste', 'taches', 'createdBy', 'finishedBy'])
+            ->where('dentiste_id', $user->id);
+
+        if ($authUser->hasRole('employer')) {
+            $query->whereHas('taches.service', function ($q) use ($authUser) {
+                $q->where('groupe_id', $authUser->groupe_id);
+            });
+        }
+
+        $search = $request->filled('search') ? trim($request->input('search')) : null;
+        if ($search !== null && $search !== '') {
+            $query->where('nom_patient', 'like', '%' . $search . '%');
+        }
+        if ($request->filled('date_debut')) {
+            $query->whereDate('created_at', '>=', $request->input('date_debut'));
+        }
+        if ($request->filled('date_fin')) {
+            $query->whereDate('created_at', '<=', $request->input('date_fin'));
+        }
+        if ($request->filled('status') && in_array($request->input('status'), \App\Enums\CommandeStatus::values(), true)) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $commandes = $query->latest()->paginate(10)->withQueryString();
+        $dentist = $user;
+
+        return view('admin.commandes.index', compact('commandes', 'dentist'));
+    }
+
     public function create()
     {
         $dentistes = User::role('dentist')->get();

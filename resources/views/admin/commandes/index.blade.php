@@ -13,10 +13,15 @@
                     </svg>
                 </div>
                 <h2 class="text-xl sm:text-2xl font-semibold text-primary">
-                    {{ __('Liste des Commandes') }}
+                    @if(isset($dentist))
+                        {{ __('Commandes') }} – {{ $dentist->full_name ?: $dentist->name }}
+                    @else
+                        {{ __('Liste des Commandes') }}
+                    @endif
                 </h2>
             </div>
             @can('create_commandes')
+            @if(!isset($dentist))
             <a href="{{ route('admin.commandes.create') }}" class="btn-primary inline-flex items-center w-full sm:w-auto justify-center">
                 <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -24,6 +29,7 @@
                 <span class="hidden sm:inline">Nouvelle Commande</span>
                 <span class="sm:hidden">Nouveau</span>
             </a>
+            @endif
             @endcan
         </div>
     </x-slot>
@@ -41,7 +47,7 @@
                 @endif
 
                 <!-- Barre de filtre (GET : filtrage côté backend, toutes les pages de pagination) -->
-                <form method="GET" action="{{ route('admin.commandes.index') }}" class="mb-4 sm:mb-6">
+                <form method="GET" action="{{ isset($dentist) ? route('admin.dentists.commandes.index', $dentist) : route('admin.commandes.index') }}" class="mb-4 sm:mb-6">
                     <div class="flex flex-wrap items-end gap-3">
                         <div class="w-full max-w-xs">
                             <input 
@@ -90,7 +96,7 @@
                         <button type="submit" class="btn-primary h-10 sm:h-11 px-4">
                             Filtrer
                         </button>
-                        <a href="{{ route('admin.commandes.index') }}" class="inline-flex items-center justify-center h-10 sm:h-11 px-4 rounded-lg border border-border bg-card text-secondary hover:bg-neutral-100 font-medium text-sm transition-colors duration-200">
+                        <a href="{{ isset($dentist) ? route('admin.dentists.commandes.index', $dentist) : route('admin.commandes.index') }}" class="inline-flex items-center justify-center h-10 sm:h-11 px-4 rounded-lg border border-border bg-card text-secondary hover:bg-neutral-100 font-medium text-sm transition-colors duration-200">
                             Réinitialiser
                         </a>
                     </div>
@@ -102,7 +108,7 @@
                             <tr>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Numéro</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Patient</th>
-                                @unless(auth()->user()->hasRole('dentist'))
+                                @unless(auth()->user()->hasRole('dentist') || isset($dentist))
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden md:table-cell">Dentiste</th>
                                 @endunless
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Statut</th>
@@ -121,7 +127,7 @@
                                     <td class="px-3 sm:px-6 py-4">
                                         <div class="text-sm font-medium text-primary">{{ $commande->nom_patient }}</div>
                                     </td>
-                                    @unless(auth()->user()->hasRole('dentist'))
+                                    @unless(auth()->user()->hasRole('dentist') || isset($dentist))
                                     <td class="px-3 sm:px-6 py-4 hidden md:table-cell">
                                         <div class="text-sm text-secondary">{{ $commande->dentiste->full_name ?? $commande->dentiste->name }}</div>
                                     </td>

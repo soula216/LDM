@@ -89,10 +89,15 @@
                     </svg>
                 </div>
                 <h2 class="text-xl sm:text-2xl font-semibold text-primary">
-                    {{ __('Liste des Factures') }}
+                    @if(isset($dentist))
+                        {{ __('Factures') }} – {{ $dentist->full_name ?: $dentist->name }}
+                    @else
+                        {{ __('Liste des Factures') }}
+                    @endif
                 </h2>
             </div>
             @can('create_factures')
+            @if(!isset($dentist))
             <button 
                 @click="showCreateModal = true; titreDocument = 'bon_livraison'; ancienSolde = ''; avance = ''"
                 class="btn-primary inline-flex items-center w-full sm:w-auto justify-center"
@@ -103,6 +108,7 @@
                 <span class="hidden sm:inline">Créer une facture</span>
                 <span class="sm:hidden">Nouveau</span>
             </button>
+            @endif
             @endcan
         </div>
     </x-slot>
@@ -119,12 +125,70 @@
                     </div>
                 @endif
 
+                <!-- Barre de filtre (GET : filtrage côté backend, toutes les pages de pagination) -->
+                <form method="GET" action="{{ isset($dentist) ? route('admin.dentists.factures.index', $dentist) : route('admin.factures.index') }}" class="mb-4 sm:mb-6">
+                    <div class="flex flex-wrap items-end gap-3">
+                        <div class="w-full max-w-xs">
+                            <input
+                                type="text"
+                                name="search"
+                                value="{{ request('search') }}"
+                                placeholder="{{ isset($dentist) ? 'Filtrer par numéro' : 'Filtrer par numéro ou dentiste' }}"
+                                class="block w-full px-3 py-2 sm:py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm sm:text-base input-field h-10 sm:h-11"
+                            />
+                        </div>
+                        <div class="w-full min-w-[140px] max-w-[180px]">
+                            <x-label for="filter-date-debut" value="{{ __('Date début') }}" class="text-primary font-medium mb-2" />
+                            <input
+                                id="filter-date-debut"
+                                type="date"
+                                name="date_debut"
+                                value="{{ request('date_debut') }}"
+                                x-on:click="if ($el.showPicker) $el.showPicker()"
+                                class="block w-full input-field cursor-pointer"
+                            />
+                        </div>
+                        <div class="w-full min-w-[140px] max-w-[180px]">
+                            <x-label for="filter-date-fin" value="{{ __('Date fin') }}" class="text-primary font-medium mb-2" />
+                            <input
+                                id="filter-date-fin"
+                                type="date"
+                                name="date_fin"
+                                value="{{ request('date_fin') }}"
+                                x-on:click="if ($el.showPicker) $el.showPicker()"
+                                class="block w-full input-field cursor-pointer"
+                            />
+                        </div>
+                        <div class="w-full min-w-[140px] max-w-[180px]">
+                            <x-label for="filter-status" value="{{ __('Statut') }}" class="text-primary font-medium mb-2" />
+                            <select
+                                id="filter-status"
+                                name="status"
+                                class="block w-full input-field h-10 sm:h-11"
+                            >
+                                <option value="">Tous les statuts</option>
+                                @foreach(\App\Models\Facture::getStatuses() as $value => $label)
+                                    <option value="{{ $value }}" {{ request('status') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary h-10 sm:h-11 px-4">
+                            Filtrer
+                        </button>
+                        <a href="{{ isset($dentist) ? route('admin.dentists.factures.index', $dentist) : route('admin.factures.index') }}" class="inline-flex items-center justify-center h-10 sm:h-11 px-4 rounded-lg border border-border bg-card text-secondary hover:bg-neutral-100 font-medium text-sm transition-colors duration-200">
+                            Réinitialiser
+                        </a>
+                    </div>
+                </form>
+
                 <div class="overflow-x-auto -mx-4 sm:mx-0">
                     <table class="min-w-full divide-y divide-border">
                         <thead class="bg-neutral-100">
                             <tr>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Numéro</th>
+                                @unless(isset($dentist))
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Dentiste</th>
+                                @endunless
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Date</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Montant</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Montant payé</th>
@@ -139,9 +203,11 @@
                                     <td class="px-3 sm:px-6 py-4">
                                         <span class="text-sm font-semibold text-primary">{{ $facture->num_facture }}</span>
                                     </td>
+                                    @unless(isset($dentist))
                                     <td class="px-3 sm:px-6 py-4">
                                         <div class="text-sm text-secondary">{{ $facture->dentist->full_name ?? $facture->dentist->name }}</div>
                                     </td>
+                                    @endunless
                                     <td class="px-3 sm:px-6 py-4">
                                         <div class="text-sm text-secondary">{{ $facture->date->format('d/m/Y') }}</div>
                                     </td>
@@ -216,7 +282,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="px-6 py-12 text-center">
+                                    <td colspan="{{ isset($dentist) ? '7' : '8' }}" class="px-6 py-12 text-center">
                                         <div class="flex flex-col items-center">
                                             <svg class="w-16 h-16 text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
