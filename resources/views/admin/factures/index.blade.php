@@ -114,7 +114,7 @@
     </x-slot>
 
     <div class="py-4 sm:py-8 bg-app min-h-screen">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="card">
                 @if(session('success'))
                     <div class="mb-4 sm:mb-6 p-3 sm:p-4 bg-accent-secondary/10 border-l-4 border-accent-secondary rounded-lg flex items-center">
@@ -181,20 +181,21 @@
                     </div>
                 </form>
 
-                <div class="overflow-x-auto -mx-4 sm:mx-0">
+                <div class="overflow-x-visible">
                     <table class="min-w-full divide-y divide-border">
                         <thead class="bg-neutral-100">
                             <tr>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Numéro</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Numéro</th>
                                 @unless(isset($dentist))
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Dentiste</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Dentiste</th>
                                 @endunless
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Date</th>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Montant</th>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Montant payé</th>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Montant restant</th>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Statut</th>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Actions</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Date</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Montant</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Montant payé</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Montant restant</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">NB BL</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Statut</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-card divide-y divide-border">
@@ -230,6 +231,11 @@
                                             @else
                                                 <span class="text-secondary">-</span>
                                             @endif
+                                        </div>
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-4">
+                                        <div class="text-sm font-medium text-primary">
+                                            {{ $facture->bonsLivraison->count() }}
                                         </div>
                                     </td>
                                     <td class="px-3 sm:px-6 py-4">
@@ -282,7 +288,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ isset($dentist) ? '7' : '8' }}" class="px-6 py-12 text-center">
+                                    <td colspan="{{ isset($dentist) ? '8' : '9' }}" class="px-6 py-12 text-center">
                                         <div class="flex flex-col items-center">
                                             <svg class="w-16 h-16 text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
