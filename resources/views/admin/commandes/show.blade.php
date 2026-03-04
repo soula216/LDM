@@ -28,7 +28,7 @@
     </x-slot>
 
     <div class="py-4 sm:py-8 bg-app min-h-screen">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="w-full max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
             @if(session('success'))
                 <div class="bg-green-50 border-l-4 border-green-400 text-green-700 px-4 py-3 rounded mb-4">
                     {{ session('success') }}
@@ -83,9 +83,9 @@
             <div class="card mb-6">
                 <div class="p-4 sm:p-6">
                     <h3 class="text-lg font-semibold text-primary mb-4">Tâches</h3>
-                    <div class="overflow-x-visible">
-                        <div class="w-full align-middle">
-                            <table class="w-full divide-y divide-border">
+                    <div class="overflow-x-auto -mx-4 sm:mx-0">
+                        <div class="inline-block min-w-full align-middle">
+                            <table class="min-w-full divide-y divide-border">
                                 <thead class="bg-neutral-50">
                                     <tr>
                                         @unless(auth()->user()->hasRole('dentist'))

@@ -62,7 +62,7 @@ class CommandeController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $commandes = $query->latest()->paginate(10)->withQueryString();
+        $commandes = $query->latest()->get();
 
         return view('admin.commandes.index', compact('commandes'));
     }
@@ -96,7 +96,7 @@ class CommandeController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $commandes = $query->latest()->paginate(10)->withQueryString();
+        $commandes = $query->latest()->get();
         $dentist = $user;
 
         return view('admin.commandes.index', compact('commandes', 'dentist'));

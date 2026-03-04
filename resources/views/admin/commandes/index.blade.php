@@ -242,13 +242,6 @@
                         </tbody>
                     </table>
                 </div>
-
-                @if($commandes->hasPages())
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 px-4 sm:px-6 py-4 border-t border-border">
-                    <p class="text-sm text-secondary">Affichage de {{ $commandes->firstItem() }} à {{ $commandes->lastItem() }} sur {{ $commandes->total() }} résultats</p>
-                    {{ $commandes->onEachSide(2)->links() }}
-                </div>
-                @endif
             </div>
         </div>
     </div>
