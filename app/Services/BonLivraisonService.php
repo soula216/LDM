@@ -15,9 +15,10 @@ class BonLivraisonService
      */
     public function generateFromCommande(Commande $commande): BonLivraison
     {
-        // Idempotent : si BL existe, ne pas recréer
-        if ($commande->bonLivraison) {
-            return $commande->bonLivraison;
+        // Idempotent : si BL existe, ne pas recréer (vérification en base pour éviter les doublons)
+        $existing = $commande->bonLivraison()->first();
+        if ($existing) {
+            return $existing;
         }
 
         $bl = BonLivraison::create([
@@ -54,7 +55,20 @@ class BonLivraisonService
     private function generateNumberBl(): string
     {
         $year = now()->year;
-        $count = BonLivraison::whereYear('created_at', $year)->count() + 1;
-        return "BL-{$year}-" . str_pad($count, 5, '0', STR_PAD_LEFT);
+        $prefix = "BL-{$year}-";
+        $last = BonLivraison::where('numero_bl', 'like', $prefix . '%')
+            ->orderByRaw('CAST(SUBSTRING(numero_bl, 10) AS UNSIGNED) DESC')
+            ->value('numero_bl');
+        $next = 1;
+        if ($last && preg_match('/^BL-\d{4}-(\d+)$/', $last, $m)) {
+            $next = (int) $m[1] + 1;
+        }
+        $numero = $prefix . str_pad($next, 5, '0', STR_PAD_LEFT);
+        // En cas de concurrence, réessayer avec un numéro plus grand jusqu'à trouver un libre
+        while (BonLivraison::where('numero_bl', $numero)->exists()) {
+            $next++;
+            $numero = $prefix . str_pad($next, 5, '0', STR_PAD_LEFT);
+        }
+        return $numero;
     }
 }
