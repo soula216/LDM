@@ -23,7 +23,7 @@ use App\Http\Controllers\App\{
 };
 
 Route::get('/', function () {
-    return redirect('/dashboard');
+    return view('accueil');
 });
 
 Route::get('/dashboard', [DashboardController::class, 'userDashboard'])
