@@ -77,8 +77,49 @@
         this.factureToDelete = factureNum;
         this.deleteFormAction = '{{ url('admin/factures') }}/' + factureId;
         this.showDeleteModal = true;
+    },
+    @unless(isset($dentist))
+    easyloadPage: {{ $factures->currentPage() }},
+    easyloadHasMore: @json($factures->hasMorePages()),
+    easyloadLoading: false,
+    easyloadObserver: null,
+    initEasyload() {
+        if (!this.$refs.easyloadSentinel) return;
+        this.easyloadObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                this.loadMoreFactures();
+            }
+        }, { rootMargin: '120px' });
+        this.easyloadObserver.observe(this.$refs.easyloadSentinel);
+    },
+    async loadMoreFactures() {
+        if (this.easyloadLoading || !this.easyloadHasMore) return;
+        this.easyloadLoading = true;
+        try {
+            const params = new URLSearchParams(window.location.search);
+            params.set('page', this.easyloadPage + 1);
+            const response = await fetch(`{{ route('admin.factures.index') }}?${params}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            const tbody = document.getElementById('factures-tbody');
+            if (tbody && data.html) {
+                tbody.insertAdjacentHTML('beforeend', data.html);
+            }
+            this.easyloadPage++;
+            this.easyloadHasMore = data.has_more;
+        } catch (error) {
+            console.error('Erreur easyload factures:', error);
+        } finally {
+            this.easyloadLoading = false;
+        }
     }
-}" x-cloak>
+    @endunless
+}" x-cloak @unless(isset($dentist)) x-init="initEasyload()" @endunless>
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -125,7 +166,7 @@
                     </div>
                 @endif
 
-                <!-- Barre de filtre (GET : filtrage côté backend, toutes les pages de pagination) -->
+                <!-- Barre de filtre (GET : filtrage côté backend) -->
                 <form method="GET" action="{{ isset($dentist) ? route('admin.dentists.factures.index', $dentist) : route('admin.factures.index') }}" class="mb-4 sm:mb-6">
                     <div class="flex flex-wrap items-end gap-3">
                         <div class="w-full max-w-xs">
@@ -198,111 +239,58 @@
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider whitespace-nowrap">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-card divide-y divide-border">
-                            @forelse($factures as $facture)
-                                <tr class="hover:bg-neutral-100/50 transition-colors">
-                                    <td class="px-3 sm:px-6 py-4">
-                                        <span class="text-sm font-semibold text-primary">{{ $facture->num_facture }}</span>
-                                    </td>
-                                    @unless(isset($dentist))
-                                    <td class="px-3 sm:px-6 py-4">
-                                        <div class="text-sm text-secondary">{{ $facture->dentist->full_name ?? $facture->dentist->name }}</div>
-                                    </td>
-                                    @endunless
-                                    <td class="px-3 sm:px-6 py-4">
-                                        <div class="text-sm text-secondary">{{ $facture->date->format('d/m/Y') }}</div>
-                                    </td>
-                                    <td class="px-3 sm:px-6 py-4">
-                                        <div class="text-sm font-medium text-primary">{{ number_format($facture->montant, 2, ',', ' ') }} TND</div>
-                                    </td>
-                                    <td class="px-3 sm:px-6 py-4">
-                                        <div class="text-sm font-medium text-primary">
-                                            @if($facture->montant_paye)
-                                                {{ number_format($facture->montant_paye, 2, ',', ' ') }} TND
-                                            @else
-                                                <span class="text-secondary">-</span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="px-3 sm:px-6 py-4">
-                                        <div class="text-sm font-medium text-primary">
-                                            @if($facture->montant_restant !== null)
-                                                {{ number_format($facture->montant_restant, 2, ',', ' ') }} TND
-                                            @else
-                                                <span class="text-secondary">-</span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="px-3 sm:px-6 py-4">
-                                        <div class="text-sm font-medium text-primary">
-                                            {{ $facture->bonsLivraison->count() }}
-                                        </div>
-                                    </td>
-                                    <td class="px-3 sm:px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                            @if($facture->status === 'pending') bg-yellow-100 text-yellow-800
-                                            @elseif($facture->status === 'delivered') bg-blue-100 text-blue-800
-                                            @elseif($facture->status === 'paid') bg-green-100 text-green-800
-                                            @elseif($facture->status === 'partially_paid') bg-orange-100 text-orange-800
-                                            @elseif($facture->status === 'rejected') bg-red-100 text-red-800
-                                            @else bg-gray-100 text-gray-800
-                                            @endif">
-                                            {{ $facture->status_label }}
-                                        </span>
-                                    </td>
-                                    <td class="px-3 sm:px-6 py-4 text-sm font-medium">
-                                        <div class="flex items-center space-x-2">
-                                            <a href="{{ route('admin.factures.show', $facture) }}" class="text-primary hover:text-primary/80 transition-colors" title="Voir">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        <tbody id="factures-tbody" class="bg-card divide-y divide-border">
+                            @if(!isset($dentist))
+                                @if($factures->isEmpty())
+                                    <tr id="factures-empty-row">
+                                        <td colspan="9" class="px-6 py-12 text-center">
+                                            <div class="flex flex-col items-center">
+                                                <svg class="w-16 h-16 text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                                 </svg>
-                                            </a>
-                                            @can('edit_factures')
-                                            <button @click="openEditModal({
-                                                id: {{ $facture->id }},
-                                                dentist_id: {{ $facture->dentist_id }},
-                                                titre_document: '{{ $facture->titre_document ?? 'bon_livraison' }}',
-                                                date: '{{ $facture->date->format('Y-m-d') }}',
-                                                num_facture: '{{ addslashes($facture->num_facture) }}',
-                                                ancien_solde: {{ $facture->ancien_solde ?? 0 }},
-                                                avance: {{ $facture->avance ?? 0 }},
-                                                status: '{{ $facture->status }}',
-                                                montant_paye: {{ $facture->montant_paye ?? 'null' }},
-                                                bons_livraison_ids: [{{ $facture->bonsLivraison->pluck('id')->implode(',') }}]
-                                            })" class="text-warning hover:text-warning/80 transition-colors" title="Modifier">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                <p class="text-secondary text-base font-medium">Aucune facture trouvée</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @else
+                                    @include('admin.factures.partials.rows', compact('factures'))
+                                @endif
+                            @else
+                                @if($factures->isEmpty())
+                                    <tr>
+                                        <td colspan="8" class="px-6 py-12 text-center">
+                                            <div class="flex flex-col items-center">
+                                                <svg class="w-16 h-16 text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                                 </svg>
-                                            </button>
-                                            @endcan
-                                            @can('delete_factures')
-                                            <button @click="openDeleteModal({{ $facture->id }}, '{{ $facture->num_facture }}')" class="text-danger hover:text-danger/80 transition-colors" title="Supprimer">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
-                                            @endcan
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="{{ isset($dentist) ? '8' : '9' }}" class="px-6 py-12 text-center">
-                                        <div class="flex flex-col items-center">
-                                            <svg class="w-16 h-16 text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                            </svg>
-                                            <p class="text-secondary text-base font-medium">Aucune facture trouvée</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforelse
+                                                <p class="text-secondary text-base font-medium">Aucune facture trouvée</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @else
+                                    @include('admin.factures.partials.rows', compact('factures'))
+                                @endif
+                            @endif
                         </tbody>
                     </table>
                 </div>
 
-                @if($factures->hasPages())
+                @if(!isset($dentist))
+                <div class="px-4 sm:px-6 py-4 border-t border-border">
+                    <p class="text-sm text-secondary text-center" x-show="!easyloadHasMore && !easyloadLoading">
+                        {{ $factures->total() }} facture(s) au total
+                    </p>
+                    <div x-ref="easyloadSentinel" x-show="easyloadHasMore" class="py-4 flex justify-center min-h-[3rem]">
+                        <div x-show="easyloadLoading" class="flex items-center gap-2 text-secondary text-sm">
+                            <svg class="animate-spin h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Chargement...</span>
+                        </div>
+                    </div>
+                </div>
+                @elseif($factures->hasPages())
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4 px-4 sm:px-6 py-4 border-t border-border">
                     <p class="text-sm text-secondary">Affichage de {{ $factures->firstItem() }} à {{ $factures->lastItem() }} sur {{ $factures->total() }} résultats</p>
                     {{ $factures->onEachSide(2)->links() }}

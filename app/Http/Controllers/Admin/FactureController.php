@@ -16,22 +16,20 @@ use Carbon\Carbon;
 
 class FactureController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
-    {
-        $this->authorize('view_factures');
+    private const FACTURES_PER_PAGE = 20;
 
+    /**
+     * Requête de base pour la liste globale des factures (admin/factures).
+     */
+    private function buildFacturesIndexQuery(Request $request)
+    {
         $user = auth()->user();
         $query = Facture::with(['dentist', 'bonsLivraison']);
 
-        // Filtrer par dentiste si l'utilisateur est un dentiste
         if ($user->hasRole('dentist')) {
             $query->where('dentist_id', $user->id);
         }
 
-        // Filtre texte : numéro de facture ou dentiste
         $search = $request->filled('search') ? trim($request->input('search')) : null;
         if ($search !== null && $search !== '') {
             $query->where(function ($q) use ($search) {
@@ -44,22 +42,40 @@ class FactureController extends Controller
             });
         }
 
-        // Filtre date début (date facture >= date_debut)
         if ($request->filled('date_debut')) {
             $query->whereDate('date', '>=', $request->input('date_debut'));
         }
-        // Filtre date fin (date facture <= date_fin)
         if ($request->filled('date_fin')) {
             $query->whereDate('date', '<=', $request->input('date_fin'));
         }
 
-        // Filtre par statut
         $validStatuses = array_keys(Facture::getStatuses());
         if ($request->filled('status') && in_array($request->input('status'), $validStatuses, true)) {
             $query->where('status', $request->input('status'));
         }
 
-        $factures = $query->latest('date')->paginate(10)->withQueryString();
+        return $query;
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $this->authorize('view_factures');
+
+        $factures = $this->buildFacturesIndexQuery($request)
+            ->latest('date')
+            ->paginate(self::FACTURES_PER_PAGE)
+            ->withQueryString();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('admin.factures.partials.rows', compact('factures'))->render(),
+                'has_more' => $factures->hasMorePages(),
+            ]);
+        }
+
         $dentists = User::role('dentist')->orderBy('order')->get();
 
         return view('admin.factures.index', compact('factures', 'dentists'));
