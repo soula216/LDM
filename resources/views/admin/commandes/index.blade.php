@@ -1,7 +1,64 @@
+@php
+    $bulkStatusEnabled = !isset($dentist) && auth()->user()->can('change_commande_status');
+    $tableColspan = (auth()->user()->hasRole('dentist') ? 6 : 8) + ($bulkStatusEnabled ? 1 : 0);
+@endphp
 <div x-data="{
     showDeleteModal: false,
     commandeToDelete: null,
     deleteFormAction: '',
+    @if($bulkStatusEnabled)
+    selectedCommandeIds: [],
+    selectAllChecked: false,
+    selectAllIndeterminate: false,
+    bulkStatus: '',
+    toggleCommandeSelection(id, checked) {
+        if (checked) {
+            if (!this.selectedCommandeIds.includes(id)) {
+                this.selectedCommandeIds.push(id);
+            }
+        } else {
+            this.selectedCommandeIds = this.selectedCommandeIds.filter(i => i !== id);
+        }
+        this.syncSelectAllState();
+    },
+    syncSelectAllState() {
+        const checkboxes = document.querySelectorAll('#commandes-tbody .commande-row-checkbox');
+        const total = checkboxes.length;
+        const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+        this.selectAllChecked = total > 0 && checked === total;
+        this.selectAllIndeterminate = checked > 0 && checked < total;
+    },
+    toggleSelectAll(checked) {
+        const checkboxes = document.querySelectorAll('#commandes-tbody .commande-row-checkbox');
+        this.selectedCommandeIds = [];
+        checkboxes.forEach(cb => {
+            cb.checked = checked;
+            if (checked) {
+                const id = parseInt(cb.value, 10);
+                if (!this.selectedCommandeIds.includes(id)) {
+                    this.selectedCommandeIds.push(id);
+                }
+            }
+        });
+        this.selectAllChecked = checked && checkboxes.length > 0;
+        this.selectAllIndeterminate = false;
+    },
+    clearSelection() {
+        this.selectedCommandeIds = [];
+        this.selectAllChecked = false;
+        this.selectAllIndeterminate = false;
+        this.bulkStatus = '';
+        document.querySelectorAll('#commandes-tbody .commande-row-checkbox').forEach(cb => {
+            cb.checked = false;
+        });
+    },
+    submitBulkStatus() {
+        if (this.selectedCommandeIds.length === 0 || !this.bulkStatus) {
+            return;
+        }
+        this.$refs.bulkStatusForm.submit();
+    },
+    @endif
     @unless(isset($dentist))
     easyloadPage: {{ $commandes->currentPage() }},
     easyloadHasMore: @json($commandes->hasMorePages()),
@@ -33,6 +90,12 @@
             const tbody = document.getElementById('commandes-tbody');
             if (tbody && data.html) {
                 tbody.insertAdjacentHTML('beforeend', data.html);
+                if (window.Alpine) {
+                    Alpine.initTree(tbody);
+                }
+                @if($bulkStatusEnabled)
+                this.syncSelectAllState();
+                @endif
             }
             this.easyloadPage++;
             this.easyloadHasMore = data.has_more;
@@ -84,6 +147,15 @@
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                         </svg>
                         <span class="text-accent-secondary font-medium text-sm sm:text-base">{{ session('success') }}</span>
+                    </div>
+                @endif
+
+                @if(session('error'))
+                    <div class="mb-4 sm:mb-6 p-3 sm:p-4 bg-danger/10 border-l-4 border-danger rounded-lg flex items-center">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-danger mr-2 sm:mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="text-danger font-medium text-sm sm:text-base">{{ session('error') }}</span>
                     </div>
                 @endif
 
@@ -143,10 +215,66 @@
                     </div>
                 </form>
 
+                @if($bulkStatusEnabled)
+                <form x-ref="bulkStatusForm" method="POST" action="{{ route('admin.commandes.bulk-status') }}" class="hidden">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="status" x-bind:value="bulkStatus">
+                    <template x-for="id in selectedCommandeIds" :key="id">
+                        <input type="hidden" name="commande_ids[]" :value="id">
+                    </template>
+                </form>
+
+                <div
+                    x-show="selectedCommandeIds.length > 0"
+                    x-cloak
+                    class="mb-4 sm:mb-6 p-3 sm:p-4 bg-primary/5 border border-primary/20 rounded-lg flex flex-col sm:flex-row sm:items-center gap-3"
+                >
+                    <p class="text-sm font-medium text-primary">
+                        <span x-text="selectedCommandeIds.length"></span> commande(s) sélectionnée(s)
+                    </p>
+                    <div class="flex flex-wrap items-center gap-3 sm:ml-auto">
+                        <select x-model="bulkStatus" class="input-field h-10 sm:h-11 min-w-[160px]">
+                            <option value="">Choisir un statut</option>
+                            @foreach(\App\Enums\CommandeStatus::cases() as $status)
+                                <option value="{{ $status->value }}">{{ $status->label() }}</option>
+                            @endforeach
+                        </select>
+                        <button
+                            type="button"
+                            @click="submitBulkStatus()"
+                            :disabled="!bulkStatus"
+                            class="btn-primary h-10 sm:h-11 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Appliquer le statut
+                        </button>
+                        <button
+                            type="button"
+                            @click="clearSelection()"
+                            class="inline-flex items-center justify-center h-10 sm:h-11 px-4 rounded-lg border border-border bg-card text-secondary hover:bg-neutral-100 font-medium text-sm transition-colors duration-200"
+                        >
+                            Annuler la sélection
+                        </button>
+                    </div>
+                </div>
+                @endif
+
                 <div class="overflow-x-auto -mx-4 sm:mx-0">
                     <table class="min-w-full divide-y divide-border">
                         <thead class="bg-neutral-100">
                             <tr>
+                                @if($bulkStatusEnabled)
+                                <th class="px-3 sm:px-6 py-3 w-10">
+                                    <input
+                                        type="checkbox"
+                                        class="rounded border-border text-primary focus:ring-primary"
+                                        :checked="selectAllChecked"
+                                        :indeterminate.prop="selectAllIndeterminate"
+                                        @change="toggleSelectAll($event.target.checked)"
+                                        title="Tout sélectionner (lignes chargées)"
+                                    />
+                                </th>
+                                @endif
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Numéro</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Patient</th>
                                 @unless(auth()->user()->hasRole('dentist') || isset($dentist))
@@ -163,7 +291,7 @@
                             @if(!isset($dentist))
                                 @if($commandes->isEmpty())
                                     <tr id="commandes-empty-row">
-                                        <td colspan="{{ auth()->user()->hasRole('dentist') ? '6' : '8' }}" class="px-6 py-12 text-center">
+                                        <td colspan="{{ $tableColspan }}" class="px-6 py-12 text-center">
                                             <div class="flex flex-col items-center">
                                                 <svg class="w-16 h-16 text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -173,7 +301,7 @@
                                         </td>
                                     </tr>
                                 @else
-                                    @include('admin.commandes.partials.rows', compact('commandes'))
+                                    @include('admin.commandes.partials.rows', ['commandes' => $commandes, 'bulkSelect' => true])
                                 @endif
                             @else
                                 @if($commandes->isEmpty())

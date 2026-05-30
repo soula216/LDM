@@ -1,5 +1,16 @@
 @foreach($commandes as $commande)
-    <tr class="hover:bg-neutral-100/50 transition-colors">
+    <tr class="hover:bg-neutral-100/50 transition-colors" data-commande-id="{{ $commande->id }}">
+        @if(!empty($bulkSelect) && auth()->user()->can('change_commande_status'))
+        <td class="px-3 sm:px-6 py-4 w-10">
+            <input
+                type="checkbox"
+                value="{{ $commande->id }}"
+                class="commande-row-checkbox rounded border-border text-primary focus:ring-primary"
+                @change="toggleCommandeSelection({{ $commande->id }}, $event.target.checked)"
+                :checked="selectedCommandeIds.includes({{ $commande->id }})"
+            />
+        </td>
+        @endif
         <td class="px-3 sm:px-6 py-4">
             <span class="text-sm font-semibold text-primary">{{ $commande->num_cmd }}</span>
         </td>

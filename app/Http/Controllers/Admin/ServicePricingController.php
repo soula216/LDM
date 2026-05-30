@@ -10,9 +10,21 @@ use Illuminate\Support\Facades\Cache;
 
 class ServicePricingController extends Controller
 {
-    public function index()
+    private const SERVICES_PER_PAGE = 20;
+
+    public function index(Request $request)
     {
-        $services = Service::with('groupe')->orderBy('nom')->paginate(10);
+        $services = Service::with('groupe')
+            ->orderBy('nom')
+            ->paginate(self::SERVICES_PER_PAGE);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('admin.services.partials.rows', compact('services'))->render(),
+                'has_more' => $services->hasMorePages(),
+            ]);
+        }
+
         $groupes = Groupe::all();
 
         return view('admin.services.index', compact('services', 'groupes'));

@@ -74,12 +74,84 @@ class CommandeController extends Controller
 
         if ($request->ajax()) {
             return response()->json([
-                'html' => view('admin.commandes.partials.rows', compact('commandes'))->render(),
+                'html' => view('admin.commandes.partials.rows', [
+                    'commandes' => $commandes,
+                    'bulkSelect' => true,
+                ])->render(),
                 'has_more' => $commandes->hasMorePages(),
             ]);
         }
 
         return view('admin.commandes.index', compact('commandes'));
+    }
+
+    /**
+     * Mise à jour du statut pour plusieurs commandes sélectionnées.
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'commande_ids' => 'required|array|min:1',
+            'commande_ids.*' => 'integer|exists:commandes,id',
+            'status' => 'required|in:Reçue,En cours,Terminée,Livrée',
+        ]);
+
+        $user = auth()->user();
+        $commandes = Commande::whereIn('id', $validated['commande_ids'])->get();
+        $newStatus = $validated['status'];
+        $updated = 0;
+        $skipped = 0;
+
+        $bonLivraisonService = app(BonLivraisonService::class);
+
+        foreach ($commandes as $commande) {
+            if (!$user->can('changeCommandeStatus', $commande)) {
+                $skipped++;
+                continue;
+            }
+
+            $oldStatus = $commande->status;
+            if ($oldStatus === $newStatus) {
+                continue;
+            }
+
+            $updateData = ['status' => $newStatus];
+
+            if ($newStatus === 'Terminée' && $oldStatus !== 'Terminée') {
+                $updateData['finished_by'] = $user->id;
+            } elseif ($oldStatus === 'Terminée' && $newStatus !== 'Terminée') {
+                $updateData['finished_by'] = null;
+            }
+
+            $commande->update($updateData);
+            $commande->touch();
+            $commande->refresh();
+
+            if ($newStatus === 'Terminée' && $oldStatus !== 'Terminée') {
+                $bonLivraisonService->generateFromCommande($commande);
+            }
+
+            $this->invalidateCommandeCaches($commande, $user);
+
+            event(new CommandeUpdated($commande));
+            $updated++;
+        }
+
+        if ($updated > 0) {
+            Cache::forget('admin.commandes.list');
+            $this->invalidateCalendarCaches();
+        }
+
+        if ($updated === 0) {
+            return redirect()->back()->with('error', 'Aucune commande n\'a pu être mise à jour.');
+        }
+
+        $message = $updated . ' commande(s) mise(s) à jour avec succès.';
+        if ($skipped > 0) {
+            $message .= ' ' . $skipped . ' commande(s) ignorée(s) (permissions insuffisantes).';
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     /**
@@ -532,6 +604,19 @@ class CommandeController extends Controller
 
         return redirect()->route('admin.commandes.index')
             ->with('success', 'Commande supprimée');
+    }
+
+    /**
+     * Invalider les caches liés à une commande (page show admin, modal app, etc.)
+     */
+    private function invalidateCommandeCaches(Commande $commande, ?User $user = null): void
+    {
+        Cache::forget("admin.commandes.show.{$commande->id}");
+
+        $user = $user ?? auth()->user();
+        if ($user) {
+            Cache::forget("app.commandes.modal.{$commande->id}.{$user->id}");
+        }
     }
 
     /**

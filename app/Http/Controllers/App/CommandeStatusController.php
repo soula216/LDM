@@ -49,6 +49,7 @@ class CommandeStatusController extends Controller
         }
 
         // Invalider caches
+        Cache::forget("admin.commandes.show.{$commande->id}");
         Cache::forget("app.commandes.modal.{$commande->id}." . auth()->id());
         
         // Invalider tous les caches du calendrier en incrémentant la version

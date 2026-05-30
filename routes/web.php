@@ -182,6 +182,10 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
             ->name('admin.commandes.index')
             ->middleware('can:view_commandes');
 
+        Route::patch('/bulk-status', [CommandeController::class, 'bulkUpdateStatus'])
+            ->name('admin.commandes.bulk-status')
+            ->middleware('can:change_commande_status');
+
         Route::get('/create', [CommandeController::class, 'create'])
             ->name('admin.commandes.create')
             ->middleware('can:create_commandes');
