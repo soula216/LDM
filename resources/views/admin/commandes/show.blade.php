@@ -109,9 +109,9 @@
                                     @foreach($commande->taches as $tache)
                                         <tr class="hover:bg-neutral-50">
                                             @unless(auth()->user()->hasRole('dentist'))
-                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary">{{ $tache->service->groupe->nom ?? '-' }}</td>
+                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary">{{ $tache->groupe?->nom ?? $tache->service?->groupe?->nom ?? '-' }}</td>
                                             @endunless
-                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary">{{ $tache->service->nom ?? '-' }}</td>
+                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary">{{ $tache->service_nom }}</td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary">{{ $tache->nb_elem }}</td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary">{{ $tache->dents ?? '-' }}</td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary hidden sm:table-cell">{{ $tache->teinte ?? '-' }}</td>
@@ -123,7 +123,11 @@
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-primary hidden md:table-cell">{{ number_format($tache->prix_unitaire_ttc_snapshot, 2) }} TND</td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-primary">{{ number_format($tache->total_ligne_ttc, 2) }} TND</td>
                                             @endunless
-                                            @if(auth()->user()->can('view_fiche_controle_quality') && (($commande->status === 'Terminée' || $commande->status === 'Livrée') && (!auth()->user()->hasRole('dentist') || $commande->status === 'Livrée')))
+                                            @php
+                                                $tacheGroupe = $tache->groupe ?? $tache->service?->groupe;
+                                                $canShowFiche = $tacheGroupe && in_array($tacheGroupe->nom, ['Conjointe', 'Mobile']);
+                                            @endphp
+                                            @if(auth()->user()->can('view_fiche_controle_quality') && $canShowFiche && (($commande->status === 'Terminée' || $commande->status === 'Livrée') && (!auth()->user()->hasRole('dentist') || $commande->status === 'Livrée')))
                                             @php
                                                 $fiche = $tache->ficheControleQuality;
                                                 $ficheExists = $fiche !== null;
@@ -133,7 +137,7 @@
                                             <td class="px-3 sm:px-6 py-4 text-sm" style="min-width: 200px; max-width: 250px;">
                                                 <div class="flex flex-col gap-1">
                                                     <button type="button" 
-                                                            onclick="openFicheModal({{ $tache->id }}, '{{ addslashes($tache->service->nom ?? '') }}', {{ $ficheExists ? 'true' : 'false' }}, {{ $canCreate ? 'true' : 'false' }}, {{ $canEdit ? 'true' : 'false' }})" 
+                                                            onclick="openFicheModal({{ $tache->id }}, '{{ addslashes($tache->service_nom) }}', {{ $ficheExists ? 'true' : 'false' }}, {{ $canCreate ? 'true' : 'false' }}, {{ $canEdit ? 'true' : 'false' }})" 
                                                             class="font-medium inline-flex items-center transition-colors duration-200 text-blue-600">
                                                         <svg class="w-4 h-4 mr-1 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>

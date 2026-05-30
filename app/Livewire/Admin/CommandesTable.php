@@ -40,8 +40,11 @@ class CommandesTable extends Component
 
             // Filtrer par groupe si l'utilisateur est un employé
             if ($user->hasRole('employer')) {
-                $query->whereHas('taches.service', function ($q) use ($user) {
-                    $q->where('groupe_id', $user->groupe_id);
+                $query->whereHas('taches', function ($q) use ($user) {
+                    $q->where(function ($q2) use ($user) {
+                        $q2->where('groupe_id', $user->groupe_id)
+                            ->orWhereHas('service', fn ($q3) => $q3->where('groupe_id', $user->groupe_id));
+                    });
                 });
             } elseif ($user->hasRole('dentist')) {
                 // Filtrer par dentiste si l'utilisateur est un dentiste

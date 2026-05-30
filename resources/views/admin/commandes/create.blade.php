@@ -68,25 +68,7 @@
                                 </svg>
                             </button>
                             <div class="tache-fields-row flex flex-col gap-4 pt-10 md:pt-0">
-                                <div class="w-full service-combobox-wrapper">
-                                    <x-label for="taches[0][service_id]" value="{{ __('Service') }}" class="text-primary font-medium mb-2" />
-                                    <select name="taches[0][service_id]" id="taches[0][service_id]" class="tache-service-select sr-only" required aria-hidden="true" tabindex="-1">
-                                        <option value="">Sélectionner un service</option>
-                                        @foreach($services as $service)
-                                            <option value="{{ $service->id }}">{{ $service->nom }}</option>
-                                        @endforeach
-                                    </select>
-                                    <div class="service-combobox relative">
-                                        <button type="button" class="service-combobox-trigger w-full input-field text-left flex items-center justify-between" aria-haspopup="listbox" aria-expanded="false">
-                                            <span class="service-combobox-trigger-text truncate">Sélectionner un service</span>
-                                            <svg class="w-4 h-4 flex-shrink-0 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                        </button>
-                                        <div class="service-combobox-dropdown absolute left-0 right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg overflow-hidden flex-col max-h-72" data-open="false">
-                                            <input type="text" class="service-combobox-filter px-3 py-2 text-sm flex-shrink-0" placeholder="Filtrer les services..." autocomplete="off">
-                                            <ul class="service-combobox-list overflow-y-auto py-1 text-sm text-primary flex-1 min-h-0" role="listbox"></ul>
-                                        </div>
-                                    </div>
-                                </div>
+                                @include('admin.commandes.partials.tache-service-fields', ['index' => 0, 'services' => $services, 'groupes' => $groupes, 'tache' => null])
 
                                 <div class="flex flex-col sm:flex-row gap-4 w-full tache-nb-teinte">
                                     <div class="w-full sm:flex-1 min-w-0">
@@ -187,6 +169,9 @@
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
+    <script>
+        @include('admin.commandes.partials.tache-service-scripts')
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             let tacheIndex = 1;
@@ -401,6 +386,10 @@
                 });
             }
             document.querySelectorAll('.service-combobox-wrapper').forEach(initServiceCombobox);
+            if (tachesContainer) {
+                initTacheServiceModeDelegation(tachesContainer);
+                initTacheServiceModes(tachesContainer);
+            }
 
             // Fonction pour ajouter une nouvelle tâche
             if (addTacheBtn && tachesContainer) {
@@ -434,6 +423,8 @@
                             if (input._flatpickr) {
                                 input._flatpickr.destroy();
                             }
+                        } else if (input.type === 'radio' && input.classList.contains('tache-service-type-radio')) {
+                            input.checked = input.value === 'catalog';
                         } else if (input.type !== 'checkbox' && !input.classList.contains('tache-date-livraison')) {
                             input.value = '';
                         }
@@ -485,6 +476,7 @@
                     // Initialiser le combobox Service pour la nouvelle tâche
                     const newComboboxWrapper = newTache.querySelector('.service-combobox-wrapper');
                     if (newComboboxWrapper) initServiceCombobox(newComboboxWrapper);
+                    applyTacheServiceMode(newTache, 'catalog');
 
                     // Initialiser le bouton de suppression pour la nouvelle tâche
                     const deleteBtn = newTache.querySelector('.delete-tache');

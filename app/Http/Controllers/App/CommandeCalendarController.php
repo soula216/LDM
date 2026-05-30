@@ -35,12 +35,15 @@ class CommandeCalendarController extends Controller
 
         $events = Cache::remember($cacheKey, 120, function () use ($user) {
             // Charger toutes les commandes avec leurs tâches (sans filtrer par date dans la requête)
-            $query = Commande::with(['taches.service.groupe', 'dentiste']);
+            $query = Commande::with(['taches.service.groupe', 'taches.groupe', 'dentiste']);
 
             // Filtrage rôle selon le cahier des charges
             if ($user->hasRole('employer')) {
-                $query->whereHas('taches.service', function ($q) use ($user) {
-                    $q->where('groupe_id', $user->groupe_id);
+                $query->whereHas('taches', function ($q) use ($user) {
+                    $q->where(function ($q2) use ($user) {
+                        $q2->where('groupe_id', $user->groupe_id)
+                            ->orWhereHas('service', fn ($q3) => $q3->where('groupe_id', $user->groupe_id));
+                    });
                 });
             } elseif ($user->hasRole('dentist')) {
                 $query->where('dentiste_id', $user->id);
@@ -61,8 +64,10 @@ class CommandeCalendarController extends Controller
             foreach ($commande->taches as $tache) {
                 // Filtrer les tâches par groupe pour les employés (via le service)
                 if ($user->hasRole('employer')) {
-                    if (!$tache->service || $tache->service->groupe_id != $user->groupe_id) {
-                        continue; // Ignorer les tâches qui ne sont pas du groupe de l'employé
+                    $matchesGroupe = $tache->groupe_id == $user->groupe_id
+                        || ($tache->service && $tache->service->groupe_id == $user->groupe_id);
+                    if (!$matchesGroupe) {
+                        continue;
                     }
                 }
                 
@@ -122,7 +127,7 @@ class CommandeCalendarController extends Controller
                     
                     // Construire le titre avec le nom du service
                     $urgentPrefix = $commande->urgent ? '⚡ ' : '';
-                    $serviceName = $tache->service->nom ?? 'N/A';
+                    $serviceName = $tache->service_nom !== '-' ? $tache->service_nom : 'N/A';
                     
                     $calendarEvents[] = [
                         'id' => "commande-{$commande->id}-tache-{$tache->id}",
@@ -143,7 +148,7 @@ class CommandeCalendarController extends Controller
                             'urgent' => $commande->urgent,
                             'dentiste' => $commande->dentiste->full_name ?? $commande->dentiste->name,
                             'service' => $serviceName,
-                            'groupe' => $tache->service->groupe->nom ?? '',
+                            'groupe' => $tache->groupe?->nom ?? $tache->service?->groupe?->nom ?? '',
                             'nb_elem' => $tache->nb_elem,
                             'teinte' => $tache->teinte,
                             'commentaire' => $commande->commentaire,
@@ -204,8 +209,11 @@ class CommandeCalendarController extends Controller
 
         // Filtrage selon les permissions de l'utilisateur
         if ($user->hasRole('employer')) {
-            $query->whereHas('taches.service', function ($q) use ($user) {
-                $q->where('groupe_id', $user->groupe_id);
+            $query->whereHas('taches', function ($q) use ($user) {
+                $q->where(function ($q2) use ($user) {
+                    $q2->where('groupe_id', $user->groupe_id)
+                        ->orWhereHas('service', fn ($q3) => $q3->where('groupe_id', $user->groupe_id));
+                });
             });
         } elseif ($user->hasRole('dentist')) {
             $query->where('dentiste_id', $user->id);
@@ -246,8 +254,11 @@ class CommandeCalendarController extends Controller
             
             // Appliquer les filtres de permissions selon l'utilisateur
             if ($user->hasRole('employer')) {
-                $updatedQuery->whereHas('taches.service', function ($q) use ($user) {
-                    $q->where('groupe_id', $user->groupe_id);
+                $updatedQuery->whereHas('taches', function ($q) use ($user) {
+                    $q->where(function ($q2) use ($user) {
+                        $q2->where('groupe_id', $user->groupe_id)
+                            ->orWhereHas('service', fn ($q3) => $q3->where('groupe_id', $user->groupe_id));
+                    });
                 });
             } elseif ($user->hasRole('dentist')) {
                 $updatedQuery->where('dentiste_id', $user->id);
@@ -329,8 +340,11 @@ class CommandeCalendarController extends Controller
             
             // Appliquer les filtres de permissions
             if ($user->hasRole('employer')) {
-                $finishedQuery->whereHas('taches.service', function ($q) use ($user) {
-                    $q->where('groupe_id', $user->groupe_id);
+                $finishedQuery->whereHas('taches', function ($q) use ($user) {
+                    $q->where(function ($q2) use ($user) {
+                        $q2->where('groupe_id', $user->groupe_id)
+                            ->orWhereHas('service', fn ($q3) => $q3->where('groupe_id', $user->groupe_id));
+                    });
                 });
             } elseif ($user->hasRole('dentist')) {
                 $finishedQuery->where('dentiste_id', $user->id);

@@ -110,17 +110,19 @@
                                     $taches = $commande->taches;
                                     // Filtrer par groupe si employer (via le service)
                                     if (auth()->user()->hasRole('employer')) {
-                                        $taches = $taches->filter(function($tache) {
-                                            return $tache->service && $tache->service->groupe_id == auth()->user()->groupe_id;
+                                        $groupeId = auth()->user()->groupe_id;
+                                        $taches = $taches->filter(function ($tache) use ($groupeId) {
+                                            return $tache->groupe_id == $groupeId
+                                                || ($tache->service && $tache->service->groupe_id == $groupeId);
                                         });
                                     }
                                 @endphp
                                 @forelse($taches as $tache)
                                     <tr>
                                         @unless(auth()->user()->hasRole('dentist'))
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $tache->service->groupe->nom ?? '-' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $tache->groupe?->nom ?? $tache->service?->groupe?->nom ?? '-' }}</td>
                                         @endunless
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $tache->service->nom ?? '-' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $tache->service_nom }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $tache->nb_elem }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $tache->teinte ?? '-' }}</td>
                                         <td class="px-6 py-4 text-sm">

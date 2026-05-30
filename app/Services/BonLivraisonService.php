@@ -35,7 +35,7 @@ class BonLivraisonService
             BonLivraisonLigne::create([
                 'bon_livraison_id' => $bl->id,
                 'service_id' => $tache->service_id,
-                'service_name_snapshot' => $tache->service->nom,
+                'service_name_snapshot' => $tache->service_nom,
                 'prix_unitaire_ttc_snapshot' => $tache->prix_unitaire_ttc_snapshot,
                 'quantite' => $tache->nb_elem,
                 'total_ligne_ttc' => $lineTotalTtc,

@@ -14,6 +14,8 @@ class CommandeTache extends Model
     protected $fillable = [
         'commande_id',
         'service_id',
+        'custom_service',
+        'groupe_id',
         'nb_elem',
         'dents',
         'teinte',
@@ -38,10 +40,23 @@ class CommandeTache extends Model
         return $this->belongsTo(Service::class);
     }
 
-    // Accessor pour obtenir le groupe depuis le service
-    public function getGroupeAttribute()
+    public function groupe()
     {
-        return $this->service->groupe ?? null;
+        return $this->belongsTo(Groupe::class);
+    }
+
+    public function getServiceNomAttribute(): string
+    {
+        if (filled($this->custom_service)) {
+            return $this->custom_service;
+        }
+
+        return $this->service?->nom ?? '-';
+    }
+
+    public function isCustomService(): bool
+    {
+        return filled($this->custom_service);
     }
 
     public function ficheControleQuality()

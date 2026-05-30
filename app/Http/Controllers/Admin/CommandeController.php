@@ -17,6 +17,7 @@ use App\Events\CommandeUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 
 class CommandeController extends Controller
@@ -32,8 +33,8 @@ class CommandeController extends Controller
         $query = Commande::with(['dentiste', 'taches', 'createdBy', 'finishedBy']);
 
         if ($user->hasRole('employer')) {
-            $query->whereHas('taches.service', function ($q) use ($user) {
-                $q->where('groupe_id', $user->groupe_id);
+            $query->whereHas('taches', function ($q) use ($user) {
+                $this->applyEmployerTacheFilter($q, $user);
             });
         } elseif ($user->hasRole('dentist')) {
             $query->where('dentiste_id', $user->id);
@@ -164,8 +165,8 @@ class CommandeController extends Controller
             ->where('dentiste_id', $user->id);
 
         if ($authUser->hasRole('employer')) {
-            $query->whereHas('taches.service', function ($q) use ($authUser) {
-                $q->where('groupe_id', $authUser->groupe_id);
+            $query->whereHas('taches', function ($q) use ($authUser) {
+                $this->applyEmployerTacheFilter($q, $authUser);
             });
         }
 
@@ -193,25 +194,30 @@ class CommandeController extends Controller
     {
         $dentistes = User::role('dentist')->get();
         $services = Service::with('groupe')->get();
+        $groupes = Groupe::orderBy('nom')->get();
 
-        return view('admin.commandes.create', compact('dentistes', 'services'));
+        return view('admin.commandes.create', compact('dentistes', 'services', 'groupes'));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'dentiste_id' => 'required|exists:users,id',
             'num_cmd' => 'required|string|max:50',
             'nom_patient' => 'nullable|string|max:255',
             'urgent' => 'boolean',
             'commentaire' => 'nullable|string',
             'taches' => 'required|array|min:1',
-            'taches.*.service_id' => 'required|exists:services,id',
+            'taches.*.service_id' => 'nullable|exists:services,id',
+            'taches.*.custom_service' => 'nullable|string|max:255',
+            'taches.*.groupe_id' => 'nullable|exists:groupes,id',
             'taches.*.nb_elem' => 'required|integer|min:1',
             'taches.*.dents' => 'nullable|string|max:255',
             'taches.*.teinte' => 'nullable|string|max:100',
             'taches.*.date_livraison' => 'required|date',
-        ]);
+        ], $this->tacheServiceTypeRules()));
+
+        $this->validateTachesServiceOrCustom($request);
 
         // Ajouter l'utilisateur qui crée la commande
         $validated['created_by'] = auth()->id();
@@ -221,24 +227,9 @@ class CommandeController extends Controller
         $resolver = app(ServicePricingResolver::class);
 
         foreach ($request->input('taches', []) as $tacheData) {
-            // Utiliser directement la date de livraison du formulaire avec l'heure (déjà calculée par JavaScript)
-            // Le JavaScript gère la logique de calcul selon le checkbox urgent
-            // Le contrôleur utilise simplement la date avec l'heure envoyée depuis le formulaire
-            $tacheData['date_livraison'] = Carbon::parse($tacheData['date_livraison']);
-
-            // Retirer groupe_id des données car il n'est plus stocké dans commande_taches
-            unset($tacheData['groupe_id']);
-
-            // Résoudre prix + snapshot
-            $prix = $resolver->resolvePriceTtc(
-                $commande->dentiste_id,
-                $tacheData['service_id']
+            $commande->taches()->create(
+                $this->prepareTacheForStorage($tacheData, $commande->dentiste_id, $resolver)
             );
-
-            $tacheData['prix_unitaire_ttc_snapshot'] = $prix;
-            $tacheData['total_ligne_ttc'] = $prix * $tacheData['nb_elem'];
-
-            $commande->taches()->create($tacheData);
         }
 
         Cache::forget('admin.commandes.list');
@@ -264,8 +255,8 @@ class CommandeController extends Controller
 
         // Vérifier si l'utilisateur est un employé et si la commande contient des tâches de son groupe
         if ($user->hasRole('employer')) {
-            $hasAccess = $commande->taches()->whereHas('service', function ($q) use ($user) {
-                $q->where('groupe_id', $user->groupe_id);
+            $hasAccess = $commande->taches()->where(function ($q) use ($user) {
+                $this->applyEmployerTacheFilter($q, $user);
             })->exists();
             
             if (!$hasAccess) {
@@ -274,7 +265,7 @@ class CommandeController extends Controller
         }
 
         $commande = Cache::remember("admin.commandes.show.{$commande->id}", 300, function () use ($commande) {
-            return $commande->load(['dentiste', 'taches.service.groupe', 'taches.ficheControleQuality.createdBy', 'taches.ficheControleQuality.updatedBy', 'files', 'bonLivraison']);
+            return $commande->load(['dentiste', 'taches.service.groupe', 'taches.groupe', 'taches.ficheControleQuality.createdBy', 'taches.ficheControleQuality.updatedBy', 'files', 'bonLivraison']);
         });
 
         return view('admin.commandes.show', compact('commande'));
@@ -294,8 +285,8 @@ class CommandeController extends Controller
 
         // Vérifier si l'utilisateur est un employé et si la commande contient des tâches de son groupe
         if ($user->hasRole('employer')) {
-            $hasAccess = $commande->taches()->whereHas('service', function ($q) use ($user) {
-                $q->where('groupe_id', $user->groupe_id);
+            $hasAccess = $commande->taches()->where(function ($q) use ($user) {
+                $this->applyEmployerTacheFilter($q, $user);
             })->exists();
             
             if (!$hasAccess) {
@@ -306,12 +297,12 @@ class CommandeController extends Controller
         $cacheKey = "app.commandes.modal.{$commande->id}.{$user->id}";
 
         $commande = Cache::remember($cacheKey, 120, function () use ($commande, $user) {
-            $commande->load(['dentiste', 'taches.service.groupe', 'bonLivraison']);
+            $commande->load(['dentiste', 'taches.service.groupe', 'taches.groupe', 'bonLivraison']);
 
-            // Filtrer tâches si employer (via le service)
+            // Filtrer tâches si employer
             if ($user->hasRole('employer')) {
-                $commande->setRelation('taches', $commande->taches->filter(function($tache) use ($user) {
-                    return $tache->service && $tache->service->groupe_id == $user->groupe_id;
+                $commande->setRelation('taches', $commande->taches->filter(function ($tache) use ($user) {
+                    return $this->tacheBelongsToEmployerGroupe($tache, $user);
                 }));
             }
 
@@ -332,8 +323,8 @@ class CommandeController extends Controller
 
         // Vérifier si l'utilisateur est un employé et si la commande contient des tâches de son groupe
         if ($user->hasRole('employer')) {
-            $hasAccess = $commande->taches()->whereHas('service', function ($q) use ($user) {
-                $q->where('groupe_id', $user->groupe_id);
+            $hasAccess = $commande->taches()->where(function ($q) use ($user) {
+                $this->applyEmployerTacheFilter($q, $user);
             })->exists();
             
             if (!$hasAccess) {
@@ -343,9 +334,10 @@ class CommandeController extends Controller
 
         $dentistes = User::role('dentist')->get();
         $services = Service::with('groupe')->get();
+        $groupes = Groupe::orderBy('nom')->get();
         $commande->load('files');
 
-        return view('admin.commandes.edit', compact('commande', 'dentistes', 'services'));
+        return view('admin.commandes.edit', compact('commande', 'dentistes', 'services', 'groupes'));
     }
 
     public function update(Request $request, Commande $commande)
@@ -359,8 +351,8 @@ class CommandeController extends Controller
 
         // Vérifier si l'utilisateur est un employé et si la commande contient des tâches de son groupe
         if ($user->hasRole('employer')) {
-            $hasAccess = $commande->taches()->whereHas('service', function ($q) use ($user) {
-                $q->where('groupe_id', $user->groupe_id);
+            $hasAccess = $commande->taches()->where(function ($q) use ($user) {
+                $this->applyEmployerTacheFilter($q, $user);
             })->exists();
             
             if (!$hasAccess) {
@@ -379,17 +371,19 @@ class CommandeController extends Controller
             'commentaire' => $commande->commentaire,
         ];
         
-        $originalTaches = $commande->taches->map(function($tache) {
-            return [
-                'service_id' => (int)$tache->service_id,
-                'nb_elem' => (int)$tache->nb_elem,
-                'dents' => $tache->dents ?? null,
-                'teinte' => $tache->teinte ?? null,
+        $originalTaches = $commande->taches->map(function ($tache) {
+            return $this->normalizeTacheForComparison([
+                'service_id' => $tache->service_id,
+                'custom_service' => $tache->custom_service,
+                'groupe_id' => $tache->groupe_id,
+                'nb_elem' => $tache->nb_elem,
+                'dents' => $tache->dents,
+                'teinte' => $tache->teinte,
                 'date_livraison' => $tache->date_livraison ? $tache->date_livraison->format('Y-m-d H:i:s') : null,
-            ];
-        })->sortBy(['service_id', 'date_livraison'])->values()->toArray();
+            ]);
+        })->sortBy(['service_id', 'custom_service', 'date_livraison'])->values()->toArray();
 
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'dentiste_id' => 'required|exists:users,id',
             'num_cmd' => 'required|string|max:50',
             'nom_patient' => 'nullable|string|max:255',
@@ -397,26 +391,32 @@ class CommandeController extends Controller
             'urgent' => 'nullable|boolean',
             'commentaire' => 'nullable|string',
             'taches' => 'required|array|min:1',
-            'taches.*.service_id' => 'required|exists:services,id',
+            'taches.*.service_id' => 'nullable|exists:services,id',
+            'taches.*.custom_service' => 'nullable|string|max:255',
+            'taches.*.groupe_id' => 'nullable|exists:groupes,id',
             'taches.*.nb_elem' => 'required|integer|min:1',
             'taches.*.dents' => 'nullable|string|max:255',
             'taches.*.teinte' => 'nullable|string|max:100',
             'taches.*.date_livraison' => 'required|date',
-        ]);
+        ], $this->tacheServiceTypeRules()));
+
+        $this->validateTachesServiceOrCustom($request);
 
         // Gérer le champ urgent (checkbox non cochée = non envoyée dans la requête)
         $validated['urgent'] = $request->has('urgent') && $request->input('urgent') == '1';
 
         // Préparer les nouvelles tâches pour comparaison
-        $newTaches = collect($request->input('taches', []))->map(function($tacheData) {
-            return [
-                'service_id' => (int)$tacheData['service_id'],
-                'nb_elem' => (int)$tacheData['nb_elem'],
+        $newTaches = collect($request->input('taches', []))->map(function ($tacheData) {
+            return $this->normalizeTacheForComparison([
+                'service_id' => $tacheData['service_id'] ?? null,
+                'custom_service' => $tacheData['custom_service'] ?? null,
+                'groupe_id' => $tacheData['groupe_id'] ?? null,
+                'nb_elem' => $tacheData['nb_elem'],
                 'dents' => $tacheData['dents'] ?? null,
                 'teinte' => $tacheData['teinte'] ?? null,
                 'date_livraison' => Carbon::parse($tacheData['date_livraison'])->format('Y-m-d H:i:s'),
-            ];
-        })->sortBy(['service_id', 'date_livraison'])->values()->toArray();
+            ]);
+        })->sortBy(['service_id', 'custom_service', 'date_livraison'])->values()->toArray();
 
         // Normaliser les valeurs null pour la comparaison
         $normalize = function($value) {
@@ -481,20 +481,9 @@ class CommandeController extends Controller
         if ($tachesChanged) {
             $commande->taches()->delete();
             foreach ($request->input('taches', []) as $tacheData) {
-                $tacheData['date_livraison'] = Carbon::parse($tacheData['date_livraison']);
-
-                unset($tacheData['groupe_id']);
-
-                // Résoudre prix + snapshot
-                $prix = $resolver->resolvePriceTtc(
-                    $commande->dentiste_id,
-                    $tacheData['service_id']
+                $commande->taches()->create(
+                    $this->prepareTacheForStorage($tacheData, $commande->dentiste_id, $resolver)
                 );
-
-                $tacheData['prix_unitaire_ttc_snapshot'] = $prix;
-                $tacheData['total_ligne_ttc'] = $prix * $tacheData['nb_elem'];
-
-                $commande->taches()->create($tacheData);
             }
         }
 
@@ -583,8 +572,8 @@ class CommandeController extends Controller
 
         // Vérifier si l'utilisateur est un employé et si la commande contient des tâches de son groupe
         if ($user->hasRole('employer')) {
-            $hasAccess = $commande->taches()->whereHas('service', function ($q) use ($user) {
-                $q->where('groupe_id', $user->groupe_id);
+            $hasAccess = $commande->taches()->where(function ($q) use ($user) {
+                $this->applyEmployerTacheFilter($q, $user);
             })->exists();
             
             if (!$hasAccess) {
@@ -604,6 +593,115 @@ class CommandeController extends Controller
 
         return redirect()->route('admin.commandes.index')
             ->with('success', 'Commande supprimée');
+    }
+
+    /**
+     * Règles de validation pour le type de service (catalogue / personnalisé).
+     */
+    private function applyEmployerTacheFilter($query, User $user): void
+    {
+        $query->where(function ($q) use ($user) {
+            $q->where('groupe_id', $user->groupe_id)
+                ->orWhereHas('service', fn ($q2) => $q2->where('groupe_id', $user->groupe_id));
+        });
+    }
+
+    private function tacheBelongsToEmployerGroupe(CommandeTache $tache, User $user): bool
+    {
+        return $tache->groupe_id == $user->groupe_id
+            || ($tache->service && $tache->service->groupe_id == $user->groupe_id);
+    }
+
+    private function tacheServiceTypeRules(): array
+    {
+        return [
+            'taches.*.service_type' => 'nullable|in:catalog,custom',
+        ];
+    }
+
+    /**
+     * Vérifie que chaque tâche a un service catalogue OU un service personnalisé (pas les deux, pas aucun).
+     */
+    private function validateTachesServiceOrCustom(Request $request): void
+    {
+        $errors = [];
+
+        foreach ($request->input('taches', []) as $index => $tache) {
+            $serviceType = $tache['service_type'] ?? 'catalog';
+            $serviceId = $tache['service_id'] ?? null;
+            $customService = trim((string) ($tache['custom_service'] ?? ''));
+
+            if ($serviceType === 'custom') {
+                if ($customService === '') {
+                    $errors["taches.{$index}.custom_service"] = 'Le service personnalisé est obligatoire.';
+                }
+                if (empty($tache['groupe_id'])) {
+                    $errors["taches.{$index}.groupe_id"] = 'Le groupe est obligatoire pour un service personnalisé.';
+                }
+                if (!empty($serviceId)) {
+                    $errors["taches.{$index}.service_id"] = 'Ne renseignez pas un service du catalogue en mode personnalisé.';
+                }
+                continue;
+            }
+
+            if (empty($serviceId)) {
+                $errors["taches.{$index}.service_id"] = 'Veuillez sélectionner un service du catalogue.';
+            }
+            if ($customService !== '') {
+                $errors["taches.{$index}.custom_service"] = 'Ne renseignez pas un service personnalisé en mode catalogue.';
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    /**
+     * Prépare les données d'une tâche avant enregistrement.
+     */
+    private function prepareTacheForStorage(array $tacheData, int $dentisteId, ServicePricingResolver $resolver): array
+    {
+        $serviceType = $tacheData['service_type'] ?? 'catalog';
+        $tacheData['date_livraison'] = Carbon::parse($tacheData['date_livraison']);
+        unset($tacheData['service_type']);
+
+        $customService = trim((string) ($tacheData['custom_service'] ?? ''));
+
+        if ($serviceType === 'custom') {
+            $tacheData['service_id'] = null;
+            $tacheData['custom_service'] = $customService;
+            $tacheData['groupe_id'] = !empty($tacheData['groupe_id']) ? (int) $tacheData['groupe_id'] : null;
+            $prix = 0;
+        } else {
+            $tacheData['custom_service'] = null;
+            $service = Service::find((int) $tacheData['service_id']);
+            $tacheData['groupe_id'] = $service?->groupe_id;
+            $prix = $resolver->resolvePriceTtc($dentisteId, (int) $tacheData['service_id']);
+        }
+
+        $tacheData['prix_unitaire_ttc_snapshot'] = $prix;
+        $tacheData['total_ligne_ttc'] = $prix * (int) $tacheData['nb_elem'];
+
+        return $tacheData;
+    }
+
+    /**
+     * Normalise une tâche pour la comparaison de changements.
+     */
+    private function normalizeTacheForComparison(array $tacheData): array
+    {
+        $customService = trim((string) ($tacheData['custom_service'] ?? ''));
+
+        return [
+            'service_id' => !empty($tacheData['service_id']) ? (int) $tacheData['service_id'] : null,
+            'custom_service' => $customService !== '' ? $customService : null,
+            'groupe_id' => !empty($tacheData['groupe_id']) ? (int) $tacheData['groupe_id'] : null,
+            'nb_elem' => (int) $tacheData['nb_elem'],
+            'dents' => $tacheData['dents'] ?? null,
+            'teinte' => $tacheData['teinte'] ?? null,
+            'date_livraison' => $tacheData['date_livraison'] ?? null,
+        ];
     }
 
     /**
@@ -663,16 +761,16 @@ class CommandeController extends Controller
     public function getTacheCriteres(CommandeTache $tache)
     {
         $this->authorize('view_fiche_controle_quality');
-        
-        // Vérifier que la tâche a un service avec un groupe
-        if (!$tache->service || !$tache->service->groupe) {
+
+        $tache->loadMissing('groupe', 'service.groupe');
+        $groupe = $tache->groupe ?? $tache->service?->groupe;
+
+        if (!$groupe) {
             return response()->json([
                 'success' => false,
                 'message' => 'La tâche n\'a pas de groupe associé'
             ], 404);
         }
-
-        $groupe = $tache->service->groupe;
 
         // Vérifier si le groupe est "Conjointe" ou "Mobile"
         if (!in_array($groupe->nom, ['Conjointe', 'Mobile'])) {
@@ -768,7 +866,17 @@ class CommandeController extends Controller
         ]);
 
         // Vérifier que tous les critères ont une validation
-        $criteres = CritereQuality::where('groupe_id', $tache->service->groupe_id)->pluck('id');
+        $tache->loadMissing('groupe', 'service.groupe');
+        $groupeId = $tache->groupe_id ?? $tache->service?->groupe_id;
+
+        if (!$groupeId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La tâche n\'a pas de groupe associé'
+            ], 422);
+        }
+
+        $criteres = CritereQuality::where('groupe_id', $groupeId)->pluck('id');
         $submittedCriteres = collect($validated['data'])->pluck('critere_id');
         
         if ($criteres->diff($submittedCriteres)->isNotEmpty()) {

@@ -37,15 +37,18 @@ class TachesExport implements FromCollection, WithHeadings, WithMapping, WithSty
         $query = CommandeTache::with([
             'commande.dentiste',
             'commande.createdBy',
-            'service.groupe'
+            'service.groupe',
+            'groupe',
         ])
         ->whereDate('date_livraison', '>=', $dateCarbon)
         ->whereDate('date_livraison', '<=', $endDate);
 
         // Appliquer les filtres selon les permissions de l'utilisateur
         if ($this->user->hasRole('employer')) {
-            $query->whereHas('service', function ($q) {
-                $q->where('groupe_id', $this->user->groupe_id);
+            $groupeId = $this->user->groupe_id;
+            $query->where(function ($q) use ($groupeId) {
+                $q->where('groupe_id', $groupeId)
+                    ->orWhereHas('service', fn ($q2) => $q2->where('groupe_id', $groupeId));
             });
         } elseif ($this->user->hasRole('dentist')) {
             $query->whereHas('commande', function ($q) {
@@ -96,8 +99,8 @@ class TachesExport implements FromCollection, WithHeadings, WithMapping, WithSty
             $tache->commande->dentiste->full_name ?? $tache->commande->dentiste->name ?? '-',
             $tache->commande->status ?? '-',
             $tache->commande->urgent ? 'Oui' : 'Non',
-            $tache->service->nom ?? '-',
-            $tache->service->groupe->nom ?? '-',
+            $tache->service?->nom ?? $tache->custom_service ?? '-',
+            $tache->groupe?->nom ?? $tache->service?->groupe?->nom ?? '-',
             $tache->nb_elem ?? '-',
             $tache->teinte ?? '-',
             $tache->prix_unitaire_ttc_snapshot ? number_format($tache->prix_unitaire_ttc_snapshot, 2, ',', ' ') . ' TND' : '-',
