@@ -485,25 +485,24 @@ class CommandeController extends Controller
                     $this->prepareTacheForStorage($tacheData, $commande->dentiste_id, $resolver)
                 );
             }
+            $commande->load('taches');
         }
 
-        // Forcer la mise à jour du timestamp updated_at pour garantir la détection des modifications
-        // Important : même si seulement les tâches changent, on doit mettre à jour updated_at de la commande
-        // Utiliser DB::table() pour forcer la mise à jour directement en base de données
-        // Cela garantit que updated_at est toujours mis à jour, même si aucun autre champ n'a changé
-        DB::table('commandes')
-            ->where('id', $commande->id)
-            ->update(['updated_at' => now()]);
-        
-        // Recharger la commande depuis la base de données pour avoir les valeurs à jour
-        $commande->refresh();
-        
         // Générer BL automatiquement si passage à Terminée et qu'il n'existe pas déjà
         if ($newStatus === 'Terminée' && $oldStatus !== 'Terminée' && !$commande->bonLivraison) {
             app(BonLivraisonService::class)->generateFromCommande($commande);
-            // Recharger la commande pour avoir le BL
+            $commande->refresh();
+        } elseif ($tachesChanged && $commande->bonLivraison) {
+            // Synchroniser le BL existant (lignes, total) et recalculer les factures liées
+            app(BonLivraisonService::class)->syncFromCommande($commande);
             $commande->refresh();
         }
+
+        DB::table('commandes')
+            ->where('id', $commande->id)
+            ->update(['updated_at' => now()]);
+
+        $commande->refresh();
         
         // Stocker temporairement l'ID de la commande modifiée par cet utilisateur pour éviter les notifications
         // Clé: "user_modified_commandes.{user_id}" avec expiration de 60 secondes
