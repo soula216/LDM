@@ -48,7 +48,7 @@
     {{-- Navigation --}}
     <nav class="flex-1 overflow-y-auto sidebar-scroll px-3 pb-4 space-y-6">
         <div>
-            <p class="sidebar-section-title">Principal</p>
+            <p class="sidebar-section-title pt-4">Principal</p>
             <div class="space-y-1">
                 <x-sidebar-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')" @click="sidebarOpen = false">
                     <svg class="sidebar-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>

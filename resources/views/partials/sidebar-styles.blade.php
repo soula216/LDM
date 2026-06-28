@@ -32,6 +32,10 @@
         color: #64748b !important;
     }
 
+    .sidebar-section-title.pt-4 {
+        padding-top: 1rem;
+    }
+
     .app-sidebar .sidebar-link {
         display: flex;
         align-items: center;
