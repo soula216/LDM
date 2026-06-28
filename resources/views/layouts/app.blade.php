@@ -14,6 +14,7 @@
 
         <!-- Scripts & styles (manifest en prod, Vite dev en local) -->
         @include('partials.app-assets')
+        @include('partials.sidebar-styles')
 
         <!-- Styles -->
         @livewireStyles
