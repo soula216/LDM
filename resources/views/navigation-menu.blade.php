@@ -1,3 +1,7 @@
+@push('styles')
+    @include('partials.sidebar-styles')
+@endpush
+
 <div>
 {{-- Overlay mobile --}}
 <div
