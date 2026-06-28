@@ -21,5 +21,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useTailwind();
+
+        // En production, ignorer public/hot (Vite dev) pour forcer le manifest build/
+        if ($this->app->environment('production') && is_file(public_path('hot'))) {
+            @unlink(public_path('hot'));
+        }
     }
 }
