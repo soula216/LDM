@@ -65,8 +65,14 @@ class RolePermissionSeeder extends Seeder
             'delete_fiche_controle_quality',
         ];
 
+        // Permissions Dépenses
+        $depensesPermissions = [
+            'view_depenses',
+            'manage_depenses',
+        ];
+
         // Toutes les permissions
-        $allPermissions = array_merge($commandesPermissions, $v3Permissions, $adminPermissions, $facturesPermissions, $ficheControleQualityPermissions);
+        $allPermissions = array_merge($commandesPermissions, $v3Permissions, $adminPermissions, $facturesPermissions, $ficheControleQualityPermissions, $depensesPermissions);
 
         foreach ($allPermissions as $perm) {
             Permission::firstOrCreate(['name' => $perm]);

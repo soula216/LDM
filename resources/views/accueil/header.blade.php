@@ -8,11 +8,14 @@
     <li><a href="#services">Services</a></li>
     <li><a href="#process">Process</a></li>
     <li><a href="#contact">Contact</a></li>
-    <li><a href="/login">Connexion</a></li>
+    <li class="nav-espace-client-desktop"><a href="{{ route('login') }}">Espace client</a></li>
   </ul>
-  <div class="menu-toggle" onclick="toggleMenu()">
-    <span></span>
-    <span></span>
-    <span></span>
+  <div class="nav-mobile-right">
+    <a href="{{ route('login') }}" class="nav-espace-client-mobile">Espace client</a>
+    <button type="button" class="menu-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Ouvrir le menu" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
   </div>
 </nav>

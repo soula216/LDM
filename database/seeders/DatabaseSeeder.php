@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
         // 2. Créer les données de test (groupes, services)
         $this->call([
             TestDataSeeder::class,
+            DepenseSeeder::class,
         ]);
 
         // 3. Ensuite créer les utilisateurs de test

@@ -23,22 +23,22 @@
     <body class="font-sans antialiased" data-user-role="{{ auth()->user()->roles->first()->name ?? '' }}">
         <x-banner />
 
-        <div class="min-h-screen bg-app">
+        <div class="min-h-screen bg-app" x-data="{ sidebarOpen: false }" @keydown.window.escape="sidebarOpen = false">
             @livewire('navigation-menu')
 
-            <!-- Page Heading -->
-            @if (isset($header))
-                <header class="bg-card shadow-sm border-b border-border">
-                    <div class="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endif
+            <div class="app-main lg:pl-[17.5rem] pt-16 lg:pt-0 min-h-screen flex flex-col transition-[padding] duration-300">
+                @if (isset($header))
+                    <header class="bg-card/80 backdrop-blur-md shadow-sm border-b border-border sticky top-0 z-20 lg:top-0">
+                        <div class="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
+                            {{ $header }}
+                        </div>
+                    </header>
+                @endif
 
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
+                <main class="flex-1">
+                    {{ $slot }}
+                </main>
+            </div>
         </div>
 
         @stack('modals')

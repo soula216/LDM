@@ -40,10 +40,6 @@
                                 <span class="text-xs sm:text-sm text-secondary">Terminée</span>
                             </div>
                             <div class="flex items-center space-x-2">
-                                <div class="w-4 h-4 rounded" style="background-color: #0EA5E9;"></div>
-                                <span class="text-xs sm:text-sm text-secondary">Livrée</span>
-                            </div>
-                            <div class="flex items-center space-x-2">
                                 <span class="text-xs sm:text-sm text-danger font-medium">⚡</span>
                                 <span class="text-xs sm:text-sm text-secondary">Urgent</span>
                             </div>

@@ -14,7 +14,8 @@ use App\Http\Controllers\Admin\{
     EcheanceController,
     ConfigController,
     GroupeController,
-    CritereQualityController
+    CritereQualityController,
+    DepenseController
 };
 use App\Http\Controllers\App\{
     CommandeCalendarController,
@@ -24,7 +25,7 @@ use App\Http\Controllers\App\{
 
 Route::get('/', function () {
     return view('accueil');
-});
+})->name('vitrine');
 
 Route::get('/dashboard', [DashboardController::class, 'userDashboard'])
     ->middleware('auth')
@@ -108,8 +109,7 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
     // Gestion rôles
     Route::prefix('roles')->group(function () {
         Route::get('/', [RoleController::class, 'index'])
-            ->name('admin.roles.index')
-            ->middleware('can:view_roles');
+            ->name('admin.roles.index');
         
         Route::get('/create', [RoleController::class, 'create'])
             ->name('admin.roles.create')
@@ -250,6 +250,21 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
         Route::delete('{service}', [ServicePricingController::class, 'destroy'])
             ->name('admin.services.destroy')
             ->middleware('can:manage_service_pricing');
+    });
+
+    // Dépenses — admin uniquement
+    Route::prefix('depenses')->group(function () {
+        Route::get('/', [DepenseController::class, 'index'])
+            ->name('admin.depenses.index');
+
+        Route::post('/', [DepenseController::class, 'store'])
+            ->name('admin.depenses.store');
+
+        Route::patch('{depense}', [DepenseController::class, 'update'])
+            ->name('admin.depenses.update');
+
+        Route::delete('{depense}', [DepenseController::class, 'destroy'])
+            ->name('admin.depenses.destroy');
     });
 
     // Factures

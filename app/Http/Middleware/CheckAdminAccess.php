@@ -74,6 +74,11 @@ class CheckAdminAccess
                 }
             }
 
+            // Routes dépenses : admin uniquement
+            if (str_starts_with($routeName, 'admin.depenses.')) {
+                abort(404, 'Page not found');
+            }
+
             // Routes config : admin uniquement (déjà géré par la vérification admin en haut)
             // Les routes config sont accessibles uniquement aux admins
 

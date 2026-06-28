@@ -12,22 +12,50 @@ class RoleController extends Controller
 {
     /**
      * GET /admin/roles
-     * Affiche rôles SAUF admin
+     * Page Rôles / Permissions (onglets)
      */
-    public function index()
+    public function index(Request $request)
     {
-        $this->authorize('view_roles');
+        if (! auth()->user()->can('view_roles') && ! auth()->user()->can('manage_permissions')) {
+            abort(403);
+        }
 
-        // Cache - 10 minutes
-        $roles = Cache::remember('admin.roles.index', 600, function () {
-            return Role::query()
-                ->where('name', '!=', 'admin') // ❌ Hide admin role
-                ->with('permissions')
-                ->withCount('users')
-                ->get();
-        });
+        $roles = collect();
+        if (auth()->user()->can('view_roles')) {
+            $roles = Cache::remember('admin.roles.index', 600, function () {
+                return Role::query()
+                    ->where('name', '!=', 'admin')
+                    ->with('permissions')
+                    ->withCount('users')
+                    ->get();
+            });
+        }
 
-        return view('admin.roles.index', compact('roles'));
+        $permissions = collect();
+        if (auth()->user()->can('manage_permissions')) {
+            $permissions = Cache::remember('admin.permissions.index', 300, function () {
+                return Permission::with('roles')
+                    ->get()
+                    ->groupBy(function ($permission) {
+                        $parts = explode('_', $permission->name);
+                        return $parts[0] ?? 'other';
+                    });
+            });
+        }
+
+        $defaultTab = auth()->user()->can('view_roles') ? 'roles' : 'permissions';
+        $activeTab = in_array($request->query('tab'), ['roles', 'permissions'], true)
+            ? $request->query('tab')
+            : $defaultTab;
+
+        if ($activeTab === 'roles' && ! auth()->user()->can('view_roles')) {
+            $activeTab = 'permissions';
+        }
+        if ($activeTab === 'permissions' && ! auth()->user()->can('manage_permissions')) {
+            $activeTab = 'roles';
+        }
+
+        return view('admin.roles.index', compact('roles', 'permissions', 'activeTab'));
     }
 
     /**

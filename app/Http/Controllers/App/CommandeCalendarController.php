@@ -35,7 +35,8 @@ class CommandeCalendarController extends Controller
 
         $events = Cache::remember($cacheKey, 120, function () use ($user) {
             // Charger toutes les commandes avec leurs tâches (sans filtrer par date dans la requête)
-            $query = Commande::with(['taches.service.groupe', 'taches.groupe', 'dentiste']);
+            $query = Commande::with(['taches.service.groupe', 'taches.groupe', 'dentiste'])
+                ->where('status', '!=', 'Livrée');
 
             // Filtrage rôle selon le cahier des charges
             if ($user->hasRole('employer')) {

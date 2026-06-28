@@ -39,6 +39,45 @@
     .input-field {
         @apply w-full rounded-lg border-border bg-card px-3 py-2.5 text-primary placeholder:text-secondary focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200;
     }
+
+    /* Formulaire dépenses : tous les champs sur une ligne */
+    .depenses-form-row {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: flex-end;
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .depenses-form-row .depenses-field-nom {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .depenses-form-row .depenses-field-qte {
+        flex: 0 0 5.5rem;
+        min-width: 5.5rem;
+    }
+
+    .depenses-form-row .depenses-field-date {
+        flex: 0 0 10.5rem;
+        min-width: 10.5rem;
+    }
+
+    .depenses-form-row .depenses-field-montant {
+        flex: 0 0 10.5rem;
+        min-width: 10.5rem;
+    }
+
+    .depenses-form-row .depenses-field-submit {
+        flex: 0 0 auto;
+    }
+
+    .depenses-form-row .input-field {
+        width: 100%;
+        max-width: 100%;
+    }
     
     /* Styles spécifiques pour les blocs de tâches */
     .tache-item.card {
@@ -140,6 +179,83 @@
     /* Assurer que les champs dans les blocs de tâches fonctionnent correctement en flexbox */
     .tache-item .flex:not(.tache-fields-row) {
         flex-wrap: wrap;
+    }
+
+    /* Sidebar navigation */
+    .app-sidebar {
+        background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        box-shadow: 4px 0 24px rgba(15, 23, 42, 0.15);
+    }
+
+    .sidebar-brand {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .sidebar-section-title {
+        @apply px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500;
+    }
+
+    .sidebar-link {
+        @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 transition-all duration-200;
+    }
+
+    .sidebar-link:hover {
+        @apply text-white;
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .sidebar-link-active {
+        @apply text-white font-semibold;
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0.08) 100%);
+        box-shadow: inset 3px 0 0 0 #0ea5e9;
+    }
+
+    .sidebar-link-external {
+        @apply text-slate-400 text-xs;
+    }
+
+    .sidebar-icon {
+        @apply w-5 h-5 flex-shrink-0 opacity-80;
+    }
+
+    .sidebar-link-active .sidebar-icon {
+        @apply opacity-100 text-primary;
+        color: #38bdf8;
+    }
+
+    .sidebar-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
+    }
+
+    .sidebar-footer {
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar-user-btn {
+        @apply flex items-center gap-3 p-2.5 rounded-xl transition-colors duration-200;
+    }
+
+    .sidebar-user-btn:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .sidebar-user-avatar {
+        @apply w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0;
+        background: linear-gradient(135deg, #0ea5e9 0%, #22c55e 100%);
+    }
+
+    .sidebar-dropdown-link {
+        @apply block px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-white/10 transition-colors;
     }
     
     .tache-item .lg\:flex-\[0_0_48\%\] {
