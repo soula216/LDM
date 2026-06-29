@@ -15,7 +15,8 @@ use App\Http\Controllers\Admin\{
     ConfigController,
     GroupeController,
     CritereQualityController,
-    DepenseController
+    DepenseController,
+    StockController
 };
 use App\Http\Controllers\App\{
     CommandeCalendarController,
@@ -250,6 +251,30 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
         Route::delete('{service}', [ServicePricingController::class, 'destroy'])
             ->name('admin.services.destroy')
             ->middleware('can:manage_service_pricing');
+    });
+
+    // Stock — admin uniquement
+    Route::prefix('stock')->group(function () {
+        Route::get('/', [StockController::class, 'index'])
+            ->name('admin.stock.index');
+
+        Route::post('elements', [StockController::class, 'storeElement'])
+            ->name('admin.stock.elements.store');
+
+        Route::patch('elements/{element}', [StockController::class, 'updateElement'])
+            ->name('admin.stock.elements.update');
+
+        Route::delete('elements/{element}', [StockController::class, 'destroyElement'])
+            ->name('admin.stock.elements.destroy');
+
+        Route::post('lines', [StockController::class, 'storeStock'])
+            ->name('admin.stock.lines.store');
+
+        Route::patch('lines/{stock}', [StockController::class, 'updateStock'])
+            ->name('admin.stock.lines.update');
+
+        Route::delete('lines/{stock}', [StockController::class, 'destroyStock'])
+            ->name('admin.stock.lines.destroy');
     });
 
     // Dépenses — admin uniquement

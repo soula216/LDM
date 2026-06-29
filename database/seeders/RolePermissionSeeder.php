@@ -71,8 +71,14 @@ class RolePermissionSeeder extends Seeder
             'manage_depenses',
         ];
 
+        // Permissions Stock
+        $stockPermissions = [
+            'view_stock',
+            'manage_stock',
+        ];
+
         // Toutes les permissions
-        $allPermissions = array_merge($commandesPermissions, $v3Permissions, $adminPermissions, $facturesPermissions, $ficheControleQualityPermissions, $depensesPermissions);
+        $allPermissions = array_merge($commandesPermissions, $v3Permissions, $adminPermissions, $facturesPermissions, $ficheControleQualityPermissions, $depensesPermissions, $stockPermissions);
 
         foreach ($allPermissions as $perm) {
             Permission::firstOrCreate(['name' => $perm]);

@@ -367,6 +367,20 @@
             padding: 4px 8px !important;
         }
 
+        /* Vue jour : afficher toutes les commandes empilées (sans "+X en plus") */
+        .fc-timeGridDay-view .fc-daygrid-event {
+            position: relative !important;
+            margin-bottom: 2px !important;
+        }
+
+        .fc-timeGridDay-view .fc-daygrid-day-events {
+            min-height: auto !important;
+        }
+
+        .fc-timeGridDay-view .fc-daygrid-event-harness {
+            position: relative !important;
+        }
+
         /* Responsive */
         @media (max-width: 640px) {
             .fc-toolbar-title {
@@ -481,6 +495,15 @@
                     month: 'Mois',
                     week: 'Semaine',
                     day: 'Jour'
+                },
+                views: {
+                    dayGridMonth: {
+                        dayMaxEvents: 3,
+                    },
+                    timeGridDay: {
+                        dayMaxEvents: false,
+                        dayMaxEventRows: false,
+                    },
                 },
                 height: 'auto',
                 contentHeight: 'auto',
@@ -651,7 +674,6 @@
                         delete info.el._tooltip;
                     }
                 },
-                dayMaxEvents: 3,
                 moreLinkClick: function(info) {
                     info.jsEvent.preventDefault();
                     var dateFormatted = info.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });

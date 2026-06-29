@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             TestDataSeeder::class,
             DepenseSeeder::class,
+            ElementSeeder::class,
         ]);
 
         // 3. Ensuite créer les utilisateurs de test

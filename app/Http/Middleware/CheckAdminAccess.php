@@ -79,6 +79,14 @@ class CheckAdminAccess
                 abort(404, 'Page not found');
             }
 
+            // Routes stock : accessible avec view_stock ou manage_stock
+            if (str_starts_with($routeName, 'admin.stock.')) {
+                if ($user->can('view_stock') || $user->can('manage_stock')) {
+                    return $next($request);
+                }
+                abort(404, 'Page not found');
+            }
+
             // Routes config : admin uniquement (déjà géré par la vérification admin en haut)
             // Les routes config sont accessibles uniquement aux admins
 
