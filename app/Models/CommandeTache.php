@@ -20,6 +20,7 @@ class CommandeTache extends Model
         'dents',
         'teinte',
         'date_livraison',
+        'calendar_sort_order',
         'prix_unitaire_ttc_snapshot',
         'total_ligne_ttc',
     ];

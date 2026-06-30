@@ -175,7 +175,7 @@
                 class="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border border-white/10 rounded-xl shadow-xl overflow-hidden py-1"
                 style="display: none;"
             >
-                <a href="{{ route('profile.show') }}" class="sidebar-dropdown-link">{{ __('Profile') }}</a>
+                <a href="{{ route('profile.show') }}" class="sidebar-dropdown-link">Mon profile</a>
 
                 @if (Laravel\Jetstream\Jetstream::hasApiFeatures())
                 <a href="{{ route('api-tokens.index') }}" class="sidebar-dropdown-link">{{ __('API Tokens') }}</a>
@@ -192,7 +192,7 @@
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="sidebar-dropdown-link w-full text-left text-red-300 hover:text-red-200 hover:bg-red-500/10">
-                        {{ __('Log Out') }}
+                        Déconnexion
                     </button>
                 </form>
             </div>

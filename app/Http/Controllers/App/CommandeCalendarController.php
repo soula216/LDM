@@ -4,9 +4,11 @@ namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Commande;
+use App\Models\CommandeTache;
 use App\Exports\TachesExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
@@ -16,6 +18,68 @@ class CommandeCalendarController extends Controller
     public function index()
     {
         return view('app.commandes.calendar');
+    }
+
+    private function bumpCalendarCache(): void
+    {
+        $version = Cache::get('app.commandes.calendar.version', 0);
+        Cache::put('app.commandes.calendar.version', $version + 1, now()->addDays(30));
+    }
+
+    private function applyTacheVisibilityFilter($query, $user): void
+    {
+        if ($user->hasRole('employer')) {
+            $groupeId = $user->groupe_id;
+            $query->where(function ($q) use ($groupeId) {
+                $q->where('groupe_id', $groupeId)
+                    ->orWhereHas('service', fn ($q2) => $q2->where('groupe_id', $groupeId));
+            });
+        } elseif ($user->hasRole('dentist')) {
+            $query->whereHas('commande', function ($q) use ($user) {
+                $q->where('dentiste_id', $user->id);
+            });
+        }
+    }
+
+    public function reorder(Request $request)
+    {
+        $validated = $request->validate([
+            'date' => 'required|date_format:Y-m-d',
+            'tache_ids' => 'required|array|min:1',
+            'tache_ids.*' => 'integer|exists:commande_taches,id',
+        ]);
+
+        $user = auth()->user();
+        $date = Carbon::parse($validated['date'])->startOfDay();
+
+        $query = CommandeTache::query()->whereDate('date_livraison', $date);
+        $this->applyTacheVisibilityFilter($query, $user);
+
+        $allowedIds = $query->pluck('id')->all();
+        $requestedIds = $validated['tache_ids'];
+
+        if (count($allowedIds) !== count($requestedIds)) {
+            return response()->json(['message' => 'Liste de tâches invalide pour cette date.'], 422);
+        }
+
+        $allowedSet = collect($allowedIds)->sort()->values()->all();
+        $requestedSet = collect($requestedIds)->unique()->sort()->values()->all();
+
+        if ($allowedSet !== $requestedSet) {
+            return response()->json(['message' => 'Liste de tâches invalide pour cette date.'], 422);
+        }
+
+        DB::transaction(function () use ($requestedIds) {
+            foreach ($requestedIds as $index => $tacheId) {
+                CommandeTache::where('id', $tacheId)->update([
+                    'calendar_sort_order' => $index + 1,
+                ]);
+            }
+        });
+
+        $this->bumpCalendarCache();
+
+        return response()->json(['success' => true]);
     }
 
     public function events(Request $request)
@@ -155,12 +219,23 @@ class CommandeCalendarController extends Controller
                             'commentaire' => $commande->commentaire,
                             'prix_unitaire_ttc' => $tache->prix_unitaire_ttc_snapshot,
                             'total_ligne_ttc' => $tache->total_ligne_ttc,
+                            'displayOrder' => $tache->calendar_sort_order ?? 999999,
                         ],
                         'url' => route('app.commandes.show', $commande->id),
                     ];
                 }
             }
         }
+
+        usort($calendarEvents, function ($a, $b) {
+            $orderA = $a['extendedProps']['displayOrder'] ?? 999999;
+            $orderB = $b['extendedProps']['displayOrder'] ?? 999999;
+            if ($orderA !== $orderB) {
+                return $orderA <=> $orderB;
+            }
+
+            return ($a['extendedProps']['tache_id'] ?? 0) <=> ($b['extendedProps']['tache_id'] ?? 0);
+        });
 
         return response()->json($calendarEvents);
     }

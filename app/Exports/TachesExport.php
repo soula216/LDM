@@ -56,7 +56,11 @@ class TachesExport implements FromCollection, WithHeadings, WithMapping, WithSty
             });
         }
 
-        return $query->get();
+        return $query
+            ->orderByRaw('calendar_sort_order IS NULL')
+            ->orderBy('calendar_sort_order')
+            ->orderBy('id')
+            ->get();
     }
 
     /**
@@ -75,8 +79,6 @@ class TachesExport implements FromCollection, WithHeadings, WithMapping, WithSty
             'Groupe',
             'Nombre d\'éléments',
             'Teinte',
-            'Prix Unitaire TTC',
-            'Total Ligne TTC',
             'Commentaire',
             'Créé par',
         ];
@@ -103,8 +105,6 @@ class TachesExport implements FromCollection, WithHeadings, WithMapping, WithSty
             $tache->groupe?->nom ?? $tache->service?->groupe?->nom ?? '-',
             $tache->nb_elem ?? '-',
             $tache->teinte ?? '-',
-            $tache->prix_unitaire_ttc_snapshot ? number_format($tache->prix_unitaire_ttc_snapshot, 2, ',', ' ') . ' TND' : '-',
-            $tache->total_ligne_ttc ? number_format($tache->total_ligne_ttc, 2, ',', ' ') . ' TND' : '-',
             $tache->commande->commentaire ?? '-',
             $tache->commande->createdBy->full_name ?? $tache->commande->createdBy->name ?? '-',
         ];

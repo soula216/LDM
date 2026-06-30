@@ -55,6 +55,14 @@
             <!-- Calendrier -->
             <div class="card bg-gradient-to-br from-card via-neutral-50 to-card overflow-hidden">
                 <div class="p-4 sm:p-6">
+                    <div id="calendar-day-reorder-hint" class="hidden mb-4 p-3 sm:p-4 bg-primary/10 border border-primary/20 rounded-lg flex items-start gap-3">
+                        <svg class="w-5 h-5 text-primary flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                        </svg>
+                        <p class="text-sm text-primary">
+                            <span class="font-semibold">Vue jour :</span> saisissez la poignée <strong>⋮⋮</strong> à gauche de chaque commande et glissez pour modifier l'ordre d'affichage et d'export Excel.
+                        </p>
+                    </div>
                     <div id="calendar"></div>
                 </div>
             </div>
@@ -367,18 +375,54 @@
             padding: 4px 8px !important;
         }
 
-        /* Vue jour : afficher toutes les commandes empilées (sans "+X en plus") */
-        .fc-timeGridDay-view .fc-daygrid-event {
-            position: relative !important;
-            margin-bottom: 2px !important;
-        }
-
+        /* Vue jour : empiler les commandes pour permettre le glisser-déposer */
         .fc-timeGridDay-view .fc-daygrid-day-events {
             min-height: auto !important;
+            position: relative !important;
         }
 
-        .fc-timeGridDay-view .fc-daygrid-event-harness {
+        .fc-timeGridDay-view .fc-daygrid-event-harness,
+        .fc-timeGridDay-view .fc-daygrid-event-harness-abs {
             position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            margin-bottom: 4px !important;
+            width: 100% !important;
+        }
+
+        .fc-timeGridDay-view .fc-daygrid-event {
+            position: relative !important;
+            margin-bottom: 0 !important;
+        }
+
+        .fc-timeGridDay-view .fc-event-sortable-chosen {
+            z-index: 20 !important;
+        }
+
+        .fc-timeGridDay-view .fc-event-sortable-ghost {
+            opacity: 0.45;
+        }
+
+        .fc-day-reorder-handle {
+            flex-shrink: 0;
+            cursor: grab;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            line-height: 1;
+            padding: 2px 4px;
+            user-select: none;
+            touch-action: none;
+            letter-spacing: -2px;
+        }
+
+        .fc-day-reorder-handle:active {
+            cursor: grabbing;
+        }
+
+        .fc-event-sortable-chosen .fc-day-reorder-handle {
+            cursor: grabbing;
         }
 
         /* Responsive */
@@ -431,6 +475,7 @@
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/locales/fr.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
@@ -444,11 +489,139 @@
             const isDentist = {{ auth()->user()->hasRole('dentist') ? 'true' : 'false' }};
             
             console.log('Initialisation du calendrier FullCalendar...');
+
+            let dayViewDragging = false;
+            let sortableInitTimer = null;
+            let activeTooltipEl = null;
+            let activeTooltipOwnerEl = null;
+
+            function hideActiveEventTooltip() {
+                if (activeTooltipEl) {
+                    activeTooltipEl.remove();
+                    activeTooltipEl = null;
+                    activeTooltipOwnerEl = null;
+                }
+            }
+
+            function positionEventTooltip(tooltipEl, eventEl) {
+                const tooltipWidth = tooltipEl.offsetWidth;
+                const tooltipHeight = tooltipEl.offsetHeight;
+                const rect = eventEl.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const viewportWidth = window.innerWidth;
+                const spacing = 8;
+
+                let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+
+                if (left < 10) {
+                    left = 10;
+                } else if (left + tooltipWidth > viewportWidth - 10) {
+                    left = viewportWidth - tooltipWidth - 10;
+                }
+
+                let top;
+                const topThreshold = 200;
+
+                if (rect.top < topThreshold) {
+                    top = rect.bottom + spacing;
+                    if (top + tooltipHeight > viewportHeight - 10) {
+                        top = Math.max(10, viewportHeight - tooltipHeight - 10);
+                    }
+                } else {
+                    top = rect.top - tooltipHeight - spacing;
+                    if (top < 10) {
+                        top = rect.bottom + spacing;
+                        if (top + tooltipHeight > viewportHeight - 10) {
+                            top = Math.max(10, viewportHeight - tooltipHeight - 10);
+                        }
+                    }
+                }
+
+                tooltipEl.style.left = left + 'px';
+                tooltipEl.style.top = top + 'px';
+                tooltipEl.style.visibility = 'visible';
+            }
+
+            function showEventTooltip(info) {
+                if (dayViewDragging) {
+                    return;
+                }
+
+                hideActiveEventTooltip();
+
+                const props = info.event.extendedProps;
+                const dentistInfo = isDentist ? '' : `<div><strong>Dentiste:</strong> ${props.dentiste || 'N/A'}</div>`;
+                const groupeInfo = isDentist ? '' : `<div><strong>Groupe:</strong> ${props.groupe || 'N/A'}</div>`;
+                const tooltipHtml = `
+                    <div class="p-2 bg-white rounded-lg shadow-lg border border-gray-200 text-sm">
+                        <div class="font-semibold text-primary mb-1">${info.event.title}</div>
+                        <div class="text-secondary space-y-1">
+                            <div><strong>Patient:</strong> ${props.nom_patient || 'N/A'}</div>
+                            ${dentistInfo}
+                            <div><strong>Service:</strong> ${props.service || 'N/A'}</div>
+                            ${groupeInfo}
+                            <div><strong>Éléments:</strong> ${props.nb_elem || 'N/A'}</div>
+                            <div><strong>Statut:</strong> ${props.status || 'N/A'}</div>
+                            ${props.urgent ? '<div class="text-danger font-medium">⚡ Commande Urgente</div>' : ''}
+                        </div>
+                    </div>
+                `;
+
+                const tooltipEl = document.createElement('div');
+                tooltipEl.className = 'fc-event-tooltip';
+                tooltipEl.innerHTML = tooltipHtml;
+                tooltipEl.style.position = 'fixed';
+                tooltipEl.style.zIndex = '9999';
+                tooltipEl.style.pointerEvents = 'none';
+                tooltipEl.style.visibility = 'hidden';
+                tooltipEl.style.maxWidth = '300px';
+                document.body.appendChild(tooltipEl);
+
+                positionEventTooltip(tooltipEl, info.el);
+
+                activeTooltipEl = tooltipEl;
+                activeTooltipOwnerEl = info.el;
+            }
+
+            function bindEventTooltipListeners(info) {
+                if (info.el._tooltipBound) {
+                    return;
+                }
+
+                info.el._tooltipBound = true;
+
+                info.el.addEventListener('mouseenter', function() {
+                    showEventTooltip(info);
+                });
+
+                info.el.addEventListener('mouseleave', function(e) {
+                    const related = e.relatedTarget;
+                    if (!related || !info.el.contains(related)) {
+                        if (activeTooltipOwnerEl === info.el) {
+                            hideActiveEventTooltip();
+                        }
+                    }
+                });
+            }
+
+            document.addEventListener('mousemove', function(e) {
+                if (!activeTooltipOwnerEl || dayViewDragging) {
+                    return;
+                }
+
+                const target = e.target;
+                if (target instanceof Node && !activeTooltipOwnerEl.contains(target)) {
+                    hideActiveEventTooltip();
+                }
+            });
+
+            calendarEl.addEventListener('scroll', hideActiveEventTooltip, true);
             
             var calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'fr',
                 firstDay: 1, // Lundi
+                editable: false,
                 headerToolbar: {
                     left: 'prev,next today exportExcel',
                     center: 'title',
@@ -509,19 +682,33 @@
                 contentHeight: 'auto',
                 aspectRatio: 1.8,
                 eventContent: function(arg) {
-                    // Personnaliser le contenu de l'événement pour afficher plusieurs lignes
                     const props = arg.event.extendedProps;
                     const urgentPrefix = props.urgent ? '⚡ ' : '';
                     const serviceName = props.service || 'N/A';
                     const heure = props.heure || '';
                     const displayName = props.display_name || '';
-                    
-                    // Créer un élément DOM pour le contenu personnalisé
+                    const isDayView = arg.view.type === 'timeGridDay';
+
                     const wrapper = document.createElement('div');
                     wrapper.style.padding = '3px 6px';
                     wrapper.style.lineHeight = '1.3';
-                    
-                    // Nom du service - peut s'afficher sur 2 lignes
+
+                    if (isDayView) {
+                        wrapper.style.display = 'flex';
+                        wrapper.style.alignItems = 'flex-start';
+                        wrapper.style.gap = '8px';
+
+                        const handle = document.createElement('span');
+                        handle.className = 'fc-day-reorder-handle';
+                        handle.textContent = '⋮⋮';
+                        handle.title = 'Glisser pour réorganiser';
+                        wrapper.appendChild(handle);
+                    }
+
+                    const content = document.createElement('div');
+                    content.style.flex = '1';
+                    content.style.minWidth = '0';
+
                     const titleDiv = document.createElement('div');
                     titleDiv.style.fontWeight = '600';
                     titleDiv.style.fontSize = '0.8rem';
@@ -530,26 +717,28 @@
                     titleDiv.style.whiteSpace = 'normal';
                     titleDiv.style.lineHeight = '1.2';
                     titleDiv.textContent = urgentPrefix + serviceName;
-                    wrapper.appendChild(titleDiv);
-                    
+                    content.appendChild(titleDiv);
+
                     if (heure) {
                         const heureDiv = document.createElement('div');
                         heureDiv.style.fontSize = '0.8rem';
                         heureDiv.style.opacity = '0.95';
                         heureDiv.style.marginTop = '2px';
                         heureDiv.textContent = heure;
-                        wrapper.appendChild(heureDiv);
+                        content.appendChild(heureDiv);
                     }
-                    
+
                     if (displayName) {
                         const nameDiv = document.createElement('div');
                         nameDiv.style.fontSize = '0.8rem';
                         nameDiv.style.opacity = '0.95';
                         nameDiv.style.marginTop = '2px';
                         nameDiv.textContent = displayName;
-                        wrapper.appendChild(nameDiv);
+                        content.appendChild(nameDiv);
                     }
-                    
+
+                    wrapper.appendChild(content);
+
                     return { domNodes: [wrapper] };
                 },
                 events: function(fetchInfo, successCallback, failureCallback) {
@@ -579,100 +768,46 @@
                     });
                 },
                 eventClick: function(info) {
+                    if (dayViewDragging) {
+                        info.jsEvent.preventDefault();
+                        return;
+                    }
                     info.jsEvent.preventDefault();
                     var payload = Object.assign({}, info.event.extendedProps, { url: info.event.url });
                     window.dispatchEvent(new CustomEvent('open-task-modal', { detail: payload }));
                 },
-                eventMouseEnter: function(info) {
-                    // Tooltip avec informations détaillées
-                    const props = info.event.extendedProps;
-                    const dentistInfo = isDentist ? '' : `<div><strong>Dentiste:</strong> ${props.dentiste || 'N/A'}</div>`;
-                    const groupeInfo = isDentist ? '' : `<div><strong>Groupe:</strong> ${props.groupe || 'N/A'}</div>`;
-                    const tooltip = `
-                        <div class="p-2 bg-white rounded-lg shadow-lg border border-gray-200 text-sm">
-                            <div class="font-semibold text-primary mb-1">${info.event.title}</div>
-                            <div class="text-secondary space-y-1">
-                                <div><strong>Patient:</strong> ${props.nom_patient || 'N/A'}</div>
-                                ${dentistInfo}
-                                <div><strong>Service:</strong> ${props.service || 'N/A'}</div>
-                                ${groupeInfo}
-                                <div><strong>Éléments:</strong> ${props.nb_elem || 'N/A'}</div>
-                                <div><strong>Statut:</strong> ${props.status || 'N/A'}</div>
-                                ${props.urgent ? '<div class="text-danger font-medium">⚡ Commande Urgente</div>' : ''}
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Créer et afficher le tooltip
-                    const tooltipEl = document.createElement('div');
-                    tooltipEl.className = 'fc-event-tooltip';
-                    tooltipEl.innerHTML = tooltip;
-                    tooltipEl.style.position = 'fixed';
-                    tooltipEl.style.zIndex = '9999';
-                    tooltipEl.style.pointerEvents = 'none';
-                    tooltipEl.style.visibility = 'hidden';
-                    tooltipEl.style.maxWidth = '300px';
-                    document.body.appendChild(tooltipEl);
-                    
-                    // Obtenir les dimensions après insertion dans le DOM
-                    const tooltipWidth = tooltipEl.offsetWidth;
-                    const tooltipHeight = tooltipEl.offsetHeight;
-                    const rect = info.el.getBoundingClientRect();
-                    const viewportHeight = window.innerHeight;
-                    const viewportWidth = window.innerWidth;
-                    const spacing = 8; // Espacement entre l'événement et le tooltip
-                    
-                    // Position horizontale : centré sur l'événement
-                    let left = rect.left + rect.width / 2 - tooltipWidth / 2;
-                    
-                    // Vérifier si le tooltip dépasse à gauche ou à droite
-                    if (left < 10) {
-                        left = 10; // Marge de sécurité
-                    } else if (left + tooltipWidth > viewportWidth - 10) {
-                        left = viewportWidth - tooltipWidth - 10;
+                eventDidMount: function(info) {
+                    bindEventTooltipListeners(info);
+
+                    if (info.view.type !== 'timeGridDay') {
+                        return;
                     }
-                    
-                    // Position verticale : au-dessus par défaut, en dessous si l'événement est trop proche du haut
-                    let top;
-                    const spaceAbove = rect.top;
-                    const spaceBelow = viewportHeight - rect.bottom;
-                    const minSpaceNeeded = tooltipHeight + spacing + 5;
-                    
-                    // Seuil : si l'événement est dans les 200 premiers pixels, afficher en dessous
-                    const topThreshold = 200;
-                    
-                    if (rect.top < topThreshold) {
-                        // Événement trop proche du haut : afficher en dessous de l'événement
-                        top = rect.bottom + spacing;
-                        // Vérifier que le tooltip reste visible en bas
-                        if (top + tooltipHeight > viewportHeight - 10) {
-                            top = Math.max(10, viewportHeight - tooltipHeight - 10);
-                        }
-                    } else {
-                        // Assez d'espace au-dessus : afficher au-dessus de l'événement
-                        top = rect.top - tooltipHeight - spacing;
-                        // S'assurer que le tooltip reste visible
-                        if (top < 10) {
-                            // Si ça dépasse en haut, afficher en dessous
-                            top = rect.bottom + spacing;
-                            // Vérifier que ça reste visible en bas aussi
-                            if (top + tooltipHeight > viewportHeight - 10) {
-                                top = Math.max(10, viewportHeight - tooltipHeight - 10);
-                            }
-                        }
+
+                    const harness = info.el.closest('.fc-daygrid-event-harness');
+                    if (harness && info.event.extendedProps.tache_id) {
+                        harness.setAttribute('data-tache-id', info.event.extendedProps.tache_id);
+                        harness.style.position = 'relative';
+                        harness.style.top = 'auto';
+                        harness.style.left = 'auto';
+                        harness.style.right = 'auto';
+                        harness.style.width = '100%';
                     }
-                    
-                    tooltipEl.style.left = left + 'px';
-                    tooltipEl.style.top = top + 'px';
-                    tooltipEl.style.visibility = 'visible';
-                    
-                    info.el._tooltip = tooltipEl;
+
+                    scheduleDayViewSortableInit();
                 },
-                eventMouseLeave: function(info) {
-                    if (info.el._tooltip) {
-                        info.el._tooltip.remove();
-                        delete info.el._tooltip;
+                eventWillUnmount: function(info) {
+                    if (activeTooltipOwnerEl === info.el) {
+                        hideActiveEventTooltip();
                     }
+                },
+                eventOrder: function(a, b) {
+                    const orderA = a.extendedProps.displayOrder ?? 999999;
+                    const orderB = b.extendedProps.displayOrder ?? 999999;
+                    if (orderA !== orderB) {
+                        return orderA - orderB;
+                    }
+
+                    return (a.extendedProps.tache_id || 0) - (b.extendedProps.tache_id || 0);
                 },
                 moreLinkClick: function(info) {
                     info.jsEvent.preventDefault();
@@ -694,6 +829,159 @@
                 eventDisplay: 'block',
                 displayEventTime: false,
             });
+
+            const reorderHintEl = document.getElementById('calendar-day-reorder-hint');
+            let daySortable = null;
+            let isSavingOrder = false;
+
+            function scheduleDayViewSortableInit() {
+                clearTimeout(sortableInitTimer);
+                sortableInitTimer = setTimeout(initDayViewSortable, 150);
+            }
+
+            function getDayViewEventsContainer() {
+                return document.querySelector('.fc-timeGridDay-view .fc-daygrid-day-events');
+            }
+
+            function getCurrentDayDateStr() {
+                if (!calendar.view || !calendar.view.activeStart) {
+                    return null;
+                }
+
+                const d = calendar.view.activeStart;
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+
+                return `${year}-${month}-${day}`;
+            }
+
+            function toggleDayReorderHint() {
+                if (!reorderHintEl) {
+                    return;
+                }
+
+                const isDayView = calendar.view && calendar.view.type === 'timeGridDay';
+                reorderHintEl.classList.toggle('hidden', !isDayView);
+            }
+
+            function destroyDayViewSortable() {
+                if (daySortable) {
+                    daySortable.destroy();
+                    daySortable = null;
+                }
+            }
+
+            async function saveDayViewOrder(container) {
+                if (isSavingOrder) {
+                    return;
+                }
+
+                const dateStr = getCurrentDayDateStr();
+                if (!dateStr) {
+                    return;
+                }
+
+                const tacheIds = [...container.querySelectorAll('.fc-daygrid-event-harness[data-tache-id]')]
+                    .map(function(el) {
+                        return parseInt(el.getAttribute('data-tache-id'), 10);
+                    })
+                    .filter(function(id) {
+                        return !Number.isNaN(id);
+                    });
+
+                if (tacheIds.length < 2) {
+                    return;
+                }
+
+                isSavingOrder = true;
+
+                try {
+                    const response = await fetch('{{ route('app.commandes.calendar.reorder') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            date: dateStr,
+                            tache_ids: tacheIds,
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Erreur HTTP: ' + response.status);
+                    }
+
+                    tacheIds.forEach(function(tacheId, index) {
+                        calendar.getEvents().forEach(function(event) {
+                            if (Number(event.extendedProps.tache_id) === tacheId) {
+                                event.setExtendedProp('displayOrder', index + 1);
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.error('Erreur lors de la réorganisation:', error);
+                    calendar.refetchEvents();
+                } finally {
+                    isSavingOrder = false;
+                }
+            }
+
+            function initDayViewSortable() {
+                destroyDayViewSortable();
+                toggleDayReorderHint();
+
+                if (!calendar.view || calendar.view.type !== 'timeGridDay') {
+                    return;
+                }
+
+                if (typeof Sortable === 'undefined') {
+                    console.warn('SortableJS non chargé');
+                    return;
+                }
+
+                const container = getDayViewEventsContainer();
+                if (!container) {
+                    return;
+                }
+
+                const harnesses = container.querySelectorAll('.fc-daygrid-event-harness[data-tache-id]');
+                if (harnesses.length < 2) {
+                    return;
+                }
+
+                harnesses.forEach(function(harness) {
+                    harness.style.position = 'relative';
+                    harness.style.top = 'auto';
+                    harness.style.left = 'auto';
+                    harness.style.right = 'auto';
+                    harness.style.width = '100%';
+                });
+
+                daySortable = Sortable.create(container, {
+                    animation: 150,
+                    handle: '.fc-day-reorder-handle',
+                    draggable: '.fc-daygrid-event-harness[data-tache-id]',
+                    forceFallback: true,
+                    fallbackTolerance: 5,
+                    ghostClass: 'fc-event-sortable-ghost',
+                    chosenClass: 'fc-event-sortable-chosen',
+                    onStart: function() {
+                        dayViewDragging = true;
+                        hideActiveEventTooltip();
+                    },
+                    onEnd: function() {
+                        saveDayViewOrder(container);
+                        setTimeout(function() {
+                            dayViewDragging = false;
+                        }, 100);
+                    },
+                });
+            }
+
             calendar.render();
             console.log('Calendrier FullCalendar initialisé et rendu');
             
@@ -843,20 +1131,29 @@
             
             // Écouter les changements de vue
             calendar.on('viewDidMount', function() {
+                hideActiveEventTooltip();
                 console.log('🔄 Vue changée:', calendar.view.type);
-                setTimeout(forceUpdateExportButton, 500);
+                setTimeout(function() {
+                    forceUpdateExportButton();
+                    scheduleDayViewSortableInit();
+                }, 500);
             });
             
-            // Écouter les changements de date (navigation jour précédent/suivant)
             calendar.on('datesSet', function() {
+                hideActiveEventTooltip();
                 console.log('📅 Dates changées, vue:', calendar.view.type);
-                setTimeout(forceUpdateExportButton, 500);
+                setTimeout(function() {
+                    forceUpdateExportButton();
+                    scheduleDayViewSortableInit();
+                }, 500);
             });
             
-            // Écouter les événements chargés (important pour détecter les nouveaux événements)
             calendar.on('eventsSet', function() {
                 console.log('📥 Événements chargés/mis à jour');
-                setTimeout(forceUpdateExportButton, 300);
+                setTimeout(function() {
+                    forceUpdateExportButton();
+                    scheduleDayViewSortableInit();
+                }, 300);
             });
             
             // Écouter aussi les changements de navigation (prev/next)

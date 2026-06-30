@@ -379,6 +379,10 @@ Route::middleware(['auth'])->prefix('app')->group(function () {
         ->middleware('can:view_commandes_calendar')
         ->name('app.commandes.calendar.export-excel');
 
+    Route::post('commandes/calendar/reorder', [CommandeCalendarController::class, 'reorder'])
+        ->middleware('can:view_commandes_calendar')
+        ->name('app.commandes.calendar.reorder');
+
     Route::get('commandes/check-new', [CommandeCalendarController::class, 'checkNew'])
         ->middleware('can:view_commandes')
         ->name('app.commandes.check-new');
