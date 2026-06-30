@@ -833,8 +833,49 @@
             const reorderHintEl = document.getElementById('calendar-day-reorder-hint');
             let daySortable = null;
             let isSavingOrder = false;
+            let lastKnownVersion = null;
+            let suppressCalendarRefetchUntil = 0;
+            let localReorderInProgress = false;
+            let preDragTacheOrder = [];
+
+            function getContainerTacheIds(container) {
+                return [...container.querySelectorAll('.fc-daygrid-event-harness[data-tache-id]')]
+                    .map(function(el) {
+                        return parseInt(el.getAttribute('data-tache-id'), 10);
+                    })
+                    .filter(function(id) {
+                        return !Number.isNaN(id);
+                    });
+            }
+
+            function applyDomTacheOrder(container, tacheIds) {
+                const harnessById = {};
+                container.querySelectorAll('.fc-daygrid-event-harness[data-tache-id]').forEach(function(harness) {
+                    harnessById[harness.getAttribute('data-tache-id')] = harness;
+                });
+
+                tacheIds.forEach(function(tacheId) {
+                    const harness = harnessById[String(tacheId)];
+                    if (harness) {
+                        container.appendChild(harness);
+                    }
+                });
+            }
+
+            function updateEventsDisplayOrderSilent(tacheIds) {
+                calendar.getEvents().forEach(function(event) {
+                    const tacheId = Number(event.extendedProps.tache_id);
+                    const index = tacheIds.indexOf(tacheId);
+                    if (index >= 0) {
+                        event.extendedProps.displayOrder = index + 1;
+                    }
+                });
+            }
 
             function scheduleDayViewSortableInit() {
+                if (isSavingOrder || localReorderInProgress || dayViewDragging) {
+                    return;
+                }
                 clearTimeout(sortableInitTimer);
                 sortableInitTimer = setTimeout(initDayViewSortable, 150);
             }
@@ -844,11 +885,11 @@
             }
 
             function getCurrentDayDateStr() {
-                if (!calendar.view || !calendar.view.activeStart) {
+                if (!calendar.view || !calendar.view.currentStart) {
                     return null;
                 }
 
-                const d = calendar.view.activeStart;
+                const d = calendar.view.currentStart;
                 const year = d.getFullYear();
                 const month = String(d.getMonth() + 1).padStart(2, '0');
                 const day = String(d.getDate()).padStart(2, '0');
@@ -882,23 +923,20 @@
                     return;
                 }
 
-                const tacheIds = [...container.querySelectorAll('.fc-daygrid-event-harness[data-tache-id]')]
-                    .map(function(el) {
-                        return parseInt(el.getAttribute('data-tache-id'), 10);
-                    })
-                    .filter(function(id) {
-                        return !Number.isNaN(id);
-                    });
+                const tacheIds = getContainerTacheIds(container);
 
                 if (tacheIds.length < 2) {
+                    localReorderInProgress = false;
                     return;
                 }
 
                 isSavingOrder = true;
+                localReorderInProgress = true;
 
                 try {
                     const response = await fetch('{{ route('app.commandes.calendar.reorder') }}', {
                         method: 'POST',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest',
@@ -911,26 +949,45 @@
                         }),
                     });
 
+                    const data = await response.json().catch(function() {
+                        return {};
+                    });
+
                     if (!response.ok) {
-                        throw new Error('Erreur HTTP: ' + response.status);
+                        console.error('Réorganisation refusée:', response.status, data);
+                        throw new Error(data.message || ('Erreur HTTP: ' + response.status));
                     }
 
-                    tacheIds.forEach(function(tacheId, index) {
-                        calendar.getEvents().forEach(function(event) {
-                            if (Number(event.extendedProps.tache_id) === tacheId) {
-                                event.setExtendedProp('displayOrder', index + 1);
-                            }
-                        });
-                    });
+                    if (typeof data.version === 'number') {
+                        lastKnownVersion = data.version;
+                    }
+
+                    suppressCalendarRefetchUntil = Date.now() + 30000;
+                    updateEventsDisplayOrderSilent(tacheIds);
                 } catch (error) {
                     console.error('Erreur lors de la réorganisation:', error);
-                    calendar.refetchEvents();
+                    if (preDragTacheOrder.length > 0) {
+                        applyDomTacheOrder(container, preDragTacheOrder);
+                        updateEventsDisplayOrderSilent(preDragTacheOrder);
+                    } else {
+                        calendar.refetchEvents();
+                    }
                 } finally {
                     isSavingOrder = false;
+                    setTimeout(function() {
+                        localReorderInProgress = false;
+                        if (calendar.view && calendar.view.type === 'timeGridDay') {
+                            initDayViewSortable();
+                        }
+                    }, 300);
                 }
             }
 
             function initDayViewSortable() {
+                if (isSavingOrder || localReorderInProgress || dayViewDragging) {
+                    return;
+                }
+
                 destroyDayViewSortable();
                 toggleDayReorderHint();
 
@@ -971,13 +1028,13 @@
                     chosenClass: 'fc-event-sortable-chosen',
                     onStart: function() {
                         dayViewDragging = true;
+                        localReorderInProgress = true;
                         hideActiveEventTooltip();
+                        preDragTacheOrder = getContainerTacheIds(container);
                     },
                     onEnd: function() {
+                        dayViewDragging = false;
                         saveDayViewOrder(container);
-                        setTimeout(function() {
-                            dayViewDragging = false;
-                        }, 100);
                     },
                 });
             }
@@ -1175,13 +1232,13 @@
             }, 1500);
 
             // Système de mise à jour en temps réel
-            let lastKnownVersion = null;
             let isChecking = false;
             let checkInterval = null;
 
             // Fonction pour vérifier les mises à jour
             async function checkForUpdates() {
-                if (isChecking) return;
+                if (isChecking || localReorderInProgress) return;
+                if (Date.now() < suppressCalendarRefetchUntil) return;
                 isChecking = true;
 
                 try {
@@ -1210,12 +1267,11 @@
                     if (data.version !== lastKnownVersion) {
                         console.log('Mise à jour détectée! Version:', lastKnownVersion, '->', data.version);
                         lastKnownVersion = data.version;
-                        
-                        // Afficher une notification discrète
-                        showUpdateNotification();
-                        
-                        // Recharger les événements du calendrier
-                        calendar.refetchEvents();
+
+                        if (Date.now() >= suppressCalendarRefetchUntil) {
+                            showUpdateNotification();
+                            calendar.refetchEvents();
+                        }
                     }
                 } catch (error) {
                     console.error('Erreur lors de la vérification des mises à jour:', error);

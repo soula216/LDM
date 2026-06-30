@@ -41,6 +41,28 @@ class CommandeCalendarController extends Controller
         }
     }
 
+    /**
+     * Tâches visibles dans le calendrier pour une date (mêmes filtres que la vue).
+     */
+    private function visibleTachesForCalendarDay(string $date, $user)
+    {
+        $dateCarbon = Carbon::parse($date)->startOfDay();
+        $endDate = $dateCarbon->copy()->endOfDay();
+
+        $query = CommandeTache::query()
+            ->whereDate('date_livraison', '>=', $dateCarbon)
+            ->whereDate('date_livraison', '<=', $endDate)
+            ->whereHas('commande', fn ($q) => $q->where('status', '!=', 'Livrée'));
+
+        $this->applyTacheVisibilityFilter($query, $user);
+
+        return $query
+            ->orderByRaw('calendar_sort_order IS NULL')
+            ->orderBy('calendar_sort_order')
+            ->orderBy('id')
+            ->get();
+    }
+
     public function reorder(Request $request)
     {
         $validated = $request->validate([
@@ -50,16 +72,17 @@ class CommandeCalendarController extends Controller
         ]);
 
         $user = auth()->user();
-        $date = Carbon::parse($validated['date'])->startOfDay();
+        $visibleTaches = $this->visibleTachesForCalendarDay($validated['date'], $user);
 
-        $query = CommandeTache::query()->whereDate('date_livraison', $date);
-        $this->applyTacheVisibilityFilter($query, $user);
-
-        $allowedIds = $query->pluck('id')->all();
-        $requestedIds = $validated['tache_ids'];
+        $allowedIds = $visibleTaches->pluck('id')->all();
+        $requestedIds = array_values(array_map('intval', $validated['tache_ids']));
 
         if (count($allowedIds) !== count($requestedIds)) {
-            return response()->json(['message' => 'Liste de tâches invalide pour cette date.'], 422);
+            return response()->json([
+                'message' => 'Liste de tâches invalide pour cette date.',
+                'expected' => count($allowedIds),
+                'received' => count($requestedIds),
+            ], 422);
         }
 
         $allowedSet = collect($allowedIds)->sort()->values()->all();
@@ -79,7 +102,10 @@ class CommandeCalendarController extends Controller
 
         $this->bumpCalendarCache();
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'version' => Cache::get('app.commandes.calendar.version', 0),
+        ]);
     }
 
     public function events(Request $request)
