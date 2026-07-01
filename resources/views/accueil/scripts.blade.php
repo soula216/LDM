@@ -110,15 +110,23 @@
   const heroCard = document.querySelector('.hero-card');
   if (heroCard) statsObserver.observe(heroCard);
 
-  // Parallax effect on shapes
-  window.addEventListener('mousemove', (e) => {
-    const shapes = document.querySelectorAll('.shape');
-    const x = e.clientX / window.innerWidth;
-    const y = e.clientY / window.innerHeight;
-    shapes.forEach((shape, index) => {
-      const speed = (index + 1) * 20;
-      shape.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
+  // Parallax effect on shapes (desktop uniquement)
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    window.addEventListener('mousemove', (e) => {
+      const shapes = document.querySelectorAll('.shape');
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+      shapes.forEach((shape, index) => {
+        const speed = (index + 1) * 20;
+        shape.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
+      });
     });
+  }
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768 && navbar.classList.contains('mobile-menu-open')) {
+      closeMenu();
+    }
   });
 
   // Hero Slider

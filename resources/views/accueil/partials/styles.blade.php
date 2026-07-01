@@ -1091,16 +1091,6 @@
       font-size: 0.95rem;
     }
 
-    @@media (max-width: 900px) {
-      .contact-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .contact-form-wrapper {
-        margin-top: 1.5rem;
-      }
-    }
-
     /* Gallery - Nos Travaux */
     .gallery-grid {
       display: grid;
@@ -1155,12 +1145,6 @@
     .gallery-overlay p {
       font-size: 0.9rem;
       color: rgba(255, 255, 255, 0.8);
-    }
-
-    @@media (max-width: 768px) {
-      .gallery-grid {
-        grid-template-columns: 1fr;
-      }
     }
 
     /* CTA Section */
@@ -1307,6 +1291,11 @@
       font-size: 0.9rem;
     }
 
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
     /* Scroll Animations */
     .reveal {
       opacity: 0;
@@ -1326,13 +1315,33 @@
 
     /* Mobile Responsive */
     @@media (max-width: 1024px) {
-      .hero-visual {
-        display: none;
+      section {
+        padding: 4.5rem 4%;
+      }
+
+      .contact-section {
+        padding: 4.5rem 4%;
       }
 
       .hero {
+        flex-direction: column;
         justify-content: center;
         text-align: center;
+        padding: 7rem 4% 3rem;
+        min-height: auto;
+      }
+
+      .hero-visual {
+        display: block;
+        position: relative;
+        right: auto;
+        top: auto;
+        transform: none;
+        width: 100%;
+        max-width: 420px;
+        margin: 2.5rem auto 0;
+        opacity: 1;
+        animation: none;
       }
 
       .hero-content {
@@ -1350,28 +1359,112 @@
 
       .process-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 2.5rem 1.5rem;
       }
 
       .process-step::after {
-        display: none;
-      }
-
-      .process-step:not(:nth-child(2n)):not(:last-child)::after {
-        display: block;
+        display: none !important;
       }
 
       .features-container {
         grid-template-columns: 1fr;
+        gap: 2.5rem;
+      }
+
+      .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
 
       .footer-content {
         grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+      }
+
+      .logo img,
+      .logo .logo-img {
+        height: 80px;
+      }
+
+      .footer-brand .logo img {
+        height: 80px;
       }
     }
 
     @@media (max-width: 768px) {
       nav {
         justify-content: space-between;
+        padding: 0.85rem 4%;
+      }
+
+      nav.scrolled {
+        padding: 0.65rem 4%;
+      }
+
+      section {
+        padding: 3.5rem 1.25rem;
+      }
+
+      .contact-section {
+        padding: 3.5rem 1.25rem;
+      }
+
+      .section-header {
+        margin-bottom: 2.5rem;
+      }
+
+      .section-subtitle {
+        font-size: 1rem;
+      }
+
+      .hero {
+        padding: 6.5rem 1.25rem 2.5rem;
+      }
+
+      .hero-badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.85rem;
+      }
+
+      .hero p {
+        font-size: 1rem;
+        margin-bottom: 1.75rem;
+      }
+
+      .hero-buttons {
+        flex-direction: column;
+        width: 100%;
+        max-width: 320px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .hero-buttons .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .hero-visual {
+        max-width: 100%;
+        margin-top: 2rem;
+      }
+
+      .hero-card {
+        padding: 1.5rem;
+        border-radius: 20px;
+      }
+
+      .hero-stats {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1.25rem;
+      }
+
+      .stat-value {
+        font-size: 1.6rem;
+      }
+
+      .slider-dots {
+        bottom: 1rem;
       }
 
       .nav-links {
@@ -1403,16 +1496,18 @@
         inset: 0;
         width: 100%;
         height: 100vh;
-        padding: 7rem 5% 2rem;
-        gap: 1.75rem;
+        height: 100dvh;
+        padding: 6rem 1.25rem 2rem;
+        gap: 1.5rem;
         background: rgba(15, 23, 42, 0.96);
         z-index: 999;
         list-style: none;
+        overflow-y: auto;
       }
 
       nav.mobile-menu-open .nav-links a {
         color: #e2e8f0 !important;
-        font-size: 1.15rem;
+        font-size: 1.1rem;
         font-weight: 500;
       }
 
@@ -1438,20 +1533,158 @@
         overflow: hidden;
       }
 
+      .logo img,
+      .logo .logo-img {
+        height: 56px;
+      }
+
+      .footer-brand .logo img {
+        height: 64px;
+      }
+
+      .services-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .service-card {
+        padding: 1.75rem 1.5rem;
+      }
+
       .process-grid {
         grid-template-columns: 1fr;
+        gap: 2rem;
       }
 
       .process-step::after {
-        display: none;
+        display: none !important;
+      }
+
+      .gallery-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .gallery-item {
+        aspect-ratio: 16/10;
+      }
+
+      .gallery-overlay {
+        opacity: 1;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent 55%);
+      }
+
+      .features-card {
+        padding: 2rem 1.5rem;
+      }
+
+      .features-card-icon {
+        width: 90px;
+        height: 90px;
+        font-size: 2.25rem;
+      }
+
+      .contact-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.5rem;
+      }
+
+      .contact-card,
+      .contact-form-wrapper {
+        padding: 1.5rem;
+        border-radius: 18px;
+      }
+
+      .contact-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .contact-actions {
+        justify-content: stretch;
       }
 
       .footer-content {
         grid-template-columns: 1fr;
         text-align: center;
+        gap: 2rem;
+      }
+
+      .footer-column ul a.footer-link-with-icon {
+        white-space: normal;
+        justify-content: center;
       }
 
       .social-links {
         justify-content: center;
+      }
+
+      .footer-bottom {
+        font-size: 0.85rem;
+        line-height: 1.6;
+      }
+
+      .shape:nth-child(1) { width: 180px; height: 180px; }
+      .shape:nth-child(2) { width: 120px; height: 120px; }
+      .shape:nth-child(3) { width: 90px; height: 90px; }
+    }
+
+    @@media (max-width: 480px) {
+      .hero h1 {
+        font-size: clamp(1.85rem, 8vw, 2.35rem);
+      }
+
+      .section-title {
+        font-size: clamp(1.65rem, 7vw, 2rem);
+      }
+
+      .hero-card-icon {
+        width: 64px;
+        height: 64px;
+        font-size: 1.6rem;
+      }
+
+      .process-number {
+        width: 64px;
+        height: 64px;
+        font-size: 1.4rem;
+      }
+
+      .contact-item {
+        align-items: flex-start;
+      }
+
+      .nav-espace-client-mobile {
+        font-size: 0.8rem;
+        max-width: 5.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    /* Effets hover uniquement sur desktop (évite les bugs tactile) */
+    @@media (hover: hover) and (pointer: fine) {
+      .service-card:hover {
+        transform: translateY(-12px) scale(1.05) rotate3d(1, 1, 0, 6deg);
+      }
+
+      .services .service-card.reveal.active:hover {
+        transform: translateY(-12px) scale(1.05) rotate3d(1, 1, 0, 6deg);
+      }
+    }
+
+    @@media (hover: none), (pointer: coarse) {
+      .service-card:hover {
+        transform: none;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+        filter: none;
+      }
+
+      .service-card:hover::before {
+        opacity: 0;
+        animation: none;
+      }
+
+      .gallery-item:hover img {
+        transform: none;
       }
     }
