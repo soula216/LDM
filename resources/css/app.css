@@ -40,6 +40,18 @@
         @apply w-full rounded-lg border-border bg-card px-3 py-2.5 text-primary placeholder:text-secondary focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200;
     }
 
+    .vitrine-slide-url-field input.vitrine-slide-url-input,
+    .vitrine-slide-url-field input.vitrine-slide-url-input:focus,
+    .vitrine-slide-url-field input.vitrine-slide-url-input:focus-visible {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        --tw-ring-shadow: 0 0 #0000 !important;
+        --tw-ring-offset-shadow: 0 0 #0000 !important;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
     /* Formulaire dépenses : tous les champs sur une ligne */
     .depenses-form-row {
         display: flex;

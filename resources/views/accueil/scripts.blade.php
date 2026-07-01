@@ -1,13 +1,18 @@
 <script>
   // Navigation scroll effect
   const navbar = document.getElementById('navbar');
-  window.addEventListener('scroll', () => {
+
+  function updateNavbarScrollState() {
+    if (!navbar) return;
     if (window.scrollY > 50) {
       navbar.classList.add('scrolled');
     } else {
       navbar.classList.remove('scrolled');
     }
-  });
+  }
+
+  window.addEventListener('scroll', updateNavbarScrollState);
+  updateNavbarScrollState();
 
   // Mobile menu toggle
   const menuToggle = document.getElementById('menuToggle');

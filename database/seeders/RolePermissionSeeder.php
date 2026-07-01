@@ -77,8 +77,13 @@ class RolePermissionSeeder extends Seeder
             'manage_stock',
         ];
 
+        // Permissions Site vitrine
+        $vitrinePermissions = [
+            'manage_vitrine',
+        ];
+
         // Toutes les permissions
-        $allPermissions = array_merge($commandesPermissions, $v3Permissions, $adminPermissions, $facturesPermissions, $ficheControleQualityPermissions, $depensesPermissions, $stockPermissions);
+        $allPermissions = array_merge($commandesPermissions, $v3Permissions, $adminPermissions, $facturesPermissions, $ficheControleQualityPermissions, $depensesPermissions, $stockPermissions, $vitrinePermissions);
 
         foreach ($allPermissions as $perm) {
             Permission::firstOrCreate(['name' => $perm]);

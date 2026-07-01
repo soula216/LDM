@@ -1,255 +1,185 @@
+@php
+    $hero = $blocks['hero'] ?? [];
+    $services = $blocks['services'] ?? [];
+    $process = $blocks['process'] ?? [];
+    $gallery = $blocks['gallery'] ?? [];
+    $features = $blocks['features'] ?? [];
+    $contact = $blocks['contact'] ?? [];
+@endphp
 {{-- Contenu principal : Hero, Services, Process, Gallery, Features, Contact --}}
 
+@if(!empty($blocks['hero']))
 {{-- Hero Section --}}
 <section class="hero" id="accueil">
   <div class="hero-slider">
-    <div class="hero-slide active" style="background-image: url('https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=1920&q=80');"></div>
-    <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=1920&q=80');"></div>
-    <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=1920&q=80');"></div>
+    @foreach($hero['slides'] ?? [] as $index => $slide)
+      <div class="hero-slide {{ $index === 0 ? 'active' : '' }}" style="background-image: url('{{ $slide['image_url'] ?? '' }}');"></div>
+    @endforeach
     <div class="slider-dots">
-      <div class="slider-dot active" data-slide="0"></div>
-      <div class="slider-dot" data-slide="1"></div>
-      <div class="slider-dot" data-slide="2"></div>
+      @foreach($hero['slides'] ?? [] as $index => $slide)
+        <div class="slider-dot {{ $index === 0 ? 'active' : '' }}" data-slide="{{ $index }}"></div>
+      @endforeach
     </div>
   </div>
   <div class="hero-content">
     <div class="hero-badge">
-      <i class="fas fa-certificate"></i>
-      <span>Laboratoire Certifié ISO 13485</span>
+      <i class="{{ $hero['badge_icon'] ?? 'fas fa-certificate' }}"></i>
+      <span>{{ $hero['badge_text'] ?? '' }}</span>
     </div>
-    <h1>Prothèses Dentaires<br><span>de Précision</span></h1>
-    <p>Découvrez l'excellence de la prothèse dentaire. Nous allions technologie de pointe et savoir-faire artisanal pour des sourires parfaits.</p>
+    <h1>{{ $hero['title_line1'] ?? '' }}<br><span>{{ $hero['title_highlight'] ?? '' }}</span></h1>
+    <p>{{ $hero['description'] ?? '' }}</p>
     <div class="hero-buttons">
-      <a href="#contact" class="btn btn-primary">
-        <i class="fas fa-calendar-alt"></i>
-        Demander un devis
-      </a>
-      <a href="#services" class="btn btn-secondary">
-        <i class="fas fa-arrow-right"></i>
-        Nos services
-      </a>
+      @foreach($hero['buttons'] ?? [] as $btn)
+        <a href="{{ $btn['href'] ?? '#' }}" class="btn btn-{{ $btn['style'] ?? 'primary' }}">
+          @if(!empty($btn['icon']))
+            <i class="{{ $btn['icon'] }}"></i>
+          @endif
+          {{ $btn['label'] ?? '' }}
+        </a>
+      @endforeach
     </div>
   </div>
   <div class="hero-visual">
     <div class="hero-card">
       <div class="hero-card-icon">
-        <i class="fas fa-tooth"></i>
+        <i class="{{ $hero['card']['icon'] ?? 'fas fa-tooth' }}"></i>
       </div>
-      <h3>Prothèse Sur Mesure</h3>
-      <p>Fabrication  avec matériaux de haute qualité</p>
+      <h3>{{ $hero['card']['title'] ?? '' }}</h3>
+      <p>{{ $hero['card']['description'] ?? '' }}</p>
       <div class="hero-stats">
-        <div class="stat">
-          <div class="stat-value">15+</div>
-          <div class="stat-label">Années d'expérience</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">5000+</div>
-          <div class="stat-label">Patients satisfaits</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">99%</div>
-          <div class="stat-label">Satisfaction</div>
-        </div>
+        @foreach($hero['card']['stats'] ?? [] as $stat)
+          <div class="stat">
+            <div class="stat-value">{{ $stat['value'] ?? '' }}</div>
+            <div class="stat-label">{{ $stat['label'] ?? '' }}</div>
+          </div>
+        @endforeach
       </div>
     </div>
   </div>
 </section>
+@endif
 
+@if(!empty($blocks['services']))
 {{-- Services Section --}}
 <section class="services" id="services">
   <div class="section-header reveal">
-    <span class="section-label">Nos Services</span>
-    <h2 class="section-title">Solutions Complètes</h2>
-    <p class="section-subtitle">Une gamme complète de prothèses dentaires pour tous vos besoins</p>
+    <span class="section-label">{{ $services['section_label'] ?? '' }}</span>
+    <h2 class="section-title">{{ $services['section_title'] ?? '' }}</h2>
+    <p class="section-subtitle">{{ $services['section_subtitle'] ?? '' }}</p>
   </div>
   <div class="services-grid">
-    <div class="service-card reveal">
-      <div class="service-icon"><i class="fas fa-crown"></i></div>
-      <h3>Couronnes Dentaires</h3>
-      <p>Couronnes en zircone, céramique ou métal-céramique pour une restauration esthétique et durable.</p>
-    </div>
-    <div class="service-card reveal">
-      <div class="service-icon"><i class="fas fa-teeth"></i></div>
-      <h3>Bridges & Ponts</h3>
-      <p>Solutions fixes pour remplacer une ou plusieurs dents manquantes avec un rendu naturel.</p>
-    </div>
-    <div class="service-card reveal">
-      <div class="service-icon"><i class="fas fa-hand-sparkles"></i></div>
-      <h3>Prothèses Amovibles</h3>
-      <p>Partielles ou complètes, nos prothèses offrent confort et esthétique au quotidien.</p>
-    </div>
-    <div class="service-card reveal">
-      <div class="service-icon"><i class="fas fa-magic"></i></div>
-      <h3>Facettes & Éclaircissement</h3>
-      <p>Transformez votre sourire avec des facettes personnalisées et un blanchiment professionnel.</p>
-    </div>
+    @foreach($services['items'] ?? [] as $item)
+      <div class="service-card reveal">
+        <div class="service-icon"><i class="{{ $item['icon'] ?? '' }}"></i></div>
+        <h3>{{ $item['title'] ?? '' }}</h3>
+        <p>{{ $item['description'] ?? '' }}</p>
+      </div>
+    @endforeach
   </div>
 </section>
+@endif
 
+@if(!empty($blocks['process']))
 {{-- Process Section --}}
 <section class="process" id="process">
   <div class="section-header reveal">
-    <span class="section-label">Notre Process</span>
-    <h2 class="section-title">Comment Nous Travaillons</h2>
-    <p class="section-subtitle">Un processus rigoureux pour des résultats exceptionnels</p>
+    <span class="section-label">{{ $process['section_label'] ?? '' }}</span>
+    <h2 class="section-title">{{ $process['section_title'] ?? '' }}</h2>
+    <p class="section-subtitle">{{ $process['section_subtitle'] ?? '' }}</p>
   </div>
   <div class="process-grid">
-    <div class="process-step reveal">
-      <div class="process-number">1</div>
-      <h3>Consultation</h3>
-      <p>Analyse de vos besoins et prise d'empreintes numériques</p>
-    </div>
-    <div class="process-step reveal">
-      <div class="process-number">2</div>
-      <h3>Conception</h3>
-      <p>Design 3D et planification précise de votre prothèse</p>
-    </div>
-    <div class="process-step reveal">
-      <div class="process-number">3</div>
-      <h3>Fabrication</h3>
-      <p>Production avec nos équipements de haute précision</p>
-    </div>
-    <div class="process-step reveal">
-      <div class="process-number">4</div>
-      <h3>Livraison</h3>
-      <p>Pose et ajustements pour un confort optimal</p>
-    </div>
+    @foreach($process['steps'] ?? [] as $step)
+      <div class="process-step reveal">
+        <div class="process-number">{{ $loop->iteration }}</div>
+        <h3>{{ $step['title'] ?? '' }}</h3>
+        <p>{{ $step['description'] ?? '' }}</p>
+      </div>
+    @endforeach
   </div>
 </section>
+@endif
 
+@if(!empty($blocks['gallery']))
 {{-- Gallery - Nos Travaux --}}
 <section class="gallery" id="travaux">
   <div class="section-header reveal">
-    <span class="section-label">Nos Travaux</span>
-    <h2 class="section-title">Découvrez Nos Réalisations</h2>
-    <p class="section-subtitle">Des résultats qui parlent d'eux-mêmes</p>
+    <span class="section-label">{{ $gallery['section_label'] ?? '' }}</span>
+    <h2 class="section-title">{{ $gallery['section_title'] ?? '' }}</h2>
+    <p class="section-subtitle">{{ $gallery['section_subtitle'] ?? '' }}</p>
   </div>
   <div class="gallery-grid">
-    <div class="gallery-item reveal">
-      <img src="https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=600&q=80" alt="Prothèse dentaire complète">
-      <div class="gallery-overlay">
-        <h3>Prothèse Complète</h3>
-        <p>Restaurations complètes sur implants</p>
+    @foreach($gallery['items'] ?? [] as $item)
+      <div class="gallery-item reveal">
+        <img src="{{ $item['image_url'] ?? '' }}" alt="{{ $item['title'] ?? '' }}">
+        <div class="gallery-overlay">
+          <h3>{{ $item['title'] ?? '' }}</h3>
+          <p>{{ $item['description'] ?? '' }}</p>
+        </div>
       </div>
-    </div>
-    <div class="gallery-item reveal">
-      <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&q=80" alt="Couronne céramique">
-      <div class="gallery-overlay">
-        <h3>Couronnes Céramiques</h3>
-        <p>Esthétique naturelle et durable</p>
-      </div>
-    </div>
-    <div class="gallery-item reveal">
-      <img src="https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=600&q=80" alt="Facettes dentaires">
-      <div class="gallery-overlay">
-        <h3>Facettes Dentaires</h3>
-        <p>Transformations de sourires</p>
-      </div>
-    </div>
-    <div class="gallery-item reveal">
-      <img src="https://images.unsplash.com/photo-1559757175-5700dde675bc?w=600&q=80" alt="Prothèse partielle">
-      <div class="gallery-overlay">
-        <h3>Prothèse Partielle</h3>
-        <p>Solution esthétique et fonctionnelle</p>
-      </div>
-    </div>
-    <div class="gallery-item reveal">
-      <img src="https://images.unsplash.com/photo-1606265752439-1f18756aa5fc?w=600&q=80" alt="Bridge dentaire">
-      <div class="gallery-overlay">
-        <h3>Bridge Sur Implants</h3>
-        <p>Réhabilitation complète</p>
-      </div>
-    </div>
-    <div class="gallery-item reveal">
-      <img src="https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=600&q=80" alt="Blanchiment dental">
-      <div class="gallery-overlay">
-        <h3>Blanchiment</h3>
-        <p>Éclat et blancheur naturelle</p>
-      </div>
-    </div>
+    @endforeach
   </div>
 </section>
+@endif
 
+@if(!empty($blocks['features']))
 {{-- Features Section --}}
 <section class="features" id="about">
   <div class="features-container">
     <div class="features-content reveal">
-      <h2>Pourquoi Choisir <span>LDM</span>?</h2>
-      <p style="color: var(--text-muted); margin-bottom: 1rem;">Nous combinons expertise traditionnelle et technologies numériques de pointe pour vous offrir le meilleur de la prothèse dentaire moderne.</p>
+      <h2>{{ $features['title_before'] ?? '' }} <span>{{ $features['title_highlight'] ?? '' }}</span>{{ $features['title_after'] ?? '' }}</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1rem;">{{ $features['description'] ?? '' }}</p>
       <ul class="features-list">
-        <li>
-          <i class="fas fa-check-circle"></i>
-          <span>Matériaux premium certifiés biocompatibles</span>
-        </li>
-        <li>
-          <i class="fas fa-check-circle"></i>
-          <span>Technologie CAD/CAM de dernière génération</span>
-        </li>
-        <li>
-          <i class="fas fa-check-circle"></i>
-          <span>Garantie sur toutes nos prothèses</span>
-        </li>
-        <li>
-          <i class="fas fa-check-circle"></i>
-          <span> Délais rapides et respectés</span>
-        </li>
+        @foreach($features['list'] ?? [] as $point)
+          <li>
+            <i class="fas fa-check-circle"></i>
+            <span>{{ $point }}</span>
+          </li>
+        @endforeach
       </ul>
     </div>
     <div class="features-visual reveal">
       <div class="features-card">
         <div class="features-card-icon">
-          <i class="fas fa-award"></i>
+          <i class="{{ $features['card']['icon'] ?? 'fas fa-award' }}"></i>
         </div>
-        <h3>Certification ISO</h3>
-        <p>Qualité supérieure reconnue</p>
+        <h3>{{ $features['card']['title'] ?? '' }}</h3>
+        <p>{{ $features['card']['description'] ?? '' }}</p>
       </div>
     </div>
   </div>
 </section>
+@endif
 
+@if(!empty($blocks['contact']))
 {{-- Contact Section --}}
 <section class="contact-section" id="contact">
   <div class="contact-grid reveal">
     <div class="contact-card">
       <div class="contact-tag">
-        <i class="fas fa-comments"></i>
-        <span>Contactez-nous</span>
+        <i class="{{ $contact['tag_icon'] ?? 'fas fa-comments' }}"></i>
+        <span>{{ $contact['tag_text'] ?? '' }}</span>
       </div>
-      <h2>Prêt à démarrer votre projet&nbsp;?</h2>
-      <p>Discutez avec notre équipe pour obtenir un devis personnalisé ou simplement poser vos questions. Nous revenons vers vous sous 24h ouvrées.</p>
+      <h2>{{ $contact['title'] ?? '' }}</h2>
+      <p>{{ $contact['description'] ?? '' }}</p>
       <div class="contact-items">
-        <div class="contact-item">
-          <div class="contact-item-icon"><i class="fas fa-location-dot"></i></div>
-          <div class="contact-item-text">
-            <h4>Adresse du laboratoire</h4>
-            <p>123 Avenue de la Dentisterie, 75001 Paris</p>
+        @foreach($contact['items'] ?? [] as $item)
+          <div class="contact-item">
+            <div class="contact-item-icon"><i class="{{ $item['icon'] ?? '' }}"></i></div>
+            <div class="contact-item-text">
+              <h4>{{ $item['title'] ?? '' }}</h4>
+              @if(filled($item['value_1'] ?? null) || filled($item['value'] ?? null))
+                <p>{{ $item['value_1'] ?? $item['value'] ?? '' }}</p>
+              @endif
+              @if(filled($item['value_2'] ?? null))
+                <p>{{ $item['value_2'] }}</p>
+              @endif
+            </div>
           </div>
-        </div>
-        <div class="contact-item">
-          <div class="contact-item-icon"><i class="fas fa-phone"></i></div>
-          <div class="contact-item-text">
-            <h4>Téléphone</h4>
-            <p>+33 1 23 45 67 89</p>
-          </div>
-        </div>
-        <div class="contact-item">
-          <div class="contact-item-icon"><i class="fas fa-envelope"></i></div>
-          <div class="contact-item-text">
-            <h4>Email professionnel</h4>
-            <p>contact@ldm-dental.fr</p>
-          </div>
-        </div>
-        <div class="contact-item">
-          <div class="contact-item-icon"><i class="fas fa-clock"></i></div>
-          <div class="contact-item-text">
-            <h4>Horaires</h4>
-            <p>Lun – Ven, 8h00 – 18h00</p>
-          </div>
-        </div>
+        @endforeach
       </div>
     </div>
     <div class="contact-form-wrapper">
-      <div class="contact-form-title">Demander un devis personnalisé</div>
+      <div class="contact-form-title">{{ $contact['form_title'] ?? '' }}</div>
       <form class="contact-form" action="#" method="post">
         <div class="contact-form-grid">
           <div>
@@ -268,11 +198,9 @@
             <label class="contact-label" for="contact-type">Type de prothèse</label>
             <select id="contact-type" name="type" class="contact-select">
               <option value="">Sélectionnez un type</option>
-              <option value="couronne">Couronne / Bridge</option>
-              <option value="facettes">Facettes</option>
-              <option value="prothese-fixe">Prothèse fixe sur implants</option>
-              <option value="prothese-amovible">Prothèse amovible</option>
-              <option value="autre">Autre demande</option>
+              @foreach($contact['form_options'] ?? [] as $option)
+                <option value="{{ $option['value'] ?? '' }}">{{ $option['label'] ?? '' }}</option>
+              @endforeach
             </select>
           </div>
           <div class="full-row">
@@ -282,7 +210,7 @@
         </div>
         <div class="contact-actions">
           <button type="submit" class="contact-submit">
-            <span>Envoyer ma demande</span>
+            <span>{{ $contact['form_submit_label'] ?? 'Envoyer ma demande' }}</span>
             <i class="fas fa-arrow-right"></i>
           </button>
         </div>
@@ -290,3 +218,4 @@
     </div>
   </div>
 </section>
+@endif

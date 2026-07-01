@@ -1,45 +1,49 @@
+@php
+    use App\Models\VitrineBlock;
+
+    $footer = $blocks['footer'] ?? [];
+    $socialLinks = $footer['social_links'] ?? [];
+    $columns = $footer['columns'] ?? [];
+    $copyright = $footer['copyright'] ?? 'LDM. Tous droits réservés.';
+    $legalLink = $footer['legal_link'] ?? ['label' => 'Mentions légales', 'href' => '#'];
+    $logoAlt = $footer['logo_alt'] ?? 'LDM - Dentaire Moderne';
+    $logoSrc = VitrineBlock::resolveLogoDisplayUrl($footer['logo_url'] ?? null);
+@endphp
 {{-- Footer --}}
 <footer>
   <div class="footer-content">
     <div class="footer-brand">
       <a href="#accueil" class="logo">
-        <img src="{{ asset('logo_ldm.png') }}" alt="LDM - Dentaire Moderne">
+        <img src="{{ $logoSrc }}" alt="{{ $logoAlt }}">
       </a>
-      <p>Laboratoire de prothèse dentaire de référence en France. Excellence et innovation au service de votre sourire.</p>
+      <p>{{ $footer['brand_description'] ?? '' }}</p>
       <div class="social-links">
-        <a href="#"><i class="fab fa-facebook-f"></i></a>
-        <a href="#"><i class="fab fa-instagram"></i></a>
-        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+        @foreach($socialLinks as $social)
+          <a href="{{ $social['url'] ?? '#' }}" target="_blank" rel="noopener noreferrer" aria-label="Réseau social">
+            <i class="{{ $social['icon'] ?? '' }}"></i>
+          </a>
+        @endforeach
       </div>
     </div>
-    <div class="footer-column">
-      <h4>Services</h4>
-      <ul>
-        <li><a href="#">Couronnes</a></li>
-        <li><a href="#">Bridges</a></li>
-        <li><a href="#">Prothèses amovibles</a></li>
-        <li><a href="#">Facettes</a></li>
-      </ul>
-    </div>
-    <div class="footer-column">
-      <h4>Entreprise</h4>
-      <ul>
-        <li><a href="#">À propos</a></li>
-        <li><a href="#">Équipe</a></li>
-        <li><a href="#">Carrières</a></li>
-        <li><a href="#">Actualités</a></li>
-      </ul>
-    </div>
-    <div class="footer-column">
-      <h4>Contact</h4>
-      <ul>
-        <li><a href="#"><i class="fas fa-map-marker-alt"></i> Paris, France</a></li>
-        <li><a href="#"><i class="fas fa-phone"></i> +33 1 23 45 67 89</a></li>
-        <li><a href="#"><i class="fas fa-envelope"></i> contact@dentaltech.fr</a></li>
-      </ul>
-    </div>
+    @foreach($columns as $column)
+      <div class="footer-column">
+        <h4>{{ $column['title'] ?? '' }}</h4>
+        <ul>
+          @foreach($column['links'] ?? [] as $link)
+            <li>
+              <a href="{{ $link['href'] ?? '#' }}" @if(!empty($link['icon'])) class="footer-link-with-icon" @endif>
+                @if(!empty($link['icon']))
+                  <i class="{{ $link['icon'] }}" aria-hidden="true"></i>
+                @endif
+                <span>{{ $link['label'] ?? '' }}</span>
+              </a>
+            </li>
+          @endforeach
+        </ul>
+      </div>
+    @endforeach
   </div>
   <div class="footer-bottom">
-    <p>© {{ date('Y') }} LDM. Tous droits réservés. | <a href="#" style="color: var(--primary);">Mentions légales</a></p>
+    <p>© {{ date('Y') }} {{ $copyright }} | <a href="{{ $legalLink['href'] ?? '#' }}" style="color: var(--primary);">{{ $legalLink['label'] ?? 'Mentions légales' }}</a></p>
   </div>
 </footer>

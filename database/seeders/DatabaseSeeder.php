@@ -18,14 +18,15 @@ class DatabaseSeeder extends Seeder
 
         // 2. Créer les données de test (groupes, services)
         $this->call([
-            TestDataSeeder::class,
-            DepenseSeeder::class,
-            ElementSeeder::class,
+            //TestDataSeeder::class,
+            //DepenseSeeder::class,
+            //ElementSeeder::class,
+            VitrineBlockSeeder::class,
         ]);
 
         // 3. Ensuite créer les utilisateurs de test
-        $this->call([
+        /*$this->call([
             AdminUserSeeder::class,
-        ]);
+        ]);*/
     }
 }

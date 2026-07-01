@@ -16,17 +16,17 @@ use App\Http\Controllers\Admin\{
     GroupeController,
     CritereQualityController,
     DepenseController,
-    StockController
+    StockController,
+    VitrineController as AdminVitrineController
 };
 use App\Http\Controllers\App\{
     CommandeCalendarController,
     CommandeStatusController,
     BonLivraisonController
 };
+use App\Http\Controllers\VitrineController;
 
-Route::get('/', function () {
-    return view('accueil');
-})->name('vitrine');
+Route::get('/', [VitrineController::class, 'show'])->name('vitrine');
 
 Route::get('/dashboard', [DashboardController::class, 'userDashboard'])
     ->middleware('auth')
@@ -141,6 +141,17 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
     Route::get('permissions', [PermissionController::class, 'index'])
         ->name('admin.permissions.index')
         ->middleware('can:manage_permissions');
+
+    // Site vitrine
+    Route::prefix('vitrine')->group(function () {
+        Route::get('/', [AdminVitrineController::class, 'index'])
+            ->name('admin.vitrine.index')
+            ->middleware('can:manage_vitrine');
+
+        Route::patch('{vitrineBlock}', [AdminVitrineController::class, 'update'])
+            ->name('admin.vitrine.update')
+            ->middleware('can:manage_vitrine');
+    });
 
     // Configuration - Protégé par permission
     Route::get('config', [ConfigController::class, 'index'])

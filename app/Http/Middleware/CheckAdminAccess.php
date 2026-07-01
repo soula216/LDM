@@ -87,8 +87,20 @@ class CheckAdminAccess
                 abort(404, 'Page not found');
             }
 
-            // Routes config : admin uniquement (déjà géré par la vérification admin en haut)
-            // Les routes config sont accessibles uniquement aux admins
+            // Routes site vitrine : accessible avec manage_vitrine
+            if (str_starts_with($routeName, 'admin.vitrine.') && $user->can('manage_vitrine')) {
+                return $next($request);
+            }
+
+            // Routes config, groupes, critères qualité : accessible avec manage_config
+            if (
+                (str_starts_with($routeName, 'admin.config.')
+                    || str_starts_with($routeName, 'admin.groupes.')
+                    || str_starts_with($routeName, 'admin.criteres-quality.'))
+                && $user->can('manage_config')
+            ) {
+                return $next($request);
+            }
 
             // Routes dashboard, roles, permissions : admin uniquement
             if (str_starts_with($routeName, 'admin.dashboard') || 

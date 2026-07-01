@@ -116,10 +116,19 @@
       text-decoration: none;
     }
 
-    .logo img {
+    .logo img,
+    .logo .logo-img {
       height: 120px;
       width: auto;
       object-fit: contain;
+    }
+
+    nav:not(.scrolled) .logo-img-scrolled {
+      display: none;
+    }
+
+    nav.scrolled .logo-img-header {
+      display: none;
     }
 
     .footer-brand .logo img {
@@ -731,20 +740,22 @@
       position: relative;
     }
 
-    .process-grid::before {
-      content: '';
-      position: absolute;
-      top: 40px;
-      left: 15%;
-      width: 70%;
-      height: 2px;
-      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
-      opacity: 0.3;
-    }
-
     .process-step {
       text-align: center;
       position: relative;
+    }
+
+    .process-step:not(:nth-child(4n)):not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 40px;
+      left: calc(50% + 40px);
+      width: calc(100% + 2rem - 80px);
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+      opacity: 0.3;
+      z-index: 0;
+      pointer-events: none;
     }
 
     .process-number {
@@ -976,6 +987,11 @@
     .contact-item-text p {
       font-size: 0.9rem;
       color: #94a3b8;
+      margin: 0;
+    }
+
+    .contact-item-text p + p {
+      margin-top: 0.15rem;
     }
 
     .contact-form-wrapper {
@@ -1258,10 +1274,25 @@
     }
 
     .footer-column ul a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
       color: var(--text-muted);
       text-decoration: none;
       font-size: 0.95rem;
       transition: color 0.3s ease;
+      line-height: 1.4;
+    }
+
+    .footer-column ul a i {
+      flex-shrink: 0;
+      width: 1rem;
+      text-align: center;
+      color: var(--primary);
+    }
+
+    .footer-column ul a.footer-link-with-icon {
+      white-space: nowrap;
     }
 
     .footer-column ul a:hover {
@@ -1321,8 +1352,12 @@
         grid-template-columns: repeat(2, 1fr);
       }
 
-      .process-grid::before {
+      .process-step::after {
         display: none;
+      }
+
+      .process-step:not(:nth-child(2n)):not(:last-child)::after {
+        display: block;
       }
 
       .features-container {
@@ -1405,6 +1440,10 @@
 
       .process-grid {
         grid-template-columns: 1fr;
+      }
+
+      .process-step::after {
+        display: none;
       }
 
       .footer-content {
