@@ -1386,7 +1386,7 @@
       }
 
       .footer-brand .logo img {
-        height: 80px;
+        height: 96px;
       }
     }
 
@@ -1539,7 +1539,7 @@
       }
 
       .footer-brand .logo img {
-        height: 64px;
+        height: 110px;
       }
 
       .services-grid {
