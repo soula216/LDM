@@ -1609,6 +1609,13 @@
         gap: 2rem;
       }
 
+      .footer-brand .logo {
+        display: flex;
+        justify-content: center;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
       .footer-column ul a.footer-link-with-icon {
         white-space: normal;
         justify-content: center;
