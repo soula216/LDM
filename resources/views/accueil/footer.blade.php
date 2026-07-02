@@ -17,13 +17,7 @@
         <img src="{{ $logoSrc }}" alt="{{ $logoAlt }}">
       </a>
       <p>{{ $footer['brand_description'] ?? '' }}</p>
-      <div class="social-links">
-        @foreach($socialLinks as $social)
-          <a href="{{ $social['url'] ?? '#' }}" target="_blank" rel="noopener noreferrer" aria-label="Réseau social">
-            <i class="{{ $social['icon'] ?? '' }}"></i>
-          </a>
-        @endforeach
-      </div>
+      @include('accueil.partials.social-links', ['links' => $socialLinks, 'iconSize' => 40])
     </div>
     @foreach($columns as $column)
       <div class="footer-column">

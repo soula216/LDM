@@ -23,7 +23,7 @@ class VitrineController extends Controller
                 'process' => ['section_title' => 'Process', 'steps' => []],
                 'gallery' => ['section_title' => 'Galerie', 'items' => []],
                 'features' => ['title_before' => 'Pourquoi', 'title_highlight' => 'LDM', 'list' => [], 'card' => []],
-                'contact' => ['title' => 'Contact', 'items' => [], 'form_options' => []],
+                'contact' => ['title' => 'Contact', 'items' => []],
                 'footer' => ['brand_description' => '', 'social_links' => [], 'columns' => [], 'copyright' => 'LDM', 'legal_link' => ['label' => 'Mentions légales', 'href' => '#']],
             ];
         }

@@ -5,6 +5,39 @@
     if (! $logoSourceType) {
         $logoSourceType = str_contains($c['logo_url'] ?? '', '/storage/vitrine/logo') ? 'upload' : 'url';
     }
+
+    $defaultSocials = [
+        ['label' => 'Facebook', 'url' => '', 'icon_source_type' => 'fontawesome', 'icon' => 'fab fa-facebook-f', 'icon_url' => ''],
+        ['label' => 'Instagram', 'url' => '', 'icon_source_type' => 'fontawesome', 'icon' => 'fab fa-instagram', 'icon_url' => ''],
+        ['label' => 'TikTok', 'url' => '', 'icon_source_type' => 'fontawesome', 'icon' => 'fab fa-tiktok', 'icon_url' => ''],
+    ];
+
+    $socialLinks = collect($c['social_links'] ?? [])->map(function ($social) {
+        $iconUrl = trim((string) ($social['icon_url'] ?? ''));
+        $icon = trim((string) ($social['icon'] ?? ''));
+        $sourceType = $social['icon_source_type'] ?? null;
+
+        if (! $sourceType) {
+            if ($iconUrl !== '') {
+                $sourceType = str_contains($iconUrl, '/storage/vitrine/social') ? 'upload' : 'url';
+            } else {
+                $sourceType = 'fontawesome';
+            }
+        }
+
+        return [
+            'label' => $social['label'] ?? '',
+            'url' => $social['url'] ?? '',
+            'icon_source_type' => $sourceType,
+            'icon' => $icon,
+            'icon_url' => $iconUrl !== '' ? \App\Models\VitrineBlock::resolveImageAbsoluteUrl($iconUrl) : '',
+            'preview_url' => null,
+        ];
+    })->values()->all();
+
+    if ($socialLinks === []) {
+        $socialLinks = $defaultSocials;
+    }
 @endphp
 
 <div class="vitrine-tab-form space-y-6 sm:space-y-8"
@@ -15,7 +48,7 @@
             source_type: @js($logoSourceType),
             preview_url: null,
         },
-        socials: @js($c['social_links'] ?? []),
+        socials: @js($socialLinks),
         columns: @js($c['columns'] ?? []),
         logoPreview() {
             return this.logo.preview_url || this.logo.image_url || '';
@@ -27,7 +60,28 @@
                 URL.revokeObjectURL(this.logo.preview_url);
             }
             this.logo.preview_url = URL.createObjectURL(file);
-        }
+        },
+        socialIconPreview(social) {
+            return social.preview_url || social.icon_url || '';
+        },
+        onSocialIconFileChange(event, social) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            if (social.preview_url?.startsWith('blob:')) {
+                URL.revokeObjectURL(social.preview_url);
+            }
+            social.preview_url = URL.createObjectURL(file);
+        },
+        newSocial() {
+            this.socials.push({
+                label: '',
+                url: '',
+                icon_source_type: 'url',
+                icon: '',
+                icon_url: '',
+                preview_url: null,
+            });
+        },
      }">
 
     <section class="rounded-2xl border border-border bg-card overflow-hidden">
@@ -105,7 +159,7 @@
                     <template x-for="(social, index) in socials" :key="'social-' + index">
                         <div class="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
                             <div class="flex items-center justify-between px-4 py-3 bg-neutral-50/80 border-b border-border/60">
-                                <span class="text-xs font-bold text-primary uppercase tracking-wide" x-text="'Réseau ' + (index + 1)"></span>
+                                <span class="text-xs font-bold text-primary uppercase tracking-wide" x-text="social.label || ('Réseau ' + (index + 1))"></span>
                                 <button type="button" @click="socials.splice(index, 1)"
                                         class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 transition-colors"
                                         title="Supprimer">
@@ -114,22 +168,25 @@
                                     </svg>
                                 </button>
                             </div>
-                            <div class="p-4 flex flex-col sm:flex-row gap-3">
-                                <div class="w-full sm:w-48 flex-shrink-0">
-                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Icône FA</label>
-                                    <input type="text" :name="'content[social_links][' + index + '][icon]'" x-model="social.icon" placeholder="fab fa-facebook-f" class="input-field w-full text-sm">
+                            <div class="p-4 space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Nom du réseau</label>
+                                        <input type="text" :name="'content[social_links][' + index + '][label]'" x-model="social.label" placeholder="Facebook" class="input-field w-full text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">URL du profil</label>
+                                        <input type="url" :name="'content[social_links][' + index + '][url]'" x-model="social.url" placeholder="https://…" class="input-field w-full text-sm">
+                                    </div>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">URL</label>
-                                    <input type="url" :name="'content[social_links][' + index + '][url]'" x-model="social.url" placeholder="https://…" class="input-field w-full text-sm">
-                                </div>
+                                @include('admin.vitrine.partials.social-icon-config-fields')
                             </div>
                         </div>
                     </template>
                 </div>
 
                 <div class="mt-4 pt-4 border-t border-border/60">
-                    @include('admin.vitrine.partials.btn-add', ['label' => 'Ajouter un réseau social', 'click' => "socials.push({icon: '', url: ''})"])
+                    @include('admin.vitrine.partials.btn-add', ['label' => 'Ajouter un réseau social', 'click' => 'newSocial()'])
                 </div>
             </div>
         </div>

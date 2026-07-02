@@ -67,10 +67,10 @@ class VitrineBlockSeeder extends Seeder
                     'section_title' => 'Solutions Complètes',
                     'section_subtitle' => 'Une gamme complète de prothèses dentaires pour tous vos besoins',
                     'items' => [
-                        ['icon' => 'fas fa-crown', 'title' => 'Couronnes Dentaires', 'description' => 'Couronnes en zircone, céramique ou métal-céramique pour une restauration esthétique et durable.'],
-                        ['icon' => 'fas fa-teeth', 'title' => 'Bridges & Ponts', 'description' => 'Solutions fixes pour remplacer une ou plusieurs dents manquantes avec un rendu naturel.'],
-                        ['icon' => 'fas fa-hand-sparkles', 'title' => 'Prothèses Amovibles', 'description' => 'Partielles ou complètes, nos prothèses offrent confort et esthétique au quotidien.'],
-                        ['icon' => 'fas fa-magic', 'title' => 'Facettes & Éclaircissement', 'description' => 'Transformez votre sourire avec des facettes personnalisées et un blanchiment professionnel.'],
+                        ['title' => 'Couronnes Dentaires', 'description' => 'Couronnes en zircone, céramique ou métal-céramique pour une restauration esthétique et durable.', 'icon_source_type' => 'url', 'icon_url' => ''],
+                        ['title' => 'Bridges & Ponts', 'description' => 'Solutions fixes pour remplacer une ou plusieurs dents manquantes avec un rendu naturel.', 'icon_source_type' => 'url', 'icon_url' => ''],
+                        ['title' => 'Prothèses Amovibles', 'description' => 'Partielles ou complètes, nos prothèses offrent confort et esthétique au quotidien.', 'icon_source_type' => 'url', 'icon_url' => ''],
+                        ['title' => 'Facettes & Éclaircissement', 'description' => 'Transformez votre sourire avec des facettes personnalisées et un blanchiment professionnel.', 'icon_source_type' => 'url', 'icon_url' => ''],
                     ],
                 ],
             ],
@@ -147,13 +147,6 @@ class VitrineBlockSeeder extends Seeder
                     ],
                     'form_title' => 'Demander un devis personnalisé',
                     'form_submit_label' => 'Envoyer ma demande',
-                    'form_options' => [
-                        ['value' => 'couronne', 'label' => 'Couronne / Bridge'],
-                        ['value' => 'facettes', 'label' => 'Facettes'],
-                        ['value' => 'prothese-fixe', 'label' => 'Prothèse fixe sur implants'],
-                        ['value' => 'prothese-amovible', 'label' => 'Prothèse amovible'],
-                        ['value' => 'autre', 'label' => 'Autre demande'],
-                    ],
                 ],
             ],
             [
@@ -166,9 +159,9 @@ class VitrineBlockSeeder extends Seeder
                     'logo_alt' => 'LDM - Dentaire Moderne',
                     'brand_description' => 'Laboratoire de prothèse dentaire de référence en France. Excellence et innovation au service de votre sourire.',
                     'social_links' => [
-                        ['icon' => 'fab fa-facebook-f', 'url' => '#'],
-                        ['icon' => 'fab fa-instagram', 'url' => '#'],
-                        ['icon' => 'fab fa-linkedin-in', 'url' => '#'],
+                        ['label' => 'Facebook', 'url' => '#', 'icon_source_type' => 'fontawesome', 'icon' => 'fab fa-facebook-f'],
+                        ['label' => 'Instagram', 'url' => '#', 'icon_source_type' => 'fontawesome', 'icon' => 'fab fa-instagram'],
+                        ['label' => 'TikTok', 'url' => '#', 'icon_source_type' => 'fontawesome', 'icon' => 'fab fa-tiktok'],
                     ],
                     'columns' => [
                         [

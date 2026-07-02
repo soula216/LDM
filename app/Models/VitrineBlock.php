@@ -120,8 +120,20 @@ class VitrineBlock extends Model
 
     private static function resolveContentImages(array $content, string $blockKey): array
     {
-        if ($blockKey === 'footer' && ! empty($content['logo_url'])) {
-            $content['logo_url'] = static::resolveImageAbsoluteUrl($content['logo_url']);
+        if ($blockKey === 'footer') {
+            if (! empty($content['logo_url'])) {
+                $content['logo_url'] = static::resolveImageAbsoluteUrl($content['logo_url']);
+            }
+
+            if (isset($content['social_links']) && is_array($content['social_links'])) {
+                $content['social_links'] = array_map(function (array $social) {
+                    if (! empty($social['icon_url'])) {
+                        $social['icon_url'] = static::resolveImageAbsoluteUrl($social['icon_url']);
+                    }
+
+                    return $social;
+                }, $content['social_links']);
+            }
         }
 
         if ($blockKey === 'header' && ! empty($content['logo_url'])) {
@@ -142,6 +154,16 @@ class VitrineBlock extends Model
             $content['items'] = array_map(function (array $item) {
                 if (isset($item['image_url'])) {
                     $item['image_url'] = static::resolveImageAbsoluteUrl($item['image_url']);
+                }
+
+                return $item;
+            }, $content['items']);
+        }
+
+        if ($blockKey === 'services' && isset($content['items']) && is_array($content['items'])) {
+            $content['items'] = array_map(function (array $item) {
+                if (! empty($item['icon_url'])) {
+                    $item['icon_url'] = static::resolveImageAbsoluteUrl($item['icon_url']);
                 }
 
                 return $item;

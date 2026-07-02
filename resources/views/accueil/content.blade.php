@@ -70,7 +70,13 @@
   <div class="services-grid">
     @foreach($services['items'] ?? [] as $item)
       <div class="service-card reveal">
-        <div class="service-icon"><i class="{{ $item['icon'] ?? '' }}"></i></div>
+        <div class="service-icon">
+          @if(filled($item['icon_url'] ?? null))
+            <img src="{{ $item['icon_url'] }}" alt="" class="service-icon-img" width="96" height="96">
+          @elseif(filled($item['icon'] ?? null))
+            <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
+          @endif
+        </div>
         <h3>{{ $item['title'] ?? '' }}</h3>
         <p>{{ $item['description'] ?? '' }}</p>
       </div>
@@ -193,15 +199,6 @@
           <div>
             <label class="contact-label" for="contact-phone">Téléphone</label>
             <input id="contact-phone" name="phone" type="tel" class="contact-input" placeholder="+33 6 00 00 00 00">
-          </div>
-          <div>
-            <label class="contact-label" for="contact-type">Type de prothèse</label>
-            <select id="contact-type" name="type" class="contact-select">
-              <option value="">Sélectionnez un type</option>
-              @foreach($contact['form_options'] ?? [] as $option)
-                <option value="{{ $option['value'] ?? '' }}">{{ $option['label'] ?? '' }}</option>
-              @endforeach
-            </select>
           </div>
           <div class="full-row">
             <label class="contact-label" for="contact-message">Message</label>

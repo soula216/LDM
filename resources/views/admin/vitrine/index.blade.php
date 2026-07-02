@@ -104,7 +104,7 @@
                             </div>
                         </div>
 
-                        <form action="{{ route('admin.vitrine.update', $block) }}" method="POST" class="p-4 sm:p-6" @if(in_array($block->key, ['hero', 'gallery', 'header', 'footer'])) enctype="multipart/form-data" @endif>
+                        <form action="{{ route('admin.vitrine.update', $block) }}" method="POST" class="p-4 sm:p-6" @if(in_array($block->key, ['hero', 'gallery', 'services', 'header', 'footer'])) enctype="multipart/form-data" @endif>
                             @csrf
                             @method('PATCH')
 

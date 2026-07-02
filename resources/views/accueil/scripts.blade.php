@@ -1,13 +1,15 @@
 <script>
   // Navigation scroll effect
+  const siteHeader = document.getElementById('siteHeader');
   const navbar = document.getElementById('navbar');
 
   function updateNavbarScrollState() {
-    if (!navbar) return;
-    if (window.scrollY > 50) {
-      navbar.classList.add('scrolled');
-    } else {
-      navbar.classList.remove('scrolled');
+    const scrolled = window.scrollY > 50;
+    if (siteHeader) {
+      siteHeader.classList.toggle('scrolled', scrolled);
+    }
+    if (navbar) {
+      navbar.classList.toggle('scrolled', scrolled);
     }
   }
 
@@ -18,7 +20,12 @@
   const menuToggle = document.getElementById('menuToggle');
 
   function openMenu() {
-    navbar.classList.add('mobile-menu-open');
+    if (siteHeader) {
+      siteHeader.classList.add('mobile-menu-open');
+    }
+    if (navbar) {
+      navbar.classList.add('mobile-menu-open');
+    }
     document.body.classList.add('mobile-menu-open');
     if (menuToggle) {
       menuToggle.setAttribute('aria-expanded', 'true');
@@ -27,7 +34,12 @@
   }
 
   function closeMenu() {
-    navbar.classList.remove('mobile-menu-open');
+    if (siteHeader) {
+      siteHeader.classList.remove('mobile-menu-open');
+    }
+    if (navbar) {
+      navbar.classList.remove('mobile-menu-open');
+    }
     document.body.classList.remove('mobile-menu-open');
     if (menuToggle) {
       menuToggle.setAttribute('aria-expanded', 'false');
@@ -36,7 +48,7 @@
   }
 
   function toggleMenu() {
-    if (navbar.classList.contains('mobile-menu-open')) {
+    if (navbar?.classList.contains('mobile-menu-open')) {
       closeMenu();
     } else {
       openMenu();
@@ -80,27 +92,45 @@
     });
   });
 
-  // Counter animation for stats
-  function animateCounter(element, target) {
+  // Counter animation for stats (lit les valeurs affichées depuis la config vitrine)
+  function parseStatValue(text) {
+    const trimmed = String(text || '').trim();
+    const match = trimmed.match(/^([\d][\d\s.,]*)\s*(.*)$/);
+    if (!match) {
+      return null;
+    }
+
+    const number = parseFloat(match[1].replace(/\s/g, '').replace(',', '.'));
+    if (Number.isNaN(number)) {
+      return null;
+    }
+
+    return { number, suffix: match[2] || '' };
+  }
+
+  function animateCounter(element, parsed) {
+    const { number, suffix } = parsed;
     let current = 0;
-    const increment = target / 50;
+    const increment = number / 50;
     const timer = setInterval(() => {
       current += increment;
-      if (current >= target) {
-        current = target;
+      if (current >= number) {
+        current = number;
         clearInterval(timer);
       }
-      element.textContent = Math.floor(current);
+      element.textContent = Math.floor(current) + suffix;
     }, 30);
   }
 
   const statsObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        const statValues = entry.target.querySelectorAll('.stat-value');
-        const targets = [15, 5000, 99];
-        statValues.forEach((stat, index) => {
-          animateCounter(stat, targets[index]);
+        entry.target.querySelectorAll('.stat-value').forEach((stat) => {
+          const parsed = parseStatValue(stat.textContent);
+          if (parsed) {
+            stat.textContent = '0' + parsed.suffix;
+            animateCounter(stat, parsed);
+          }
         });
         statsObserver.unobserve(entry.target);
       }

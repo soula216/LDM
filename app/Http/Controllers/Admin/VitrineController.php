@@ -18,6 +18,10 @@ class VitrineController extends Controller
 
     private const LOGO_STORAGE_PREFIX = 'vitrine/logo/';
 
+    private const SOCIAL_STORAGE_PREFIX = 'vitrine/social/';
+
+    private const SERVICE_STORAGE_PREFIX = 'vitrine/services/';
+
     public function index(Request $request): View
     {
         $this->authorize('manage_vitrine');
@@ -47,6 +51,10 @@ class VitrineController extends Controller
             $content = $this->processGalleryItems($request, $content, $existingContent);
         }
 
+        if ($vitrineBlock->key === 'services') {
+            $content = $this->processServiceItems($request, $content, $existingContent);
+        }
+
         if ($vitrineBlock->key === 'process') {
             $content = $this->processProcessSteps($content);
         }
@@ -61,6 +69,7 @@ class VitrineController extends Controller
 
         if ($vitrineBlock->key === 'footer') {
             $content = $this->processBlockLogo($request, $content, $existingContent);
+            $content = $this->processFooterSocialLinks($request, $content, $existingContent);
         }
 
         $vitrineBlock->update([
@@ -179,6 +188,67 @@ class VitrineController extends Controller
         return $content;
     }
 
+    private function processServiceItems(Request $request, array $content, array $existingContent): array
+    {
+        $incomingItems = $content['items'] ?? [];
+        $existingItems = $existingContent['items'] ?? [];
+        $processed = [];
+
+        foreach ($incomingItems as $index => $item) {
+            $title = trim((string) ($item['title'] ?? ''));
+            $description = trim((string) ($item['description'] ?? ''));
+            $iconSourceType = ($item['icon_source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
+            $iconUrl = trim((string) ($item['icon_url'] ?? ''));
+            $existingUrl = trim((string) ($existingItems[$index]['icon_url'] ?? ''));
+
+            if ($request->hasFile("service_icon_uploads.$index")) {
+                $file = $request->file("service_icon_uploads.$index");
+                $this->validateServiceIconUpload($file, $index);
+
+                if ($existingUrl !== '') {
+                    $this->deleteVitrineImageIfStored($existingUrl);
+                }
+
+                $iconUrl = $this->storeServiceIconImage($file);
+                $iconSourceType = 'upload';
+            } elseif ($iconSourceType === 'upload') {
+                if ($iconUrl === '' && $existingUrl !== '') {
+                    $iconUrl = $existingUrl;
+                }
+            } elseif ($iconSourceType === 'url' && $existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $iconUrl) {
+                $this->deleteVitrineImageIfStored($existingUrl);
+            }
+
+            if ($title === '' && $description === '' && $iconUrl === '') {
+                continue;
+            }
+
+            $processedItem = [
+                'title' => $title,
+                'description' => $description,
+                'icon_source_type' => $iconSourceType,
+            ];
+
+            if ($iconUrl !== '') {
+                $processedItem['icon_url'] = VitrineBlock::resolveImageUrl($iconUrl);
+            }
+
+            $processed[] = $processedItem;
+        }
+
+        $newUrls = collect($processed)->pluck('icon_url')->filter()->all();
+        foreach ($existingItems as $oldItem) {
+            $oldUrl = trim((string) ($oldItem['icon_url'] ?? ''));
+            if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldUrl);
+            }
+        }
+
+        $content['items'] = array_values($processed);
+
+        return $content;
+    }
+
     private function processProcessSteps(array $content): array
     {
         $steps = $content['steps'] ?? [];
@@ -227,6 +297,81 @@ class VitrineController extends Controller
         }
 
         $content['items'] = array_values($processed);
+        unset($content['form_options']);
+
+        return $content;
+    }
+
+    private function processFooterSocialLinks(Request $request, array $content, array $existingContent): array
+    {
+        $incoming = $content['social_links'] ?? [];
+        $existing = $existingContent['social_links'] ?? [];
+        $processed = [];
+
+        foreach ($incoming as $index => $social) {
+            $label = trim((string) ($social['label'] ?? ''));
+            $url = trim((string) ($social['url'] ?? ''));
+            $icon = trim((string) ($social['icon'] ?? ''));
+            $iconSourceType = (string) ($social['icon_source_type'] ?? 'fontawesome');
+
+            if (! in_array($iconSourceType, ['url', 'upload', 'fontawesome'], true)) {
+                $iconSourceType = 'fontawesome';
+            }
+
+            $iconUrl = trim((string) ($social['icon_url'] ?? ''));
+            $existingUrl = trim((string) ($existing[$index]['icon_url'] ?? ''));
+
+            if ($iconSourceType === 'url' || $iconSourceType === 'upload') {
+                if ($request->hasFile("social_icon_uploads.$index")) {
+                    $file = $request->file("social_icon_uploads.$index");
+                    $this->validateSocialIconUpload($file, $index);
+
+                    if ($existingUrl !== '') {
+                        $this->deleteVitrineImageIfStored($existingUrl);
+                    }
+
+                    $iconUrl = $this->storeSocialIconImage($file);
+                    $iconSourceType = 'upload';
+                } elseif ($iconSourceType === 'upload') {
+                    if ($iconUrl === '' && $existingUrl !== '') {
+                        $iconUrl = $existingUrl;
+                    }
+                } elseif ($iconSourceType === 'url' && $existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $iconUrl) {
+                    $this->deleteVitrineImageIfStored($existingUrl);
+                }
+            } elseif ($existingUrl !== '' && $this->isStoredVitrineImage($existingUrl)) {
+                $this->deleteVitrineImageIfStored($existingUrl);
+                $iconUrl = '';
+            }
+
+            if ($label === '' && $url === '' && $icon === '' && $iconUrl === '') {
+                continue;
+            }
+
+            $item = [
+                'label' => $label,
+                'url' => $url,
+                'icon_source_type' => $iconSourceType,
+            ];
+
+            if ($iconSourceType === 'fontawesome') {
+                $item['icon'] = $icon;
+            } elseif ($iconUrl !== '') {
+                $item['icon_url'] = VitrineBlock::resolveImageUrl($iconUrl);
+            }
+
+            $processed[] = $item;
+        }
+
+        $newUrls = collect($processed)->pluck('icon_url')->filter()->all();
+        foreach ($existing as $oldSocial) {
+            $oldUrl = trim((string) ($oldSocial['icon_url'] ?? ''));
+            if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldUrl);
+            }
+        }
+
+        $content['social_links'] = array_values($processed);
 
         return $content;
     }
@@ -324,6 +469,44 @@ class VitrineController extends Controller
         return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
     }
 
+    private function validateSocialIconUpload(UploadedFile $file, int $index): void
+    {
+        request()->validate([
+            "social_icon_uploads.$index" => 'required|file|mimes:jpeg,jpg,png,webp,gif,svg|max:5120',
+        ], [
+            "social_icon_uploads.$index.mimes" => 'Formats acceptés : JPEG, PNG, WebP, GIF, SVG.',
+            "social_icon_uploads.$index.max" => 'L\'icône ne doit pas dépasser 5 Mo.',
+        ]);
+    }
+
+    private function storeSocialIconImage(UploadedFile $file): string
+    {
+        $extension = $file->getClientOriginalExtension() ?: 'png';
+        $filename = 'social_' . time() . '_' . uniqid() . '.' . strtolower($extension);
+        $path = $file->storeAs('vitrine/social', $filename, 'public');
+
+        return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
+    private function validateServiceIconUpload(UploadedFile $file, int $index): void
+    {
+        request()->validate([
+            "service_icon_uploads.$index" => 'required|file|mimes:jpeg,jpg,png,webp,gif,svg|max:5120',
+        ], [
+            "service_icon_uploads.$index.mimes" => 'Formats acceptés : JPEG, PNG, WebP, GIF, SVG.',
+            "service_icon_uploads.$index.max" => 'L\'icône ne doit pas dépasser 5 Mo.',
+        ]);
+    }
+
+    private function storeServiceIconImage(UploadedFile $file): string
+    {
+        $extension = $file->getClientOriginalExtension() ?: 'png';
+        $filename = 'service_' . time() . '_' . uniqid() . '.' . strtolower($extension);
+        $path = $file->storeAs('vitrine/services', $filename, 'public');
+
+        return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
     private function isStoredVitrineImage(string $imageUrl): bool
     {
         return $this->storagePathFromImageUrl($imageUrl) !== null;
@@ -340,6 +523,8 @@ class VitrineController extends Controller
             str_starts_with($path, self::SLIDER_STORAGE_PREFIX)
             || str_starts_with($path, self::GALLERY_STORAGE_PREFIX)
             || str_starts_with($path, self::LOGO_STORAGE_PREFIX)
+            || str_starts_with($path, self::SOCIAL_STORAGE_PREFIX)
+            || str_starts_with($path, self::SERVICE_STORAGE_PREFIX)
         )) {
             Storage::disk('public')->delete($path);
         }
@@ -356,7 +541,9 @@ class VitrineController extends Controller
 
         if (str_starts_with($imageUrl, self::SLIDER_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::GALLERY_STORAGE_PREFIX)
-            || str_starts_with($imageUrl, self::LOGO_STORAGE_PREFIX)) {
+            || str_starts_with($imageUrl, self::LOGO_STORAGE_PREFIX)
+            || str_starts_with($imageUrl, self::SOCIAL_STORAGE_PREFIX)
+            || str_starts_with($imageUrl, self::SERVICE_STORAGE_PREFIX)) {
             return $imageUrl;
         }
 

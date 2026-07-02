@@ -1,9 +1,49 @@
-@php $c = $content; @endphp
+@php
+    $c = $content;
+    $serviceItems = collect($c['items'] ?? [])->map(function ($item) {
+        $iconUrl = trim((string) ($item['icon_url'] ?? ''));
+        $sourceType = $item['icon_source_type'] ?? null;
+
+        if (! $sourceType) {
+            $sourceType = $iconUrl !== ''
+                ? (str_contains($iconUrl, '/storage/vitrine/services') ? 'upload' : 'url')
+                : 'url';
+        }
+
+        return [
+            'title' => $item['title'] ?? '',
+            'description' => $item['description'] ?? '',
+            'icon_url' => $iconUrl !== '' ? \App\Models\VitrineBlock::resolveImageAbsoluteUrl($iconUrl) : '',
+            'icon_source_type' => $sourceType,
+            'preview_url' => null,
+        ];
+    })->values()->all();
+@endphp
 
 <div class="vitrine-tab-form space-y-6 sm:space-y-8"
      x-data="{
         open: { header: true, items: true },
-        items: @js($c['items'] ?? [])
+        items: @js($serviceItems),
+        itemIconPreview(item) {
+            return item.preview_url || item.icon_url || '';
+        },
+        onItemIconFileChange(event, item) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            if (item.preview_url?.startsWith('blob:')) {
+                URL.revokeObjectURL(item.preview_url);
+            }
+            item.preview_url = URL.createObjectURL(file);
+        },
+        newServiceItem() {
+            this.items.push({
+                title: '',
+                description: '',
+                icon_url: '',
+                icon_source_type: 'url',
+                preview_url: null,
+            });
+        },
      }">
 
     <section class="rounded-2xl border border-border bg-card overflow-hidden">
@@ -67,15 +107,13 @@
                                 </button>
                             </div>
                             <div class="p-4 sm:p-5 space-y-4">
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div>
-                                        <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Icône Font Awesome</label>
-                                        <input type="text" :name="'content[items][' + index + '][icon]'" x-model="item.icon" placeholder="fas fa-crown" class="input-field w-full text-sm">
-                                    </div>
-                                    <div class="sm:col-span-2">
-                                        <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>
-                                        <input type="text" :name="'content[items][' + index + '][title]'" x-model="item.title" placeholder="Couronnes Dentaires" class="input-field w-full text-sm">
-                                    </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>
+                                    <input type="text" :name="'content[items][' + index + '][title]'" x-model="item.title" placeholder="Couronnes Dentaires" class="input-field w-full text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Icône du service</label>
+                                    @include('admin.vitrine.partials.service-icon-config-fields')
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Description</label>
@@ -87,7 +125,7 @@
                 </div>
 
                 <div class="mt-4 pt-4 border-t border-border/60">
-                    @include('admin.vitrine.partials.btn-add', ['label' => 'Ajouter un service', 'click' => "items.push({icon: 'fas fa-star', title: '', description: ''})"])
+                    @include('admin.vitrine.partials.btn-add', ['label' => 'Ajouter un service', 'click' => 'newServiceItem()'])
                 </div>
             </div>
         </div>
