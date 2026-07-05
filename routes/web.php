@@ -32,6 +32,7 @@ Route::get('/services/{slug}', [VitrineController::class, 'serviceShow'])->name(
 Route::get('/process', [VitrineController::class, 'process'])->name('vitrine.process');
 Route::get('/academy', [VitrineController::class, 'academy'])->name('vitrine.academy');
 Route::get('/academy/documents', [VitrineController::class, 'academyDocuments'])->name('vitrine.academy.documents');
+Route::get('/faq', [VitrineController::class, 'faq'])->name('vitrine.faq');
 
 Route::get('/dashboard', [DashboardController::class, 'userDashboard'])
     ->middleware('auth')

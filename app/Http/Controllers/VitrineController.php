@@ -98,6 +98,21 @@ class VitrineController extends Controller
         ]);
     }
 
+    public function faq(): View
+    {
+        $blocks = $this->loadBlocks();
+
+        return view('accueil.faq', [
+            'blocks' => $blocks,
+            'faq' => $blocks['faq'] ?? [
+                'section_label' => 'FAQ',
+                'section_title' => 'Foire Aux Questions',
+                'section_subtitle' => '',
+                'items' => [],
+            ],
+        ]);
+    }
+
     public function academy(): View
     {
         $blocks = $this->loadBlocks();
@@ -205,6 +220,7 @@ class VitrineController extends Controller
                 'gallery' => ['section_title' => 'Galerie', 'items' => []],
                 'features' => ['title_before' => 'Pourquoi', 'title_highlight' => 'LDM', 'list' => [], 'card' => []],
                 'academy' => ['section_title' => 'LDM Academy', 'documents' => []],
+                'faq' => ['section_title' => 'Foire Aux Questions', 'items' => []],
                 'contact' => ['title' => 'Contact', 'items' => []],
                 'footer' => ['brand_description' => '', 'social_links' => [], 'columns' => [], 'copyright' => 'LDM', 'legal_link' => ['label' => 'Mentions légales', 'href' => '#']],
             ];

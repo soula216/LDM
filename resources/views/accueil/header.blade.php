@@ -37,6 +37,7 @@
               (VitrineBlock::isPublicPageActive('academy') && str_contains($navHref, '/academy'))
               || (VitrineBlock::isPublicPageActive('services') && str_contains($navHref, '/services'))
               || (VitrineBlock::isPublicPageActive('process') && str_contains($navHref, '/process'))
+              || (VitrineBlock::isPublicPageActive('faq') && str_contains($navHref, '/faq'))
           );
         @endphp
         <li>

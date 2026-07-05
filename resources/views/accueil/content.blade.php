@@ -68,16 +68,24 @@
     <p class="section-subtitle">{{ $gallery['section_subtitle'] ?? '' }}</p>
   </div>
   <div class="gallery-grid">
-    @foreach($gallery['items'] ?? [] as $item)
-      <div class="gallery-item reveal">
+    @foreach($gallery['items'] ?? [] as $index => $item)
+      <button type="button"
+              class="gallery-item reveal"
+              data-gallery-item
+              data-gallery-index="{{ $index }}"
+              data-gallery-src="{{ $item['image_url'] ?? '' }}"
+              data-gallery-title="{{ $item['title'] ?? '' }}"
+              data-gallery-description="{{ $item['description'] ?? '' }}"
+              aria-label="Agrandir : {{ $item['title'] ?? 'Image galerie' }}">
         <img src="{{ $item['image_url'] ?? '' }}" alt="{{ $item['title'] ?? '' }}">
         <div class="gallery-overlay">
           <h3>{{ $item['title'] ?? '' }}</h3>
           <p>{{ $item['description'] ?? '' }}</p>
         </div>
-      </div>
+      </button>
     @endforeach
   </div>
+  @include('accueil.partials.gallery-lightbox')
 </section>
 @endif
 

@@ -182,4 +182,192 @@
       dot.addEventListener('click', () => showSlide(i));
     });
   }
+
+  // Galerie — lightbox
+  (function initGalleryLightbox() {
+    const lightbox = document.getElementById('galleryLightbox');
+    const items = Array.from(document.querySelectorAll('[data-gallery-item]'));
+    if (!lightbox || items.length === 0) return;
+
+    const imageEl = document.getElementById('galleryLightboxImage');
+    const titleEl = document.getElementById('galleryLightboxTitle');
+    const descEl = document.getElementById('galleryLightboxDesc');
+    const counterEl = document.getElementById('galleryLightboxCounter');
+    const captionEl = lightbox.querySelector('.gallery-lightbox-caption');
+    const prevBtn = lightbox.querySelector('[data-gallery-lightbox-prev]');
+    const nextBtn = lightbox.querySelector('[data-gallery-lightbox-next]');
+    const closeEls = lightbox.querySelectorAll('[data-gallery-lightbox-close]');
+    let currentIndex = 0;
+    let lastFocused = null;
+
+    function setCaption(title, description) {
+      titleEl.textContent = title || '';
+      descEl.textContent = description || '';
+      titleEl.hidden = !title;
+      descEl.hidden = !description;
+      if (captionEl) {
+        captionEl.hidden = !title && !description;
+      }
+    }
+
+    function showAt(index) {
+      const item = items[index];
+      if (!item) return;
+
+      currentIndex = index;
+      const src = item.dataset.gallerySrc || '';
+      const title = item.dataset.galleryTitle || '';
+      const description = item.dataset.galleryDescription || '';
+
+      imageEl.src = src;
+      imageEl.alt = title || 'Image galerie';
+      setCaption(title, description);
+
+      if (counterEl) {
+        counterEl.textContent = `${index + 1} / ${items.length}`;
+      }
+
+      if (prevBtn) prevBtn.disabled = index <= 0;
+      if (nextBtn) nextBtn.disabled = index >= items.length - 1;
+    }
+
+    function open(index) {
+      lastFocused = document.activeElement;
+      showAt(index);
+      lightbox.hidden = false;
+      lightbox.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('gallery-lightbox-open');
+      requestAnimationFrame(() => {
+        lightbox.classList.add('is-active');
+      });
+      lightbox.querySelector('.gallery-lightbox-close')?.focus();
+    }
+
+    function close() {
+      lightbox.classList.remove('is-active');
+      window.setTimeout(() => {
+        lightbox.hidden = true;
+        lightbox.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('gallery-lightbox-open');
+        imageEl.removeAttribute('src');
+        if (lastFocused && typeof lastFocused.focus === 'function') {
+          lastFocused.focus();
+        }
+      }, 220);
+    }
+
+    items.forEach((item, index) => {
+      item.addEventListener('click', () => open(index));
+      item.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          open(index);
+        }
+      });
+    });
+
+    prevBtn?.addEventListener('click', () => {
+      if (currentIndex > 0) showAt(currentIndex - 1);
+    });
+
+    nextBtn?.addEventListener('click', () => {
+      if (currentIndex < items.length - 1) showAt(currentIndex + 1);
+    });
+
+    closeEls.forEach((el) => el.addEventListener('click', close));
+
+    document.addEventListener('keydown', (event) => {
+      if (lightbox.hidden || !lightbox.classList.contains('is-active')) return;
+
+      if (event.key === 'Escape') {
+        close();
+        return;
+      }
+
+      if (event.key === 'ArrowLeft' && currentIndex > 0) {
+        showAt(currentIndex - 1);
+      }
+
+      if (event.key === 'ArrowRight' && currentIndex < items.length - 1) {
+        showAt(currentIndex + 1);
+      }
+    });
+  })();
+
+  // FAQ accordion
+  (function () {
+    const accordion = document.querySelector('[data-faq-accordion]');
+    if (!accordion) return;
+
+    const items = accordion.querySelectorAll('[data-faq-item]');
+
+    function closeItem(item) {
+      const trigger = item.querySelector('[data-faq-trigger]');
+      const panel = item.querySelector('[data-faq-panel]');
+      if (!trigger || !panel || panel.hidden) return;
+
+      const startHeight = panel.scrollHeight;
+      panel.style.height = startHeight + 'px';
+      panel.offsetHeight;
+      panel.style.height = '0px';
+      item.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded', 'false');
+
+      const onEnd = (event) => {
+        if (event.propertyName !== 'height') return;
+        panel.removeEventListener('transitionend', onEnd);
+        panel.hidden = true;
+        panel.style.height = '';
+      };
+      panel.addEventListener('transitionend', onEnd);
+    }
+
+    function openItem(item) {
+      const trigger = item.querySelector('[data-faq-trigger]');
+      const panel = item.querySelector('[data-faq-panel]');
+      if (!trigger || !panel) return;
+
+      panel.hidden = false;
+      panel.style.height = '0px';
+      panel.offsetHeight;
+      const endHeight = panel.scrollHeight;
+      panel.style.height = endHeight + 'px';
+      item.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
+
+      const onEnd = (event) => {
+        if (event.propertyName !== 'height') return;
+        panel.removeEventListener('transitionend', onEnd);
+        if (item.classList.contains('is-open')) {
+          panel.style.height = 'auto';
+        }
+      };
+      panel.addEventListener('transitionend', onEnd);
+    }
+
+    items.forEach((item) => {
+      const trigger = item.querySelector('[data-faq-trigger]');
+      const panel = item.querySelector('[data-faq-panel]');
+      if (!trigger || !panel) return;
+
+      if (trigger.getAttribute('aria-expanded') === 'true') {
+        item.classList.add('is-open');
+        panel.style.height = 'auto';
+      }
+
+      trigger.addEventListener('click', () => {
+        const isOpen = item.classList.contains('is-open');
+
+        items.forEach((other) => {
+          if (other !== item) closeItem(other);
+        });
+
+        if (isOpen) {
+          closeItem(item);
+        } else {
+          openItem(item);
+        }
+      });
+    });
+  })();
 </script>

@@ -19,10 +19,11 @@ class VitrineBlockSeeder extends Seeder
                     'logo_source_type' => 'url',
                     'logo_alt' => 'LDM',
                     'nav_links' => [
-                        ['label' => 'Accueil', 'href' => '#accueil'],
+                        ['label' => 'Accueil', 'href' => '/'],
                         ['label' => 'Services', 'href' => '/services'],
                         ['label' => 'Process', 'href' => '/process'],
                         ['label' => 'LDM Academy', 'href' => '/academy'],
+                        ['label' => 'FAQ', 'href' => '/faq'],
                         ['label' => 'Contact', 'href' => '#contact'],
                     ],
                     'client_space_label' => 'Espace client',
@@ -160,9 +161,49 @@ class VitrineBlockSeeder extends Seeder
                 ],
             ],
             [
+                'key' => 'faq',
+                'label' => 'FAQ',
+                'sort_order' => 7,
+                'content' => [
+                    'section_label' => 'FAQ',
+                    'section_title' => 'Foire Aux Questions',
+                    'section_subtitle' => 'Retrouvez les réponses aux questions les plus fréquentes sur nos services, délais et modalités de collaboration.',
+                    'items' => [
+                        [
+                            'question' => 'Comment envoyer un fichier STL ?',
+                            'answer' => 'Vous pouvez nous transmettre vos fichiers STL via votre espace client sécurisé, par e-mail à notre adresse dédiée aux fichiers numériques, ou sur support USB lors de la remise des empreintes. Vérifiez que le fichier est correctement exporté (maillage fermé, sans erreurs) et indiquez la référence du dossier patient dans votre message.',
+                        ],
+                        [
+                            'question' => 'Quels sont vos délais de fabrication ?',
+                            'answer' => 'Nos délais standards varient de 5 à 10 jours ouvrés selon la complexité du cas et le type de prothèse. Pour les cas urgents, nous proposons des options express sous réserve de faisabilité technique. Un délai précis vous est confirmé à la validation de chaque commande.',
+                        ],
+                        [
+                            'question' => 'Quels matériaux utilisez-vous ?',
+                            'answer' => 'Nous travaillons avec des matériaux certifiés biocompatibles : zircone multilayer, céramique stratifiée, titane, chrome-cobalt, résines haut de gamme et polymères pour prothèses amovibles. Chaque matériau est sélectionné en fonction du cas clinique, de l\'esthétique attendue et des contraintes fonctionnelles.',
+                        ],
+                        [
+                            'question' => 'Réalisez-vous des restaurations sur implants ?',
+                            'answer' => 'Oui, nous réalisons l\'ensemble des solutions implantaires : couronnes unitaires, bridges, prothèses amovibles sur barre ou attachments, ainsi que les structures en titane ou zircone. Nous travaillons à partir de vos scans, fichiers STL ou empreintes conventionnelles.',
+                        ],
+                        [
+                            'question' => 'Traitez-vous les cas urgents ?',
+                            'answer' => 'Oui, nous traitons les cas urgents en priorité lorsque la situation clinique l\'exige. Contactez-nous par téléphone dès que possible pour évaluer la faisabilité et organiser une fabrication accélérée, sous réserve de disponibilité des équipes et des matériaux.',
+                        ],
+                        [
+                            'question' => 'Livrez-vous sur tout le territoire tunisien ?',
+                            'answer' => 'Oui, nous assurons la livraison sur l\'ensemble du territoire tunisien via notre réseau de transporteurs partenaires ou par coursier dédié selon votre localisation. Les modalités et délais de livraison vous sont communiqués à la confirmation de commande.',
+                        ],
+                        [
+                            'question' => 'Comment demander le catalogue et la liste des prix ?',
+                            'answer' => 'Pour recevoir notre catalogue et la liste des tarifs, remplissez le formulaire de contact en précisant votre demande, ou écrivez-nous directement par e-mail. Vous pouvez également consulter la rubrique LDM Academy pour télécharger nos documents techniques. Notre équipe commerciale vous répond sous 24 h ouvrées.',
+                        ],
+                    ],
+                ],
+            ],
+            [
                 'key' => 'academy',
                 'label' => 'LDM Academy',
-                'sort_order' => 7,
+                'sort_order' => 8,
                 'content' => [
                     'section_label' => 'LDM Academy',
                     'section_title' => 'Ressources pour les praticiens',
@@ -173,7 +214,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'contact',
                 'label' => 'Contact',
-                'sort_order' => 8,
+                'sort_order' => 9,
                 'content' => [
                     'tag_icon' => 'fas fa-comments',
                     'tag_text' => 'Contactez-nous',
@@ -192,7 +233,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'footer',
                 'label' => 'Pied de page',
-                'sort_order' => 9,
+                'sort_order' => 10,
                 'content' => [
                     'logo_url' => 'logo_ldm.png',
                     'logo_source_type' => 'url',

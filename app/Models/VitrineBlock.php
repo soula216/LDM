@@ -125,6 +125,7 @@ class VitrineBlock extends Model
             'academy' => 'vitrine.academy',
             'services' => 'vitrine.services',
             'process' => 'vitrine.process',
+            'faq' => 'vitrine.faq',
         ];
 
         foreach ($pageRoutes as $slug => $routeName) {
@@ -134,6 +135,10 @@ class VitrineBlock extends Model
             ) {
                 return route($routeName);
             }
+        }
+
+        if ($normalized === '#accueil') {
+            return $homeUrl;
         }
 
         if (str_starts_with($href, '#')) {

@@ -70,6 +70,10 @@ class VitrineController extends Controller
             $content = $this->processProcessSteps($content);
         }
 
+        if ($vitrineBlock->key === 'faq') {
+            $content = $this->processFaqItems($content);
+        }
+
         if ($vitrineBlock->key === 'contact') {
             $content = $this->processContactItems($content);
         }
@@ -428,6 +432,30 @@ class VitrineController extends Controller
         }
 
         $content['steps'] = array_values($processed);
+
+        return $content;
+    }
+
+    private function processFaqItems(array $content): array
+    {
+        $items = $content['items'] ?? [];
+        $processed = [];
+
+        foreach ($items as $item) {
+            $question = trim((string) ($item['question'] ?? ''));
+            $answer = trim((string) ($item['answer'] ?? ''));
+
+            if ($question === '' && $answer === '') {
+                continue;
+            }
+
+            $processed[] = [
+                'question' => $question,
+                'answer' => $answer,
+            ];
+        }
+
+        $content['items'] = array_values($processed);
 
         return $content;
     }

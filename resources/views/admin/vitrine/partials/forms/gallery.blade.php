@@ -14,8 +14,23 @@
 <div class="vitrine-tab-form space-y-6 sm:space-y-8"
      x-data="{
         open: { header: true, items: true },
+        lightbox: null,
         items: @js($galleryItems),
         itemPreview(item) { return item.preview_url || item.image_url || ''; },
+        openLightbox(item) {
+            const src = this.itemPreview(item);
+            if (!src) return;
+            this.lightbox = {
+                src,
+                title: item.title || '',
+                description: item.description || '',
+            };
+            document.body.classList.add('overflow-hidden');
+        },
+        closeLightbox() {
+            this.lightbox = null;
+            document.body.classList.remove('overflow-hidden');
+        },
         onItemFileChange(event, item) {
             const file = event.target.files?.[0];
             if (!file) return;
@@ -95,7 +110,15 @@
 
                             <div class="aspect-[4/3] bg-neutral-100 relative overflow-hidden border-b border-border/40">
                                 <template x-if="itemPreview(item)">
-                                    <img :src="itemPreview(item)" alt="" class="w-full h-full object-cover">
+                                    <button type="button"
+                                            @click="openLightbox(item)"
+                                            class="group block w-full h-full p-0 border-0 bg-transparent cursor-zoom-in"
+                                            title="Agrandir l'image">
+                                        <img :src="itemPreview(item)" alt="" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]">
+                                        <span class="absolute inset-x-0 bottom-0 px-3 py-2 text-xs font-medium text-white bg-gradient-to-t from-slate-900/75 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                            Cliquer pour agrandir
+                                        </span>
+                                    </button>
                                 </template>
                                 <template x-if="!itemPreview(item)">
                                     <div class="absolute inset-0 flex flex-col items-center justify-center text-secondary/50 gap-2 p-4 text-center">
@@ -155,4 +178,51 @@
             </div>
         </div>
     </section>
+
+    <div x-show="lightbox"
+         x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @keydown.escape.window="closeLightbox()"
+         class="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5"
+         role="dialog"
+         aria-modal="true"
+         :aria-label="lightbox?.title || 'Aperçu image galerie'">
+        <button type="button"
+                class="absolute inset-0 bg-slate-950/90 backdrop-blur-md"
+                @click="closeLightbox()"
+                aria-label="Fermer"></button>
+        <div class="relative z-10 w-full max-w-[min(96vw,1500px)] h-[min(94dvh,100%)] flex flex-col gap-3">
+            <div class="flex items-center justify-between gap-3 px-1">
+                <div class="inline-flex items-center gap-2 min-w-0">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.14em] text-slate-200 bg-white/10 border border-white/15">Galerie</span>
+                    <span class="text-xs font-semibold text-slate-300/85" x-text="lightbox ? 'Aperçu' : ''"></span>
+                </div>
+                <button type="button"
+                        @click="closeLightbox()"
+                        class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/10 border border-white/15 text-white hover:bg-white/18 transition-colors"
+                        aria-label="Fermer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <figure class="relative flex-1 min-h-0 flex flex-col items-center justify-center rounded-[22px] border border-white/12 bg-gradient-to-br from-slate-900/70 to-slate-800/55 shadow-[0_30px_80px_rgba(0,0,0,0.55)] p-2 sm:p-3 overflow-hidden">
+                <div class="absolute inset-[10%] bg-sky-400/10 blur-3xl rounded-full pointer-events-none" aria-hidden="true"></div>
+                <img :src="lightbox?.src"
+                     :alt="lightbox?.title || 'Image galerie'"
+                     class="relative z-10 max-h-[calc(94dvh-10rem)] w-auto max-w-full rounded-2xl object-contain shadow-2xl bg-slate-950">
+                <figcaption class="relative z-10 mt-3 w-full max-w-3xl text-center px-3 py-3 rounded-2xl bg-white/6 border border-white/10 backdrop-blur-md"
+                            x-show="lightbox?.title || lightbox?.description">
+                    <h3 class="text-base sm:text-lg font-semibold text-white" x-text="lightbox?.title" x-show="lightbox?.title"></h3>
+                    <p class="text-sm text-slate-200/85 mt-1 leading-relaxed" x-text="lightbox?.description" x-show="lightbox?.description"></p>
+                </figcaption>
+            </figure>
+        </div>
+    </div>
 </div>
