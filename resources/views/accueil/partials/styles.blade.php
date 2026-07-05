@@ -3403,12 +3403,24 @@
       }
 
       .services-honeycomb {
-        --hex-size: 172px;
-        --hex-gap-x: 1.5rem;
+        --hex-gap-x: clamp(0.5rem, 1.8vw, 1.5rem);
+        --hex-size: calc((100% - 2 * var(--hex-gap-x)) / 3);
+        --hex-overlap: calc(var(--hex-size) * 0.21);
+        width: 100%;
+        max-width: 100%;
       }
 
       .services-honeycomb__grid {
-        padding: 3rem 2rem 3.25rem;
+        width: 100%;
+        max-width: 100%;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 3rem 0.5rem 3.25rem;
+        overflow: visible;
+      }
+
+      .services-hex-item,
+      .services-hex-shell-wrap {
+        width: 100%;
       }
 
       .services-honeycomb__bg-hex--1 { width: 260px; height: 300px; }
@@ -3706,18 +3718,37 @@
       }
 
       .inner-body.services--page {
-        padding: 2rem 1rem 3rem;
+        padding: 2rem 0.65rem 3rem;
+        justify-content: flex-start;
+        overflow-x: clip;
       }
 
       .services-honeycomb {
-        --hex-size: 148px;
-        --hex-gap-x: 1.1rem;
+        --hex-gap-x: clamp(0.4rem, 2.2vw, 1rem);
+        --hex-size: calc((100% - 2 * var(--hex-gap-x)) / 3);
+        --hex-overlap: calc(var(--hex-size) * 0.2);
+        width: 100%;
         max-width: 100%;
+        padding: 0.5rem 0 1.25rem;
       }
 
       .services-honeycomb__grid {
-        row-gap: 0.75rem;
-        padding: 2.5rem 1rem 2.75rem;
+        width: 100%;
+        max-width: 100%;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        column-gap: var(--hex-gap-x);
+        row-gap: 0.35rem;
+        padding: 2rem 0.25rem 2.25rem;
+        overflow: visible;
+      }
+
+      .services-hex-item {
+        width: 100%;
+      }
+
+      .services-hex-shell-wrap {
+        width: 100%;
+        margin: 0 auto;
       }
 
       .services-honeycomb__bg-hex--1,
@@ -3738,16 +3769,21 @@
       }
 
       .services-hex-label {
-        width: 54%;
-        max-width: 54%;
-        font-size: clamp(0.68rem, 3vw, 0.84rem);
+        width: 62%;
+        max-width: 62%;
+        font-size: clamp(0.62rem, 2.8vw, 0.84rem);
+        letter-spacing: 0.02em;
       }
 
       .services-hex-label.is-compact {
-        width: 48%;
-        max-width: 48%;
-        font-size: clamp(0.58rem, 2.7vw, 0.72rem);
-        line-height: 1.16;
+        width: 56%;
+        max-width: 56%;
+        font-size: clamp(0.54rem, 2.4vw, 0.72rem);
+        line-height: 1.14;
+      }
+
+      .services-hex-placeholder {
+        font-size: clamp(1.35rem, 7vw, 2rem);
       }
 
       .service-detail-body {
@@ -3965,6 +4001,49 @@
         height: 42px;
         font-size: 1rem;
         border-radius: 12px;
+      }
+
+      .inner-body.services--page {
+        padding: 1.75rem 0.5rem 2.75rem;
+      }
+
+      .services-honeycomb {
+        --hex-gap-x: clamp(0.25rem, 1.6vw, 0.55rem);
+        --hex-size: calc((100% - 2 * var(--hex-gap-x)) / 3);
+        --hex-overlap: calc(var(--hex-size) * 0.17);
+        padding: 0.25rem 0 1rem;
+      }
+
+      .services-honeycomb__grid {
+        row-gap: 0.2rem;
+        padding: 1.75rem 0.15rem 2rem;
+      }
+
+      .services-honeycomb__center-glow {
+        width: min(170px, 68%);
+      }
+
+      .services-honeycomb__center-label {
+        font-size: clamp(0.68rem, 4vw, 0.88rem);
+        letter-spacing: 0.08em;
+        padding: 0 6%;
+      }
+
+      .services-hex-label {
+        width: 66%;
+        max-width: 66%;
+        font-size: clamp(0.56rem, 3.2vw, 0.78rem);
+      }
+
+      .services-hex-label.is-compact {
+        width: 60%;
+        max-width: 60%;
+        font-size: clamp(0.5rem, 2.8vw, 0.66rem);
+        line-height: 1.12;
+      }
+
+      .services-hex-placeholder {
+        font-size: clamp(1.1rem, 8vw, 1.65rem);
       }
 
       .faq-hero {
