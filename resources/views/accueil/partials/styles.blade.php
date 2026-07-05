@@ -2970,9 +2970,9 @@
       }
 
       .hero {
-        min-height: 50dvh;
+        min-height: auto;
         justify-content: center;
-        padding: calc(4.75rem + var(--top-bar-height)) 1rem 1.25rem;
+        padding: calc(6.5rem + var(--top-bar-height) + 1.5rem) 1rem 1.5rem;
       }
 
       .hero-badge {
@@ -3010,7 +3010,48 @@
       }
 
       .hero-visual {
-        display: none;
+        display: block;
+        position: relative;
+        right: auto;
+        top: auto;
+        transform: none;
+        width: 100%;
+        max-width: 100%;
+        margin: 1.35rem auto 0;
+        opacity: 1;
+        animation: none;
+      }
+
+      .hero-card {
+        padding: 1.15rem;
+        border-radius: 18px;
+      }
+
+      .hero-card-icon {
+        width: 52px;
+        height: 52px;
+        font-size: 1.35rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .hero-card h3 {
+        font-size: 1.05rem;
+      }
+
+      .hero-card p {
+        font-size: 0.82rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .hero-stats {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.85rem;
+        padding-top: 0.75rem;
+      }
+
+      .stat-value {
+        font-size: 1.35rem;
       }
 
       .slider-dots {
@@ -3265,8 +3306,7 @@
       }
 
       .hero {
-        min-height: 48dvh;
-        padding: calc(4.35rem + var(--top-bar-height)) 0.85rem 1rem;
+        padding: calc(6rem + var(--top-bar-height) + 1.25rem) 0.85rem 1.25rem;
       }
 
       .hero h1 {
