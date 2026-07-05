@@ -27,6 +27,11 @@ use App\Http\Controllers\App\{
 use App\Http\Controllers\VitrineController;
 
 Route::get('/', [VitrineController::class, 'show'])->name('vitrine');
+Route::get('/services', [VitrineController::class, 'services'])->name('vitrine.services');
+Route::get('/services/{slug}', [VitrineController::class, 'serviceShow'])->name('vitrine.services.show');
+Route::get('/process', [VitrineController::class, 'process'])->name('vitrine.process');
+Route::get('/academy', [VitrineController::class, 'academy'])->name('vitrine.academy');
+Route::get('/academy/documents', [VitrineController::class, 'academyDocuments'])->name('vitrine.academy.documents');
 
 Route::get('/dashboard', [DashboardController::class, 'userDashboard'])
     ->middleware('auth')

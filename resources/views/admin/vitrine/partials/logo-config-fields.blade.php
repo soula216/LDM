@@ -1,6 +1,6 @@
 @props([
     'logoAlt' => '',
-    'logoAltPlaceholder' => 'LDM - Dentaire Moderne',
+    'logoAltPlaceholder' => 'LDM - Digital Max',
 ])
 
 <input type="hidden" name="content[logo_source_type]" x-model="logo.source_type">

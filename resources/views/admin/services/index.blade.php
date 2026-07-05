@@ -1,54 +1,3 @@
-<div x-data="{
-    showDeleteModal: false,
-    serviceToDelete: null,
-    deleteFormAction: '',
-    showEditModal: false,
-    editingService: null,
-    editForm: {
-        nom: '',
-        prix_unitaire_ttc: '',
-        groupe_id: ''
-    },
-    easyloadPage: {{ $services->currentPage() }},
-    easyloadHasMore: @json($services->hasMorePages()),
-    easyloadLoading: false,
-    easyloadObserver: null,
-    initEasyload() {
-        if (!this.$refs.easyloadSentinel) return;
-        this.easyloadObserver = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
-                this.loadMoreServices();
-            }
-        }, { rootMargin: '120px' });
-        this.easyloadObserver.observe(this.$refs.easyloadSentinel);
-    },
-    async loadMoreServices() {
-        if (this.easyloadLoading || !this.easyloadHasMore) return;
-        this.easyloadLoading = true;
-        try {
-            const params = new URLSearchParams(window.location.search);
-            params.set('page', this.easyloadPage + 1);
-            const response = await fetch(`{{ route('admin.services.index') }}?${params}`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-            });
-            if (!response.ok) return;
-            const data = await response.json();
-            const tbody = document.getElementById('services-tbody');
-            if (tbody && data.html) {
-                tbody.insertAdjacentHTML('beforeend', data.html);
-            }
-            this.easyloadPage++;
-            this.easyloadHasMore = data.has_more;
-        } catch (error) {
-            console.error('Erreur easyload services:', error);
-        } finally {
-            this.easyloadLoading = false;
-        }
-    }
-}" x-cloak x-init="initEasyload()">
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-2 sm:space-y-0">
@@ -65,6 +14,75 @@
         </div>
     </x-slot>
 
+    <div
+        x-data="{
+            showDeleteModal: false,
+            serviceToDelete: null,
+            deleteFormAction: '',
+            showEditModal: false,
+            editingService: null,
+            editForm: {
+                nom: '',
+                prix_unitaire_ttc: '',
+                groupe_id: ''
+            },
+            easyloadPage: {{ $services->currentPage() }},
+            easyloadHasMore: @json($services->hasMorePages()),
+            easyloadLoading: false,
+            easyloadObserver: null,
+            initEasyload() {
+                if (this.easyloadObserver) {
+                    this.easyloadObserver.disconnect();
+                }
+                if (!this.$refs.easyloadSentinel || !this.easyloadHasMore) return;
+                this.easyloadObserver = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) {
+                        this.loadMoreServices();
+                    }
+                }, { rootMargin: '200px' });
+                this.easyloadObserver.observe(this.$refs.easyloadSentinel);
+            },
+            async loadMoreServices() {
+                if (this.easyloadLoading || !this.easyloadHasMore) return;
+                this.easyloadLoading = true;
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    params.set('page', this.easyloadPage + 1);
+                    const response = await fetch(`{{ route('admin.services.index') }}?${params}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                    });
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    const tbody = document.getElementById('services-tbody');
+                    if (tbody && data.html) {
+                        const emptyRow = document.getElementById('services-empty-row');
+                        if (emptyRow) emptyRow.remove();
+                        tbody.insertAdjacentHTML('beforeend', data.html);
+                        if (window.Alpine) {
+                            Alpine.initTree(tbody);
+                        }
+                    }
+                    this.easyloadPage++;
+                    this.easyloadHasMore = data.has_more;
+                } catch (error) {
+                    console.error('Erreur easyload services:', error);
+                } finally {
+                    this.easyloadLoading = false;
+                    if (this.easyloadHasMore) {
+                        this.$nextTick(() => this.initEasyload());
+                    } else if (this.easyloadObserver) {
+                        this.easyloadObserver.disconnect();
+                    }
+                }
+            }
+        }"
+        x-cloak
+        x-init="$nextTick(() => initEasyload())"
+        class="services-page"
+    >
     <div class="py-4 sm:py-8 bg-app min-h-screen">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             @if(session('success'))
@@ -188,7 +206,7 @@
                     <p class="text-sm text-secondary text-center" x-show="!easyloadHasMore && !easyloadLoading">
                         {{ $services->total() }} service(s) au total
                     </p>
-                    <div x-ref="easyloadSentinel" x-show="easyloadHasMore" class="py-4 flex justify-center min-h-[3rem]">
+                    <div x-ref="easyloadSentinel" class="py-4 flex justify-center min-h-[3rem]">
                         <div x-show="easyloadLoading" class="flex items-center gap-2 text-secondary text-sm">
                             <svg class="animate-spin h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -345,5 +363,5 @@
             </div>
         </div>
     </div>
+    </div>
 </x-app-layout>
-</div>

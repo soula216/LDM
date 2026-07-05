@@ -107,6 +107,48 @@ class VitrineBlock extends Model
         return $absolute !== '' ? $absolute : asset('logo_ldm.png');
     }
 
+    /**
+     * Résout les liens du site public (ancres homepage → pages dédiées).
+     */
+    public static function resolvePublicHref(?string $href): string
+    {
+        $href = trim((string) $href);
+        $homeUrl = route('vitrine');
+
+        if ($href === '' || $href === '#') {
+            return $homeUrl;
+        }
+
+        $normalized = rtrim(strtolower($href), '/');
+
+        $pageRoutes = [
+            'academy' => 'vitrine.academy',
+            'services' => 'vitrine.services',
+            'process' => 'vitrine.process',
+        ];
+
+        foreach ($pageRoutes as $slug => $routeName) {
+            if (
+                in_array($normalized, ["#{$slug}", "/{$slug}", $slug], true)
+                || str_ends_with($normalized, "/{$slug}")
+            ) {
+                return route($routeName);
+            }
+        }
+
+        if (str_starts_with($href, '#')) {
+            return $homeUrl . $href;
+        }
+
+        return $href;
+    }
+
+    public static function isPublicPageActive(string $page): bool
+    {
+        return request()->routeIs('vitrine.' . $page)
+            || request()->routeIs('vitrine.' . $page . '.*');
+    }
+
     public static function getContent(string $key, ?array $default = null): ?array
     {
         $block = static::query()->where('key', $key)->where('is_active', true)->first();
@@ -162,6 +204,10 @@ class VitrineBlock extends Model
 
         if ($blockKey === 'services' && isset($content['items']) && is_array($content['items'])) {
             $content['items'] = array_map(function (array $item) {
+                if (! empty($item['image_url'])) {
+                    $item['image_url'] = static::resolveImageAbsoluteUrl($item['image_url']);
+                }
+
                 if (! empty($item['icon_url'])) {
                     $item['icon_url'] = static::resolveImageAbsoluteUrl($item['icon_url']);
                 }
@@ -170,6 +216,88 @@ class VitrineBlock extends Model
             }, $content['items']);
         }
 
+        if ($blockKey === 'academy' && isset($content['documents']) && is_array($content['documents'])) {
+            $content['documents'] = array_map(function (array $doc) {
+                if (! empty($doc['file_url'])) {
+                    $doc['file_url'] = static::resolveImageAbsoluteUrl($doc['file_url']);
+                }
+
+                if (! empty($doc['cover_image_url'])) {
+                    $doc['cover_image_url'] = static::resolveImageAbsoluteUrl($doc['cover_image_url']);
+                }
+
+                if (! empty($doc['pdf_preview_url'])) {
+                    $doc['pdf_preview_url'] = static::resolveImageAbsoluteUrl($doc['pdf_preview_url']);
+                }
+
+                return $doc;
+            }, $content['documents']);
+        }
+
         return $content;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function activeServiceItems(array $items): \Illuminate\Support\Collection
+    {
+        return collect($items)->filter(function (array $item): bool {
+            return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        })->values();
+    }
+
+    public static function isServiceItemActive(array $item): bool
+    {
+        return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * URL d'affichage pour l'image d'un service vitrine (hexagone ou détail).
+     *
+     * @param  array<string, mixed>  $item
+     */
+    public static function serviceItemImageUrl(array $item): string
+    {
+        $imageUrl = trim((string) ($item['image_url'] ?? ''));
+        if ($imageUrl === '') {
+            $imageUrl = trim((string) ($item['icon_url'] ?? ''));
+        }
+
+        return static::resolveImageAbsoluteUrl($imageUrl);
+    }
+
+    /**
+     * Image de fond d'une carte Academy : couverture personnalisée ou 1re page du PDF.
+     *
+     * @param  array<string, mixed>  $doc
+     */
+    public static function academyDocumentBackgroundUrl(array $doc): string
+    {
+        $coverUrl = trim((string) ($doc['cover_image_url'] ?? ''));
+        if ($coverUrl !== '') {
+            return static::resolveImageAbsoluteUrl($coverUrl);
+        }
+
+        $previewUrl = trim((string) ($doc['pdf_preview_url'] ?? ''));
+        if ($previewUrl !== '') {
+            return static::resolveImageAbsoluteUrl($previewUrl);
+        }
+
+        return '';
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    public static function serviceItemSlug(array $item): string
+    {
+        $slug = trim((string) ($item['slug'] ?? ''));
+        if ($slug !== '') {
+            return \Illuminate\Support\Str::slug($slug);
+        }
+
+        return \Illuminate\Support\Str::slug((string) ($item['title'] ?? 'service'));
     }
 }

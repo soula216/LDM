@@ -6,10 +6,11 @@
     $navLinks = $header['nav_links'] ?? [];
     $socialLinks = $footer['social_links'] ?? [];
     $clientLabel = $header['client_space_label'] ?? 'Espace client';
-    $headerLogoAlt = $header['logo_alt'] ?? 'LDM - Dentaire Moderne';
+    $headerLogoAlt = $header['logo_alt'] ?? 'LDM - Digital Max';
     $headerLogoSrc = VitrineBlock::resolveLogoDisplayUrl($header['logo_url'] ?? null);
     $footerLogoAlt = $footer['logo_alt'] ?? $headerLogoAlt;
     $footerLogoSrc = VitrineBlock::resolveLogoDisplayUrl($footer['logo_url'] ?? null);
+    $homeUrl = route('vitrine');
 @endphp
 {{-- Header / Navigation --}}
 <header class="site-header" id="siteHeader">
@@ -20,18 +21,29 @@
       @include('accueil.partials.social-links', [
           'links' => $socialLinks,
           'modifier' => 'social-links--topbar',
-          'iconSize' => 26,
       ])
     </div>
   </div>
   <nav id="navbar">
-    <a href="#accueil" class="logo">
+    <a href="{{ $homeUrl }}#accueil" class="logo">
       <img src="{{ $headerLogoSrc }}" alt="{{ $headerLogoAlt }}" class="logo-img logo-img-header">
       <img src="{{ $footerLogoSrc }}" alt="{{ $footerLogoAlt }}" class="logo-img logo-img-scrolled">
     </a>
     <ul class="nav-links">
       @foreach($navLinks as $link)
-        <li><a href="{{ $link['href'] ?? '#' }}">{{ $link['label'] ?? '' }}</a></li>
+        @php
+          $navHref = VitrineBlock::resolvePublicHref($link['href'] ?? '#');
+          $isActive = (
+              (VitrineBlock::isPublicPageActive('academy') && str_contains($navHref, '/academy'))
+              || (VitrineBlock::isPublicPageActive('services') && str_contains($navHref, '/services'))
+              || (VitrineBlock::isPublicPageActive('process') && str_contains($navHref, '/process'))
+          );
+        @endphp
+        <li>
+          <a href="{{ $navHref }}" @class(['is-active' => $isActive])>
+            {{ $link['label'] ?? '' }}
+          </a>
+        </li>
       @endforeach
       <li class="nav-espace-client-desktop"><a href="{{ route('login') }}">{{ $clientLabel }}</a></li>
     </ul>

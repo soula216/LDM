@@ -7,31 +7,16 @@
     }
 
     $defaultSocials = [
-        ['label' => 'Facebook', 'url' => '', 'icon_source_type' => 'fontawesome', 'icon' => 'fab fa-facebook-f', 'icon_url' => ''],
-        ['label' => 'Instagram', 'url' => '', 'icon_source_type' => 'fontawesome', 'icon' => 'fab fa-instagram', 'icon_url' => ''],
-        ['label' => 'TikTok', 'url' => '', 'icon_source_type' => 'fontawesome', 'icon' => 'fab fa-tiktok', 'icon_url' => ''],
+        ['label' => 'Facebook', 'url' => '', 'icon' => 'fab fa-facebook-f'],
+        ['label' => 'Instagram', 'url' => '', 'icon' => 'fab fa-instagram'],
+        ['label' => 'TikTok', 'url' => '', 'icon' => 'fab fa-tiktok'],
     ];
 
     $socialLinks = collect($c['social_links'] ?? [])->map(function ($social) {
-        $iconUrl = trim((string) ($social['icon_url'] ?? ''));
-        $icon = trim((string) ($social['icon'] ?? ''));
-        $sourceType = $social['icon_source_type'] ?? null;
-
-        if (! $sourceType) {
-            if ($iconUrl !== '') {
-                $sourceType = str_contains($iconUrl, '/storage/vitrine/social') ? 'upload' : 'url';
-            } else {
-                $sourceType = 'fontawesome';
-            }
-        }
-
         return [
             'label' => $social['label'] ?? '',
             'url' => $social['url'] ?? '',
-            'icon_source_type' => $sourceType,
-            'icon' => $icon,
-            'icon_url' => $iconUrl !== '' ? \App\Models\VitrineBlock::resolveImageAbsoluteUrl($iconUrl) : '',
-            'preview_url' => null,
+            'icon' => $social['icon'] ?? '',
         ];
     })->values()->all();
 
@@ -61,26 +46,8 @@
             }
             this.logo.preview_url = URL.createObjectURL(file);
         },
-        socialIconPreview(social) {
-            return social.preview_url || social.icon_url || '';
-        },
-        onSocialIconFileChange(event, social) {
-            const file = event.target.files?.[0];
-            if (!file) return;
-            if (social.preview_url?.startsWith('blob:')) {
-                URL.revokeObjectURL(social.preview_url);
-            }
-            social.preview_url = URL.createObjectURL(file);
-        },
         newSocial() {
-            this.socials.push({
-                label: '',
-                url: '',
-                icon_source_type: 'url',
-                icon: '',
-                icon_url: '',
-                preview_url: null,
-            });
+            this.socials.push({ label: '', url: '', icon: 'fab fa-facebook-f' });
         },
      }">
 
@@ -168,18 +135,19 @@
                                     </svg>
                                 </button>
                             </div>
-                            <div class="p-4 space-y-4">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Nom du réseau</label>
-                                        <input type="text" :name="'content[social_links][' + index + '][label]'" x-model="social.label" placeholder="Facebook" class="input-field w-full text-sm">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">URL du profil</label>
-                                        <input type="url" :name="'content[social_links][' + index + '][url]'" x-model="social.url" placeholder="https://…" class="input-field w-full text-sm">
-                                    </div>
+                            <div class="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Nom</label>
+                                    <input type="text" :name="'content[social_links][' + index + '][label]'" x-model="social.label" placeholder="Facebook" class="input-field w-full text-sm">
                                 </div>
-                                @include('admin.vitrine.partials.social-icon-config-fields')
+                                <div>
+                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Icône FA</label>
+                                    <input type="text" :name="'content[social_links][' + index + '][icon]'" x-model="social.icon" placeholder="fab fa-facebook-f" class="input-field w-full text-sm font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">URL du profil</label>
+                                    <input type="url" :name="'content[social_links][' + index + '][url]'" x-model="social.url" placeholder="https://…" class="input-field w-full text-sm">
+                                </div>
                             </div>
                         </div>
                     </template>

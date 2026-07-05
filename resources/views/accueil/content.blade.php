@@ -1,12 +1,12 @@
 @php
+    use App\Models\VitrineBlock;
+
     $hero = $blocks['hero'] ?? [];
-    $services = $blocks['services'] ?? [];
-    $process = $blocks['process'] ?? [];
     $gallery = $blocks['gallery'] ?? [];
     $features = $blocks['features'] ?? [];
     $contact = $blocks['contact'] ?? [];
 @endphp
-{{-- Contenu principal : Hero, Services, Process, Gallery, Features, Contact --}}
+{{-- Contenu principal : Hero, Gallery, Features, Contact --}}
 
 @if(!empty($blocks['hero']))
 {{-- Hero Section --}}
@@ -30,7 +30,7 @@
     <p>{{ $hero['description'] ?? '' }}</p>
     <div class="hero-buttons">
       @foreach($hero['buttons'] ?? [] as $btn)
-        <a href="{{ $btn['href'] ?? '#' }}" class="btn btn-{{ $btn['style'] ?? 'primary' }}">
+        <a href="{{ VitrineBlock::resolvePublicHref($btn['href'] ?? '#') }}" class="btn btn-{{ $btn['style'] ?? 'primary' }}">
           @if(!empty($btn['icon']))
             <i class="{{ $btn['icon'] }}"></i>
           @endif
@@ -55,52 +55,6 @@
         @endforeach
       </div>
     </div>
-  </div>
-</section>
-@endif
-
-@if(!empty($blocks['services']))
-{{-- Services Section --}}
-<section class="services" id="services">
-  <div class="section-header reveal">
-    <span class="section-label">{{ $services['section_label'] ?? '' }}</span>
-    <h2 class="section-title">{{ $services['section_title'] ?? '' }}</h2>
-    <p class="section-subtitle">{{ $services['section_subtitle'] ?? '' }}</p>
-  </div>
-  <div class="services-grid">
-    @foreach($services['items'] ?? [] as $item)
-      <div class="service-card reveal">
-        <div class="service-icon">
-          @if(filled($item['icon_url'] ?? null))
-            <img src="{{ $item['icon_url'] }}" alt="" class="service-icon-img" width="96" height="96">
-          @elseif(filled($item['icon'] ?? null))
-            <i class="{{ $item['icon'] }}" aria-hidden="true"></i>
-          @endif
-        </div>
-        <h3>{{ $item['title'] ?? '' }}</h3>
-        <p>{{ $item['description'] ?? '' }}</p>
-      </div>
-    @endforeach
-  </div>
-</section>
-@endif
-
-@if(!empty($blocks['process']))
-{{-- Process Section --}}
-<section class="process" id="process">
-  <div class="section-header reveal">
-    <span class="section-label">{{ $process['section_label'] ?? '' }}</span>
-    <h2 class="section-title">{{ $process['section_title'] ?? '' }}</h2>
-    <p class="section-subtitle">{{ $process['section_subtitle'] ?? '' }}</p>
-  </div>
-  <div class="process-grid">
-    @foreach($process['steps'] ?? [] as $step)
-      <div class="process-step reveal">
-        <div class="process-number">{{ $loop->iteration }}</div>
-        <h3>{{ $step['title'] ?? '' }}</h3>
-        <p>{{ $step['description'] ?? '' }}</p>
-      </div>
-    @endforeach
   </div>
 </section>
 @endif
@@ -193,12 +147,12 @@
             <input id="contact-name" name="name" type="text" class="contact-input" placeholder="Votre nom">
           </div>
           <div>
-            <label class="contact-label" for="contact-email">Email professionnel</label>
-            <input id="contact-email" name="email" type="email" class="contact-input" placeholder="votre@email.fr">
+            <label class="contact-label" for="contact-email">Email</label>
+            <input id="contact-email" name="email" type="email" class="contact-input" placeholder="Votre email">
           </div>
           <div>
             <label class="contact-label" for="contact-phone">Téléphone</label>
-            <input id="contact-phone" name="phone" type="tel" class="contact-input" placeholder="+33 6 00 00 00 00">
+            <input id="contact-phone" name="phone" type="tel" class="contact-input" placeholder="Votre téléphone">
           </div>
           <div class="full-row">
             <label class="contact-label" for="contact-message">Message</label>

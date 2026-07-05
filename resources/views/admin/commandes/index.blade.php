@@ -2,111 +2,6 @@
     $bulkStatusEnabled = !isset($dentist) && auth()->user()->can('change_commande_status');
     $tableColspan = (auth()->user()->hasRole('dentist') ? 6 : 8) + ($bulkStatusEnabled ? 1 : 0);
 @endphp
-<div x-data="{
-    showDeleteModal: false,
-    commandeToDelete: null,
-    deleteFormAction: '',
-    @if($bulkStatusEnabled)
-    selectedCommandeIds: [],
-    selectAllChecked: false,
-    selectAllIndeterminate: false,
-    bulkStatus: '',
-    toggleCommandeSelection(id, checked) {
-        if (checked) {
-            if (!this.selectedCommandeIds.includes(id)) {
-                this.selectedCommandeIds.push(id);
-            }
-        } else {
-            this.selectedCommandeIds = this.selectedCommandeIds.filter(i => i !== id);
-        }
-        this.syncSelectAllState();
-    },
-    syncSelectAllState() {
-        const checkboxes = document.querySelectorAll('#commandes-tbody .commande-row-checkbox');
-        const total = checkboxes.length;
-        const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
-        this.selectAllChecked = total > 0 && checked === total;
-        this.selectAllIndeterminate = checked > 0 && checked < total;
-    },
-    toggleSelectAll(checked) {
-        const checkboxes = document.querySelectorAll('#commandes-tbody .commande-row-checkbox');
-        this.selectedCommandeIds = [];
-        checkboxes.forEach(cb => {
-            cb.checked = checked;
-            if (checked) {
-                const id = parseInt(cb.value, 10);
-                if (!this.selectedCommandeIds.includes(id)) {
-                    this.selectedCommandeIds.push(id);
-                }
-            }
-        });
-        this.selectAllChecked = checked && checkboxes.length > 0;
-        this.selectAllIndeterminate = false;
-    },
-    clearSelection() {
-        this.selectedCommandeIds = [];
-        this.selectAllChecked = false;
-        this.selectAllIndeterminate = false;
-        this.bulkStatus = '';
-        document.querySelectorAll('#commandes-tbody .commande-row-checkbox').forEach(cb => {
-            cb.checked = false;
-        });
-    },
-    submitBulkStatus() {
-        if (this.selectedCommandeIds.length === 0 || !this.bulkStatus) {
-            return;
-        }
-        this.$refs.bulkStatusForm.submit();
-    },
-    @endif
-    @unless(isset($dentist))
-    easyloadPage: {{ $commandes->currentPage() }},
-    easyloadHasMore: @json($commandes->hasMorePages()),
-    easyloadLoading: false,
-    easyloadObserver: null,
-    initEasyload() {
-        if (!this.$refs.easyloadSentinel) return;
-        this.easyloadObserver = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
-                this.loadMoreCommandes();
-            }
-        }, { rootMargin: '120px' });
-        this.easyloadObserver.observe(this.$refs.easyloadSentinel);
-    },
-    async loadMoreCommandes() {
-        if (this.easyloadLoading || !this.easyloadHasMore) return;
-        this.easyloadLoading = true;
-        try {
-            const params = new URLSearchParams(window.location.search);
-            params.set('page', this.easyloadPage + 1);
-            const response = await fetch(`{{ route('admin.commandes.index') }}?${params}`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-            });
-            if (!response.ok) return;
-            const data = await response.json();
-            const tbody = document.getElementById('commandes-tbody');
-            if (tbody && data.html) {
-                tbody.insertAdjacentHTML('beforeend', data.html);
-                if (window.Alpine) {
-                    Alpine.initTree(tbody);
-                }
-                @if($bulkStatusEnabled)
-                this.syncSelectAllState();
-                @endif
-            }
-            this.easyloadPage++;
-            this.easyloadHasMore = data.has_more;
-        } catch (error) {
-            console.error('Erreur easyload commandes:', error);
-        } finally {
-            this.easyloadLoading = false;
-        }
-    }
-    @endunless
-}" x-cloak @unless(isset($dentist)) x-init="initEasyload()" @endunless>
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -138,6 +33,128 @@
         </div>
     </x-slot>
 
+    <div
+        x-data="{
+            showDeleteModal: false,
+            commandeToDelete: null,
+            deleteFormAction: '',
+            @if($bulkStatusEnabled)
+            selectedCommandeIds: [],
+            selectAllChecked: false,
+            selectAllIndeterminate: false,
+            bulkStatus: '',
+            toggleCommandeSelection(id, checked) {
+                if (checked) {
+                    if (!this.selectedCommandeIds.includes(id)) {
+                        this.selectedCommandeIds.push(id);
+                    }
+                } else {
+                    this.selectedCommandeIds = this.selectedCommandeIds.filter(i => i !== id);
+                }
+                this.syncSelectAllState();
+            },
+            syncSelectAllState() {
+                const checkboxes = document.querySelectorAll('#commandes-tbody .commande-row-checkbox');
+                const total = checkboxes.length;
+                const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+                this.selectAllChecked = total > 0 && checked === total;
+                this.selectAllIndeterminate = checked > 0 && checked < total;
+            },
+            toggleSelectAll(checked) {
+                const checkboxes = document.querySelectorAll('#commandes-tbody .commande-row-checkbox');
+                this.selectedCommandeIds = [];
+                checkboxes.forEach(cb => {
+                    cb.checked = checked;
+                    if (checked) {
+                        const id = parseInt(cb.value, 10);
+                        if (!this.selectedCommandeIds.includes(id)) {
+                            this.selectedCommandeIds.push(id);
+                        }
+                    }
+                });
+                this.selectAllChecked = checked && checkboxes.length > 0;
+                this.selectAllIndeterminate = false;
+            },
+            clearSelection() {
+                this.selectedCommandeIds = [];
+                this.selectAllChecked = false;
+                this.selectAllIndeterminate = false;
+                this.bulkStatus = '';
+                document.querySelectorAll('#commandes-tbody .commande-row-checkbox').forEach(cb => {
+                    cb.checked = false;
+                });
+            },
+            submitBulkStatus() {
+                if (this.selectedCommandeIds.length === 0 || !this.bulkStatus) {
+                    return;
+                }
+                this.$refs.bulkStatusForm.submit();
+            },
+            @endif
+            @unless(isset($dentist))
+            easyloadPage: {{ $commandes->currentPage() }},
+            easyloadHasMore: @json($commandes->hasMorePages()),
+            easyloadLoading: false,
+            easyloadObserver: null,
+            initEasyload() {
+                if (this.easyloadObserver) {
+                    this.easyloadObserver.disconnect();
+                }
+                if (!this.$refs.easyloadSentinel || !this.easyloadHasMore) return;
+                this.easyloadObserver = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) {
+                        this.loadMoreCommandes();
+                    }
+                }, { rootMargin: '200px' });
+                this.easyloadObserver.observe(this.$refs.easyloadSentinel);
+            },
+            async loadMoreCommandes() {
+                if (this.easyloadLoading || !this.easyloadHasMore) return;
+                this.easyloadLoading = true;
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    params.set('page', this.easyloadPage + 1);
+                    const response = await fetch(`{{ route('admin.commandes.index') }}?${params}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                    });
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    const tbody = document.getElementById('commandes-tbody');
+                    if (tbody && data.html) {
+                        const emptyRow = document.getElementById('commandes-empty-row');
+                        if (emptyRow) emptyRow.remove();
+                        tbody.insertAdjacentHTML('beforeend', data.html);
+                        if (window.Alpine) {
+                            Alpine.initTree(tbody);
+                        }
+                        @if($bulkStatusEnabled)
+                        this.syncSelectAllState();
+                        @endif
+                    }
+                    this.easyloadPage++;
+                    this.easyloadHasMore = data.has_more;
+                } catch (error) {
+                    console.error('Erreur easyload commandes:', error);
+                } finally {
+                    this.easyloadLoading = false;
+                    if (this.easyloadHasMore) {
+                        this.$nextTick(() => this.initEasyload());
+                    } else if (this.easyloadObserver) {
+                        this.easyloadObserver.disconnect();
+                    }
+                }
+            }
+            @endunless
+        }"
+        x-cloak
+        @unless(isset($dentist))
+        x-init="$nextTick(() => initEasyload())"
+        @endunless
+        class="commandes-page"
+    >
     <div class="py-4 sm:py-8 bg-app min-h-screen">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="card">
@@ -328,7 +345,7 @@
                     <p class="text-sm text-secondary text-center" x-show="!easyloadHasMore && !easyloadLoading">
                         {{ $commandes->total() }} commande(s) au total
                     </p>
-                    <div x-ref="easyloadSentinel" x-show="easyloadHasMore" class="py-4 flex justify-center min-h-[3rem]">
+                    <div x-ref="easyloadSentinel" class="py-4 flex justify-center min-h-[3rem]">
                         <div x-show="easyloadLoading" class="flex items-center gap-2 text-secondary text-sm">
                             <svg class="animate-spin h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -390,5 +407,5 @@
             </div>
         </div>
     </div>
+    </div>
 </x-app-layout>
-</div>

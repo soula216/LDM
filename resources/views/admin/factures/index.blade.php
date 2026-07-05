@@ -1,125 +1,3 @@
-<div x-data="{ 
-    showCreateModal: false,
-    showEditModal: false,
-    showDeleteModal: false,
-    factureToDelete: null,
-    deleteFormAction: '',
-    editingFactureId: null,
-    selectedDentist: '',
-    titreDocument: 'bon_livraison',
-    factureDate: '{{ now()->format('Y-m-d') }}',
-    numFacture: '',
-    ancienSolde: '',
-    avance: '',
-    factureStatus: 'pending',
-    montantPaye: '',
-    bonsLivraison: [],
-    selectedBLs: [],
-    loading: false,
-    async loadBonsLivraison() {
-        if (!this.selectedDentist) {
-            this.bonsLivraison = [];
-            return;
-        }
-        this.loading = true;
-        try {
-            const url = this.editingFactureId 
-                ? `{{ route('admin.factures.get-bons-livraison') }}?dentist_id=${this.selectedDentist}&facture_id=${this.editingFactureId}`
-                : `{{ route('admin.factures.get-bons-livraison') }}?dentist_id=${this.selectedDentist}`;
-            const response = await fetch(url);
-            const data = await response.json();
-            if (data.success) {
-                this.bonsLivraison = data.bonsLivraison;
-                // Pré-sélectionner les BL si on est en mode édition
-                if (this.editingFactureId) {
-                    this.bonsLivraison.forEach(bl => {
-                        if (bl.is_selected && !this.selectedBLs.includes(bl.id)) {
-                            this.selectedBLs.push(bl.id);
-                        }
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        } finally {
-            this.loading = false;
-        }
-    },
-    openEditModal(facture) {
-        this.editingFactureId = facture.id;
-        this.selectedDentist = facture.dentist_id;
-        this.titreDocument = facture.titre_document || 'bon_livraison';
-        this.factureDate = facture.date;
-        this.numFacture = facture.num_facture;
-        this.ancienSolde = facture.ancien_solde ?? '';
-        this.avance = facture.avance ?? '';
-        this.factureStatus = facture.status || 'pending';
-        this.montantPaye = facture.montant_paye || '';
-        this.selectedBLs = facture.bons_livraison_ids || [];
-        this.showEditModal = true;
-        this.loadBonsLivraison();
-    },
-    closeEditModal() {
-        this.showEditModal = false;
-        this.editingFactureId = null;
-        this.selectedDentist = '';
-        this.titreDocument = 'bon_livraison';
-        this.factureDate = '{{ now()->format('Y-m-d') }}';
-        this.numFacture = '';
-        this.ancienSolde = '';
-        this.avance = '';
-        this.factureStatus = 'pending';
-        this.montantPaye = '';
-        this.selectedBLs = [];
-        this.bonsLivraison = [];
-    },
-    openDeleteModal(factureId, factureNum) {
-        this.factureToDelete = factureNum;
-        this.deleteFormAction = '{{ url('admin/factures') }}/' + factureId;
-        this.showDeleteModal = true;
-    },
-    @unless(isset($dentist))
-    easyloadPage: {{ $factures->currentPage() }},
-    easyloadHasMore: @json($factures->hasMorePages()),
-    easyloadLoading: false,
-    easyloadObserver: null,
-    initEasyload() {
-        if (!this.$refs.easyloadSentinel) return;
-        this.easyloadObserver = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
-                this.loadMoreFactures();
-            }
-        }, { rootMargin: '120px' });
-        this.easyloadObserver.observe(this.$refs.easyloadSentinel);
-    },
-    async loadMoreFactures() {
-        if (this.easyloadLoading || !this.easyloadHasMore) return;
-        this.easyloadLoading = true;
-        try {
-            const params = new URLSearchParams(window.location.search);
-            params.set('page', this.easyloadPage + 1);
-            const response = await fetch(`{{ route('admin.factures.index') }}?${params}`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-            });
-            if (!response.ok) return;
-            const data = await response.json();
-            const tbody = document.getElementById('factures-tbody');
-            if (tbody && data.html) {
-                tbody.insertAdjacentHTML('beforeend', data.html);
-            }
-            this.easyloadPage++;
-            this.easyloadHasMore = data.has_more;
-        } catch (error) {
-            console.error('Erreur easyload factures:', error);
-        } finally {
-            this.easyloadLoading = false;
-        }
-    }
-    @endunless
-}" x-cloak @unless(isset($dentist)) x-init="initEasyload()" @endunless>
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -137,23 +15,150 @@
                     @endif
                 </h2>
             </div>
-            @can('create_factures')
-            @if(!isset($dentist))
-            <button 
-                @click="showCreateModal = true; titreDocument = 'bon_livraison'; ancienSolde = ''; avance = ''"
-                class="btn-primary inline-flex items-center w-full sm:w-auto justify-center"
-            >
-                <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                <span class="hidden sm:inline">Créer une facture</span>
-                <span class="sm:hidden">Nouveau</span>
-            </button>
-            @endif
-            @endcan
         </div>
     </x-slot>
 
+    <div
+        x-data="{
+            showCreateModal: false,
+            showEditModal: false,
+            showDeleteModal: false,
+            factureToDelete: null,
+            deleteFormAction: '',
+            editingFactureId: null,
+            selectedDentist: '',
+            titreDocument: 'bon_livraison',
+            factureDate: '{{ now()->format('Y-m-d') }}',
+            numFacture: '',
+            ancienSolde: '',
+            avance: '',
+            factureStatus: 'pending',
+            montantPaye: '',
+            bonsLivraison: [],
+            selectedBLs: [],
+            loading: false,
+            async loadBonsLivraison() {
+                if (!this.selectedDentist) {
+                    this.bonsLivraison = [];
+                    return;
+                }
+                this.loading = true;
+                try {
+                    const url = this.editingFactureId
+                        ? `{{ route('admin.factures.get-bons-livraison') }}?dentist_id=${this.selectedDentist}&facture_id=${this.editingFactureId}`
+                        : `{{ route('admin.factures.get-bons-livraison') }}?dentist_id=${this.selectedDentist}`;
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    if (data.success) {
+                        this.bonsLivraison = data.bonsLivraison;
+                        if (this.editingFactureId) {
+                            this.bonsLivraison.forEach(bl => {
+                                if (bl.is_selected && !this.selectedBLs.includes(bl.id)) {
+                                    this.selectedBLs.push(bl.id);
+                                }
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                } finally {
+                    this.loading = false;
+                }
+            },
+            openEditModal(facture) {
+                this.editingFactureId = facture.id;
+                this.selectedDentist = facture.dentist_id;
+                this.titreDocument = facture.titre_document || 'bon_livraison';
+                this.factureDate = facture.date;
+                this.numFacture = facture.num_facture;
+                this.ancienSolde = facture.ancien_solde ?? '';
+                this.avance = facture.avance ?? '';
+                this.factureStatus = facture.status || 'pending';
+                this.montantPaye = facture.montant_paye || '';
+                this.selectedBLs = facture.bons_livraison_ids || [];
+                this.showEditModal = true;
+                this.loadBonsLivraison();
+            },
+            closeEditModal() {
+                this.showEditModal = false;
+                this.editingFactureId = null;
+                this.selectedDentist = '';
+                this.titreDocument = 'bon_livraison';
+                this.factureDate = '{{ now()->format('Y-m-d') }}';
+                this.numFacture = '';
+                this.ancienSolde = '';
+                this.avance = '';
+                this.factureStatus = 'pending';
+                this.montantPaye = '';
+                this.selectedBLs = [];
+                this.bonsLivraison = [];
+            },
+            openDeleteModal(factureId, factureNum) {
+                this.factureToDelete = factureNum;
+                this.deleteFormAction = '{{ url('admin/factures') }}/' + factureId;
+                this.showDeleteModal = true;
+            },
+            @unless(isset($dentist))
+            easyloadPage: {{ $factures->currentPage() }},
+            easyloadHasMore: @json($factures->hasMorePages()),
+            easyloadLoading: false,
+            easyloadObserver: null,
+            initEasyload() {
+                if (this.easyloadObserver) {
+                    this.easyloadObserver.disconnect();
+                }
+                if (!this.$refs.easyloadSentinel || !this.easyloadHasMore) return;
+                this.easyloadObserver = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) {
+                        this.loadMoreFactures();
+                    }
+                }, { rootMargin: '200px' });
+                this.easyloadObserver.observe(this.$refs.easyloadSentinel);
+            },
+            async loadMoreFactures() {
+                if (this.easyloadLoading || !this.easyloadHasMore) return;
+                this.easyloadLoading = true;
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    params.set('page', this.easyloadPage + 1);
+                    const response = await fetch(`{{ route('admin.factures.index') }}?${params}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                    });
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    const tbody = document.getElementById('factures-tbody');
+                    if (tbody && data.html) {
+                        const emptyRow = document.getElementById('factures-empty-row');
+                        if (emptyRow) emptyRow.remove();
+                        tbody.insertAdjacentHTML('beforeend', data.html);
+                        if (window.Alpine) {
+                            Alpine.initTree(tbody);
+                        }
+                    }
+                    this.easyloadPage++;
+                    this.easyloadHasMore = data.has_more;
+                } catch (error) {
+                    console.error('Erreur easyload factures:', error);
+                } finally {
+                    this.easyloadLoading = false;
+                    if (this.easyloadHasMore) {
+                        this.$nextTick(() => this.initEasyload());
+                    } else if (this.easyloadObserver) {
+                        this.easyloadObserver.disconnect();
+                    }
+                }
+            }
+            @endunless
+        }"
+        x-cloak
+        @unless(isset($dentist))
+        x-init="$nextTick(() => initEasyload())"
+        @endunless
+        class="factures-page"
+    >
     <div class="py-4 sm:py-8 bg-app min-h-screen">
         <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="card">
@@ -219,6 +224,21 @@
                         <a href="{{ isset($dentist) ? route('admin.dentists.factures.index', $dentist) : route('admin.factures.index') }}" class="inline-flex items-center justify-center h-10 sm:h-11 px-4 rounded-lg border border-border bg-card text-secondary hover:bg-neutral-100 font-medium text-sm transition-colors duration-200">
                             Réinitialiser
                         </a>
+                        @can('create_factures')
+                        @if(!isset($dentist))
+                        <button
+                            type="button"
+                            @click="showCreateModal = true; titreDocument = 'bon_livraison'; ancienSolde = ''; avance = ''"
+                            class="btn-primary inline-flex items-center h-10 sm:h-11 px-4 ml-auto"
+                        >
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            <span class="hidden sm:inline">Créer une facture</span>
+                            <span class="sm:hidden">Nouveau</span>
+                        </button>
+                        @endif
+                        @endcan
                     </div>
                 </form>
 
@@ -280,7 +300,7 @@
                     <p class="text-sm text-secondary text-center" x-show="!easyloadHasMore && !easyloadLoading">
                         {{ $factures->total() }} facture(s) au total
                     </p>
-                    <div x-ref="easyloadSentinel" x-show="easyloadHasMore" class="py-4 flex justify-center min-h-[3rem]">
+                    <div x-ref="easyloadSentinel" class="py-4 flex justify-center min-h-[3rem]">
                         <div x-show="easyloadLoading" class="flex items-center gap-2 text-secondary text-sm">
                             <svg class="animate-spin h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -744,6 +764,6 @@
             </div>
         </div>
     </div>
+    </div>
 </x-app-layout>
-</div>
 

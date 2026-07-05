@@ -6,18 +6,21 @@
     $columns = $footer['columns'] ?? [];
     $copyright = $footer['copyright'] ?? 'LDM. Tous droits réservés.';
     $legalLink = $footer['legal_link'] ?? ['label' => 'Mentions légales', 'href' => '#'];
-    $logoAlt = $footer['logo_alt'] ?? 'LDM - Dentaire Moderne';
+    $logoAlt = $footer['logo_alt'] ?? 'LDM - Digital Max';
     $logoSrc = VitrineBlock::resolveLogoDisplayUrl($footer['logo_url'] ?? null);
 @endphp
 {{-- Footer --}}
 <footer>
   <div class="footer-content">
     <div class="footer-brand">
-      <a href="#accueil" class="logo">
+      <a href="{{ route('vitrine') }}#accueil" class="logo">
         <img src="{{ $logoSrc }}" alt="{{ $logoAlt }}">
       </a>
       <p>{{ $footer['brand_description'] ?? '' }}</p>
-      @include('accueil.partials.social-links', ['links' => $socialLinks, 'iconSize' => 40])
+      @include('accueil.partials.social-links', [
+          'links' => $socialLinks,
+          'flagSrc' => asset('images/vitrine/drapeau-tunis.png'),
+      ])
     </div>
     @foreach($columns as $column)
       <div class="footer-column">
@@ -25,7 +28,7 @@
         <ul>
           @foreach($column['links'] ?? [] as $link)
             <li>
-              <a href="{{ $link['href'] ?? '#' }}" @if(!empty($link['icon'])) class="footer-link-with-icon" @endif>
+              <a href="{{ VitrineBlock::resolvePublicHref($link['href'] ?? '#') }}" @if(!empty($link['icon'])) class="footer-link-with-icon" @endif>
                 @if(!empty($link['icon']))
                   <i class="{{ $link['icon'] }}" aria-hidden="true"></i>
                 @endif
@@ -38,6 +41,6 @@
     @endforeach
   </div>
   <div class="footer-bottom">
-    <p>© {{ date('Y') }} {{ $copyright }} | <a href="{{ $legalLink['href'] ?? '#' }}" style="color: var(--primary);">{{ $legalLink['label'] ?? 'Mentions légales' }}</a></p>
+    <p>© {{ date('Y') }} {{ $copyright }} | <a href="{{ VitrineBlock::resolvePublicHref($legalLink['href'] ?? '#') }}" style="color: var(--primary);">{{ $legalLink['label'] ?? 'Mentions légales' }}</a></p>
   </div>
 </footer>

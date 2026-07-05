@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\VitrineBlock;
+use App\Services\AcademyPdfThumbnailService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -21,6 +22,12 @@ class VitrineController extends Controller
     private const SOCIAL_STORAGE_PREFIX = 'vitrine/social/';
 
     private const SERVICE_STORAGE_PREFIX = 'vitrine/services/';
+
+    private const ACADEMY_STORAGE_PREFIX = 'vitrine/academy/';
+
+    private const ACADEMY_COVER_STORAGE_PREFIX = 'vitrine/academy/covers/';
+
+    private const ACADEMY_CATEGORIES = ['catalogue', 'guide', 'protocole', 'notice'];
 
     public function index(Request $request): View
     {
@@ -53,6 +60,10 @@ class VitrineController extends Controller
 
         if ($vitrineBlock->key === 'services') {
             $content = $this->processServiceItems($request, $content, $existingContent);
+        }
+
+        if ($vitrineBlock->key === 'academy') {
+            $content = $this->processAcademyDocuments($request, $content, $existingContent);
         }
 
         if ($vitrineBlock->key === 'process') {
@@ -193,15 +204,27 @@ class VitrineController extends Controller
         $incomingItems = $content['items'] ?? [];
         $existingItems = $existingContent['items'] ?? [];
         $processed = [];
+        $usedSlugs = [];
 
         foreach ($incomingItems as $index => $item) {
             $title = trim((string) ($item['title'] ?? ''));
             $description = trim((string) ($item['description'] ?? ''));
-            $iconSourceType = ($item['icon_source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
-            $iconUrl = trim((string) ($item['icon_url'] ?? ''));
-            $existingUrl = trim((string) ($existingItems[$index]['icon_url'] ?? ''));
+            $contentHtml = (string) ($item['content_html'] ?? '');
+            $imageSourceType = ($item['image_source_type'] ?? $item['icon_source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
+            $imageUrl = trim((string) ($item['image_url'] ?? $item['icon_url'] ?? ''));
+            $existingUrl = trim((string) ($existingItems[$index]['image_url'] ?? $existingItems[$index]['icon_url'] ?? ''));
 
-            if ($request->hasFile("service_icon_uploads.$index")) {
+            if ($request->hasFile("service_image_uploads.$index")) {
+                $file = $request->file("service_image_uploads.$index");
+                $this->validateServiceImageUpload($file, $index);
+
+                if ($existingUrl !== '') {
+                    $this->deleteVitrineImageIfStored($existingUrl);
+                }
+
+                $imageUrl = $this->storeServiceIconImage($file);
+                $imageSourceType = 'upload';
+            } elseif ($request->hasFile("service_icon_uploads.$index")) {
                 $file = $request->file("service_icon_uploads.$index");
                 $this->validateServiceIconUpload($file, $index);
 
@@ -209,42 +232,178 @@ class VitrineController extends Controller
                     $this->deleteVitrineImageIfStored($existingUrl);
                 }
 
-                $iconUrl = $this->storeServiceIconImage($file);
-                $iconSourceType = 'upload';
-            } elseif ($iconSourceType === 'upload') {
-                if ($iconUrl === '' && $existingUrl !== '') {
-                    $iconUrl = $existingUrl;
+                $imageUrl = $this->storeServiceIconImage($file);
+                $imageSourceType = 'upload';
+            } elseif ($imageSourceType === 'upload') {
+                if ($imageUrl === '' && $existingUrl !== '') {
+                    $imageUrl = $existingUrl;
                 }
-            } elseif ($iconSourceType === 'url' && $existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $iconUrl) {
+            } elseif ($imageSourceType === 'url' && $existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $imageUrl) {
                 $this->deleteVitrineImageIfStored($existingUrl);
             }
 
-            if ($title === '' && $description === '' && $iconUrl === '') {
+            if ($title === '' && $description === '' && $contentHtml === '' && $imageUrl === '') {
                 continue;
             }
 
+            $slug = \Illuminate\Support\Str::slug(trim((string) ($item['slug'] ?? '')) ?: $title);
+            if ($slug === '') {
+                $slug = 'service-' . ($index + 1);
+            }
+            $baseSlug = $slug;
+            $suffix = 2;
+            while (in_array($slug, $usedSlugs, true)) {
+                $slug = $baseSlug . '-' . $suffix;
+                $suffix++;
+            }
+            $usedSlugs[] = $slug;
+
+            $isActive = filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
             $processedItem = [
                 'title' => $title,
+                'slug' => $slug,
                 'description' => $description,
-                'icon_source_type' => $iconSourceType,
+                'content_html' => $contentHtml,
+                'image_source_type' => $imageSourceType,
+                'is_active' => $isActive,
             ];
 
-            if ($iconUrl !== '') {
-                $processedItem['icon_url'] = VitrineBlock::resolveImageUrl($iconUrl);
+            if ($imageUrl !== '') {
+                $processedItem['image_url'] = VitrineBlock::resolveImageUrl($imageUrl);
             }
 
             $processed[] = $processedItem;
         }
 
-        $newUrls = collect($processed)->pluck('icon_url')->filter()->all();
+        $newUrls = collect($processed)->pluck('image_url')->filter()->all();
         foreach ($existingItems as $oldItem) {
-            $oldUrl = trim((string) ($oldItem['icon_url'] ?? ''));
+            $oldUrl = trim((string) ($oldItem['image_url'] ?? $oldItem['icon_url'] ?? ''));
             if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
                 $this->deleteVitrineImageIfStored($oldUrl);
             }
         }
 
         $content['items'] = array_values($processed);
+
+        return $content;
+    }
+
+    private function processAcademyDocuments(Request $request, array $content, array $existingContent): array
+    {
+        $incoming = $content['documents'] ?? [];
+        $existing = $existingContent['documents'] ?? [];
+        $processed = [];
+
+        foreach ($incoming as $index => $doc) {
+            $title = trim((string) ($doc['title'] ?? ''));
+            $description = trim((string) ($doc['description'] ?? ''));
+            $category = (string) ($doc['category'] ?? 'catalogue');
+            if (! in_array($category, self::ACADEMY_CATEGORIES, true)) {
+                $category = 'catalogue';
+            }
+
+            $fileUrl = trim((string) ($doc['file_url'] ?? ''));
+            $fileName = trim((string) ($doc['file_name'] ?? ''));
+            $existingUrl = trim((string) ($existing[$index]['file_url'] ?? ''));
+            $existingName = trim((string) ($existing[$index]['file_name'] ?? ''));
+
+            $coverSourceType = ($doc['cover_image_source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
+            $coverImageUrl = trim((string) ($doc['cover_image_url'] ?? ''));
+            $existingCoverUrl = trim((string) ($existing[$index]['cover_image_url'] ?? ''));
+            $existingPreviewUrl = trim((string) ($existing[$index]['pdf_preview_url'] ?? ''));
+            $pdfPreviewUrl = $existingPreviewUrl;
+            $pdfWasReplaced = false;
+
+            if ($request->hasFile("academy_cover_uploads.$index")) {
+                $file = $request->file("academy_cover_uploads.$index");
+                $this->validateAcademyCoverUpload($file, $index);
+
+                if ($existingCoverUrl !== '') {
+                    $this->deleteVitrineImageIfStored($existingCoverUrl);
+                }
+
+                $coverImageUrl = $this->storeAcademyCoverImage($file);
+                $coverSourceType = 'upload';
+            } elseif ($coverSourceType === 'upload') {
+                if ($coverImageUrl === '' && $existingCoverUrl !== '') {
+                    $coverImageUrl = $existingCoverUrl;
+                }
+            } elseif ($coverSourceType === 'url' && $existingCoverUrl !== '' && $this->isStoredVitrineImage($existingCoverUrl) && $existingCoverUrl !== $coverImageUrl) {
+                $this->deleteVitrineImageIfStored($existingCoverUrl);
+            }
+
+            if ($request->hasFile("academy_pdf_uploads.$index")) {
+                $file = $request->file("academy_pdf_uploads.$index");
+                $this->validateAcademyPdfUpload($file, $index);
+
+                if ($existingUrl !== '') {
+                    $this->deleteVitrineImageIfStored($existingUrl);
+                }
+
+                $fileUrl = $this->storeAcademyPdf($file);
+                $fileName = $file->getClientOriginalName() ?: basename($fileUrl);
+                $pdfWasReplaced = true;
+
+                if ($existingPreviewUrl !== '') {
+                    $this->deleteVitrineImageIfStored($existingPreviewUrl);
+                    $pdfPreviewUrl = '';
+                }
+            } elseif ($fileUrl === '' && $existingUrl !== '') {
+                $fileUrl = $existingUrl;
+                if ($fileName === '') {
+                    $fileName = $existingName;
+                }
+            }
+
+            if ($title === '' && $description === '' && $fileUrl === '') {
+                continue;
+            }
+
+            if ($fileUrl === '') {
+                continue;
+            }
+
+            if ($pdfPreviewUrl === '' || $pdfWasReplaced) {
+                $generatedPreview = $this->generateAcademyPdfPreview($fileUrl);
+                if ($generatedPreview !== '') {
+                    $pdfPreviewUrl = $generatedPreview;
+                }
+            }
+
+            $processed[] = [
+                'title' => $title !== '' ? $title : ($fileName !== '' ? $fileName : 'Document PDF'),
+                'category' => $category,
+                'description' => $description,
+                'file_url' => VitrineBlock::resolveImageUrl($fileUrl),
+                'file_name' => $fileName,
+                'cover_image_source_type' => $coverSourceType,
+                'cover_image_url' => $coverImageUrl !== '' ? VitrineBlock::resolveImageUrl($coverImageUrl) : '',
+                'pdf_preview_url' => $pdfPreviewUrl !== '' ? VitrineBlock::resolveImageUrl($pdfPreviewUrl) : '',
+            ];
+        }
+
+        $newUrls = collect($processed)->pluck('file_url')->filter()->all();
+        $newCoverUrls = collect($processed)->pluck('cover_image_url')->filter()->all();
+        $newPreviewUrls = collect($processed)->pluck('pdf_preview_url')->filter()->all();
+        foreach ($existing as $oldDoc) {
+            $oldUrl = trim((string) ($oldDoc['file_url'] ?? ''));
+            if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldUrl);
+            }
+
+            $oldCoverUrl = trim((string) ($oldDoc['cover_image_url'] ?? ''));
+            if ($oldCoverUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldCoverUrl), $newCoverUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldCoverUrl);
+            }
+
+            $oldPreviewUrl = trim((string) ($oldDoc['pdf_preview_url'] ?? ''));
+            if ($oldPreviewUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldPreviewUrl), $newPreviewUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldPreviewUrl);
+            }
+        }
+
+        $content['documents'] = array_values($processed);
 
         return $content;
     }
@@ -308,65 +467,25 @@ class VitrineController extends Controller
         $existing = $existingContent['social_links'] ?? [];
         $processed = [];
 
-        foreach ($incoming as $index => $social) {
+        foreach ($incoming as $social) {
             $label = trim((string) ($social['label'] ?? ''));
             $url = trim((string) ($social['url'] ?? ''));
             $icon = trim((string) ($social['icon'] ?? ''));
-            $iconSourceType = (string) ($social['icon_source_type'] ?? 'fontawesome');
 
-            if (! in_array($iconSourceType, ['url', 'upload', 'fontawesome'], true)) {
-                $iconSourceType = 'fontawesome';
-            }
-
-            $iconUrl = trim((string) ($social['icon_url'] ?? ''));
-            $existingUrl = trim((string) ($existing[$index]['icon_url'] ?? ''));
-
-            if ($iconSourceType === 'url' || $iconSourceType === 'upload') {
-                if ($request->hasFile("social_icon_uploads.$index")) {
-                    $file = $request->file("social_icon_uploads.$index");
-                    $this->validateSocialIconUpload($file, $index);
-
-                    if ($existingUrl !== '') {
-                        $this->deleteVitrineImageIfStored($existingUrl);
-                    }
-
-                    $iconUrl = $this->storeSocialIconImage($file);
-                    $iconSourceType = 'upload';
-                } elseif ($iconSourceType === 'upload') {
-                    if ($iconUrl === '' && $existingUrl !== '') {
-                        $iconUrl = $existingUrl;
-                    }
-                } elseif ($iconSourceType === 'url' && $existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $iconUrl) {
-                    $this->deleteVitrineImageIfStored($existingUrl);
-                }
-            } elseif ($existingUrl !== '' && $this->isStoredVitrineImage($existingUrl)) {
-                $this->deleteVitrineImageIfStored($existingUrl);
-                $iconUrl = '';
-            }
-
-            if ($label === '' && $url === '' && $icon === '' && $iconUrl === '') {
+            if ($label === '' && $url === '' && $icon === '') {
                 continue;
             }
 
-            $item = [
+            $processed[] = [
                 'label' => $label,
                 'url' => $url,
-                'icon_source_type' => $iconSourceType,
+                'icon' => $icon,
             ];
-
-            if ($iconSourceType === 'fontawesome') {
-                $item['icon'] = $icon;
-            } elseif ($iconUrl !== '') {
-                $item['icon_url'] = VitrineBlock::resolveImageUrl($iconUrl);
-            }
-
-            $processed[] = $item;
         }
 
-        $newUrls = collect($processed)->pluck('icon_url')->filter()->all();
         foreach ($existing as $oldSocial) {
             $oldUrl = trim((string) ($oldSocial['icon_url'] ?? ''));
-            if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
+            if ($oldUrl !== '') {
                 $this->deleteVitrineImageIfStored($oldUrl);
             }
         }
@@ -469,23 +588,55 @@ class VitrineController extends Controller
         return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
     }
 
-    private function validateSocialIconUpload(UploadedFile $file, int $index): void
+    private function validateAcademyPdfUpload(UploadedFile $file, int $index): void
     {
         request()->validate([
-            "social_icon_uploads.$index" => 'required|file|mimes:jpeg,jpg,png,webp,gif,svg|max:5120',
+            "academy_pdf_uploads.$index" => 'required|file|mimes:pdf|max:20480',
         ], [
-            "social_icon_uploads.$index.mimes" => 'Formats acceptés : JPEG, PNG, WebP, GIF, SVG.',
-            "social_icon_uploads.$index.max" => 'L\'icône ne doit pas dépasser 5 Mo.',
+            "academy_pdf_uploads.$index.mimes" => 'Seuls les fichiers PDF sont acceptés.',
+            "academy_pdf_uploads.$index.max" => 'Le PDF ne doit pas dépasser 20 Mo.',
         ]);
     }
 
-    private function storeSocialIconImage(UploadedFile $file): string
+    private function storeAcademyPdf(UploadedFile $file): string
     {
-        $extension = $file->getClientOriginalExtension() ?: 'png';
-        $filename = 'social_' . time() . '_' . uniqid() . '.' . strtolower($extension);
-        $path = $file->storeAs('vitrine/social', $filename, 'public');
+        $filename = 'academy_' . time() . '_' . uniqid() . '.pdf';
+        $path = $file->storeAs('vitrine/academy', $filename, 'public');
 
         return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
+    private function validateAcademyCoverUpload(UploadedFile $file, int $index): void
+    {
+        request()->validate([
+            "academy_cover_uploads.$index" => 'required|file|mimes:jpeg,jpg,png,webp,gif|max:5120',
+        ], [
+            "academy_cover_uploads.$index.mimes" => 'Formats acceptés : JPEG, PNG, WebP, GIF.',
+            "academy_cover_uploads.$index.max" => 'L\'image ne doit pas dépasser 5 Mo.',
+        ]);
+    }
+
+    private function storeAcademyCoverImage(UploadedFile $file): string
+    {
+        $extension = $file->getClientOriginalExtension() ?: 'jpg';
+        $filename = 'academy_cover_' . time() . '_' . uniqid() . '.' . strtolower($extension);
+        $path = $file->storeAs('vitrine/academy/covers', $filename, 'public');
+
+        return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
+    private function generateAcademyPdfPreview(string $pdfUrl): string
+    {
+        $service = new AcademyPdfThumbnailService;
+        $storagePath = $service->storagePathFromFileUrl($pdfUrl);
+
+        if (! $storagePath) {
+            return '';
+        }
+
+        $previewUrl = $service->generateFromStoragePath($storagePath);
+
+        return $previewUrl ? VitrineBlock::resolveImageUrl($previewUrl) : '';
     }
 
     private function validateServiceIconUpload(UploadedFile $file, int $index): void
@@ -495,6 +646,16 @@ class VitrineController extends Controller
         ], [
             "service_icon_uploads.$index.mimes" => 'Formats acceptés : JPEG, PNG, WebP, GIF, SVG.',
             "service_icon_uploads.$index.max" => 'L\'icône ne doit pas dépasser 5 Mo.',
+        ]);
+    }
+
+    private function validateServiceImageUpload(UploadedFile $file, int $index): void
+    {
+        request()->validate([
+            "service_image_uploads.$index" => 'required|file|mimes:jpeg,jpg,png,webp,gif|max:5120',
+        ], [
+            "service_image_uploads.$index.mimes" => 'Formats acceptés : JPEG, PNG, WebP, GIF.',
+            "service_image_uploads.$index.max" => 'L\'image ne doit pas dépasser 5 Mo.',
         ]);
     }
 
@@ -525,6 +686,8 @@ class VitrineController extends Controller
             || str_starts_with($path, self::LOGO_STORAGE_PREFIX)
             || str_starts_with($path, self::SOCIAL_STORAGE_PREFIX)
             || str_starts_with($path, self::SERVICE_STORAGE_PREFIX)
+            || str_starts_with($path, self::ACADEMY_STORAGE_PREFIX)
+            || str_starts_with($path, self::ACADEMY_COVER_STORAGE_PREFIX)
         )) {
             Storage::disk('public')->delete($path);
         }
@@ -543,7 +706,9 @@ class VitrineController extends Controller
             || str_starts_with($imageUrl, self::GALLERY_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::LOGO_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::SOCIAL_STORAGE_PREFIX)
-            || str_starts_with($imageUrl, self::SERVICE_STORAGE_PREFIX)) {
+            || str_starts_with($imageUrl, self::SERVICE_STORAGE_PREFIX)
+            || str_starts_with($imageUrl, self::ACADEMY_STORAGE_PREFIX)
+            || str_starts_with($imageUrl, self::ACADEMY_COVER_STORAGE_PREFIX)) {
             return $imageUrl;
         }
 
