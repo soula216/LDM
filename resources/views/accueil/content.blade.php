@@ -148,23 +148,51 @@
     </div>
     <div class="contact-form-wrapper">
       <div class="contact-form-title">{{ $contact['form_title'] ?? '' }}</div>
-      <form class="contact-form" action="#" method="post">
+
+      @if(session('contact_success'))
+        <div class="contact-alert contact-alert--success" role="status">
+          <i class="fas fa-check-circle" aria-hidden="true"></i>
+          <span>{{ session('contact_success') }}</span>
+        </div>
+      @endif
+
+      @if($errors->any())
+        <div class="contact-alert contact-alert--error" role="alert">
+          <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+          <span>Veuillez corriger les erreurs ci-dessous.</span>
+        </div>
+      @endif
+
+      <form class="contact-form" action="{{ route('contact.store') }}" method="post" novalidate>
+        @csrf
         <div class="contact-form-grid">
           <div>
-            <label class="contact-label" for="contact-name">Nom complet</label>
-            <input id="contact-name" name="name" type="text" class="contact-input" placeholder="Votre nom">
+            <label class="contact-label" for="contact-name">Nom complet <span aria-hidden="true">*</span></label>
+            <input id="contact-name" name="name" type="text" class="contact-input @error('name') contact-input--error @enderror" placeholder="Votre nom" value="{{ old('name') }}" required autocomplete="name">
+            @error('name')
+              <p class="contact-field-error">{{ $message }}</p>
+            @enderror
           </div>
           <div>
-            <label class="contact-label" for="contact-email">Email</label>
-            <input id="contact-email" name="email" type="email" class="contact-input" placeholder="Votre email">
+            <label class="contact-label" for="contact-email">Email <span aria-hidden="true">*</span></label>
+            <input id="contact-email" name="email" type="email" class="contact-input @error('email') contact-input--error @enderror" placeholder="Votre email" value="{{ old('email') }}" required autocomplete="email">
+            @error('email')
+              <p class="contact-field-error">{{ $message }}</p>
+            @enderror
           </div>
           <div>
             <label class="contact-label" for="contact-phone">Téléphone</label>
-            <input id="contact-phone" name="phone" type="tel" class="contact-input" placeholder="Votre téléphone">
+            <input id="contact-phone" name="phone" type="tel" class="contact-input @error('phone') contact-input--error @enderror" placeholder="Votre téléphone" value="{{ old('phone') }}" autocomplete="tel">
+            @error('phone')
+              <p class="contact-field-error">{{ $message }}</p>
+            @enderror
           </div>
           <div class="full-row">
-            <label class="contact-label" for="contact-message">Message</label>
-            <textarea id="contact-message" name="message" class="contact-textarea" placeholder="Décrivez votre projet, vos besoins ou vos questions…"></textarea>
+            <label class="contact-label" for="contact-message">Message <span aria-hidden="true">*</span></label>
+            <textarea id="contact-message" name="message" class="contact-textarea @error('message') contact-input--error @enderror" placeholder="Décrivez votre projet, vos besoins ou vos questions…" required>{{ old('message') }}</textarea>
+            @error('message')
+              <p class="contact-field-error">{{ $message }}</p>
+            @enderror
           </div>
         </div>
         <div class="contact-actions">

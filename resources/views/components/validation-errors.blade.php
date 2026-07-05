@@ -1,8 +1,9 @@
 @if ($errors->any())
     @php
         $isLoginPage = request()->routeIs('login') || request()->is('login');
+        $isRegisterPage = request()->routeIs('register');
         $errorTitle = $isLoginPage ? 'Erreurs de connexion' : 'Erreurs de validation';
-        $bgClass = $isLoginPage ? 'bg-white' : 'bg-danger/10';
+        $bgClass = $isLoginPage ? 'bg-white' : ($isRegisterPage ? 'auth-validation-errors' : 'bg-danger/10');
         
         // Pour la page de login, déterminer le type d'erreur
         $loginErrors = [];
@@ -101,16 +102,31 @@
             }
         }
     @endphp
-    <div {{ $attributes->merge(['class' => "p-4 {$bgClass} border-l-4 border-danger rounded-lg"]) }} style="{{ $isLoginPage ? 'background-color: #fff !important;' : '' }}">
-        <div class="flex items-start">
-            <svg class="w-5 h-5 text-danger mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+    <div {{ $attributes->merge(['class' => "p-4 {$bgClass} rounded-xl"]) }} style="{{ $isLoginPage ? 'background-color: #fff !important; border-left: 4px solid #f87171;' : '' }}">
+        <div class="flex items-start gap-3">
+            <svg @class([
+                'w-5 h-5 flex-shrink-0 mt-0.5',
+                'auth-validation-errors__icon' => $isRegisterPage,
+                'text-red-500' => $isLoginPage,
+                'text-danger' => ! $isLoginPage && ! $isRegisterPage,
+            ]) fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
             </svg>
-            <div class="flex-1">
-                <h3 class="text-sm font-medium text-danger mb-2">
+            <div class="flex-1 min-w-0">
+                <h3 @class([
+                    'text-sm font-semibold mb-2',
+                    'auth-validation-errors__title' => $isRegisterPage,
+                    'text-red-600' => $isLoginPage,
+                    'text-danger' => ! $isLoginPage && ! $isRegisterPage,
+                ])>
                     {{ __($errorTitle) }}
                 </h3>
-                <ul class="list-disc list-inside text-sm text-danger space-y-1">
+                <ul @class([
+                    'list-disc list-inside text-sm space-y-1',
+                    'auth-validation-errors__list' => $isRegisterPage,
+                    'text-red-600' => $isLoginPage,
+                    'text-danger' => ! $isLoginPage && ! $isRegisterPage,
+                ])>
                     @foreach ($isLoginPage && !empty($loginErrors) ? $loginErrors : $errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach

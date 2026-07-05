@@ -17,7 +17,8 @@ use App\Http\Controllers\Admin\{
     CritereQualityController,
     DepenseController,
     StockController,
-    VitrineController as AdminVitrineController
+    VitrineController as AdminVitrineController,
+    ContactMessageController as AdminContactMessageController
 };
 use App\Http\Controllers\App\{
     CommandeCalendarController,
@@ -25,8 +26,15 @@ use App\Http\Controllers\App\{
     BonLivraisonController
 };
 use App\Http\Controllers\VitrineController;
+use App\Http\Controllers\ContactMessageController;
+use App\Http\Controllers\Auth\DentistRegistrationController;
 
 Route::get('/', [VitrineController::class, 'show'])->name('vitrine');
+Route::post('/contact', [ContactMessageController::class, 'store'])->name('contact.store');
+Route::middleware(['guest', 'throttle:6,1'])->group(function () {
+    Route::get('/register', [DentistRegistrationController::class, 'create'])->name('register');
+    Route::post('/register', [DentistRegistrationController::class, 'store'])->name('register.store');
+});
 Route::get('/services', [VitrineController::class, 'services'])->name('vitrine.services');
 Route::get('/services/{slug}', [VitrineController::class, 'serviceShow'])->name('vitrine.services.show');
 Route::get('/process', [VitrineController::class, 'process'])->name('vitrine.process');
@@ -147,6 +155,15 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
     Route::get('permissions', [PermissionController::class, 'index'])
         ->name('admin.permissions.index')
         ->middleware('can:manage_permissions');
+
+    // Messages contact (formulaire vitrine)
+    Route::prefix('contact-messages')->group(function () {
+        Route::get('/', [AdminContactMessageController::class, 'index'])
+            ->name('admin.contact-messages.index');
+
+        Route::delete('{contactMessage}', [AdminContactMessageController::class, 'destroy'])
+            ->name('admin.contact-messages.destroy');
+    });
 
     // Site vitrine
     Route::prefix('vitrine')->group(function () {

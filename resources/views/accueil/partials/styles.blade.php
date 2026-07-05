@@ -2769,6 +2769,40 @@
       font-size: 0.95rem;
     }
 
+    .contact-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.25rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .contact-alert--success {
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      color: #bbf7d0;
+    }
+
+    .contact-alert--error {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fecaca;
+    }
+
+    .contact-field-error {
+      margin-top: 0.35rem;
+      font-size: 0.8rem;
+      color: #fca5a5;
+    }
+
+    .contact-input--error,
+    .contact-textarea.contact-input--error {
+      border-color: rgba(239, 68, 68, 0.75);
+    }
+
     /* Gallery - Nos Travaux */
     .gallery-grid {
       display: grid;

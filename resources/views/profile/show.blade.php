@@ -8,7 +8,7 @@
                     </svg>
                 </div>
                 <h2 class="text-xl sm:text-2xl font-semibold text-primary">
-                    {{ __('Profile') }}
+                    {{ __('Mon profil') }}
                 </h2>
             </div>
         </div>

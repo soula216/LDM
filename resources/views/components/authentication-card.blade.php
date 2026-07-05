@@ -1,3 +1,9 @@
+@props([
+    'title' => 'Connexion Sécurisée',
+    'subtitle' => 'Gestion de laboratoire prothèse dentaire',
+    'wide' => false,
+])
+
 <div class="login-bg-container">
     <!-- Background Image - Fallback to gradient if image doesn't exist -->
     @if(file_exists(public_path('bg-dentaire.jpg')))
@@ -13,15 +19,15 @@
 </div>
 
 <main class="login-container-new">
-    <div class="login-card-new">
+    <div @class(['login-card-new', 'login-card-new--wide' => $wide])>
         <header class="login-card-header login-animate-float">
             <div class="login-logo-container">
                 <div class="login-logo-ring">
                     <div class="login-logo-ring-inner">LDM</div>
                 </div>
             </div>
-            <h1>Connexion Sécurisée</h1>
-            <p>Gestion de laboratoire prothèse dentaire</p>
+            <h1>{{ $title }}</h1>
+            <p>{{ $subtitle }}</p>
         </header>
 
         {{ $slot }}

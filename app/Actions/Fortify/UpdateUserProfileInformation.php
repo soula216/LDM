@@ -11,15 +11,18 @@ use Laravel\Fortify\Contracts\UpdatesUserProfileInformation;
 class UpdateUserProfileInformation implements UpdatesUserProfileInformation
 {
     /**
-     * Validate and update the given user's profile information.
-     *
      * @param  array<string, mixed>  $input
      */
     public function update(User $user, array $input): void
     {
         Validator::make($input, [
-            'name' => ['required', 'string', 'max:255'],
+            'nom' => ['required', 'string', 'max:255'],
+            'prénom' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'tél' => ['nullable', 'string', 'max:20'],
+            'gouvernorat' => ['nullable', 'string', 'max:255'],
+            'ville' => ['nullable', 'string', 'max:255'],
+            'adresse' => ['nullable', 'string', 'max:1000'],
             'photo' => ['nullable', 'mimes:jpg,jpeg,png', 'max:1024'],
         ])->validateWithBag('updateProfileInformation');
 
@@ -27,29 +30,41 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             $user->updateProfilePhoto($input['photo']);
         }
 
-        if ($input['email'] !== $user->email &&
-            $user instanceof MustVerifyEmail) {
-            $this->updateVerifiedUser($user, $input);
+        $profileData = $this->buildProfileData($input);
+
+        if ($input['email'] !== $user->email && $user instanceof MustVerifyEmail) {
+            $this->updateVerifiedUser($user, $profileData);
         } else {
-            $user->forceFill([
-                'name' => $input['name'],
-                'email' => $input['email'],
-            ])->save();
+            $user->forceFill($profileData)->save();
         }
     }
 
     /**
-     * Update the given verified user's profile information.
-     *
-     * @param  array<string, string>  $input
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
      */
-    protected function updateVerifiedUser(User $user, array $input): void
+    protected function buildProfileData(array $input): array
     {
-        $user->forceFill([
-            'name' => $input['name'],
+        return [
+            'nom' => $input['nom'],
+            'prénom' => $input['prénom'],
+            'name' => trim($input['nom'] . ' ' . $input['prénom']),
             'email' => $input['email'],
+            'tél' => $input['tél'] ?? null,
+            'gouvernorat' => $input['gouvernorat'] ?? null,
+            'ville' => $input['ville'] ?? null,
+            'adresse' => $input['adresse'] ?? null,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $profileData
+     */
+    protected function updateVerifiedUser(User $user, array $profileData): void
+    {
+        $user->forceFill(array_merge($profileData, [
             'email_verified_at' => null,
-        ])->save();
+        ]))->save();
 
         $user->sendEmailVerificationNotification();
     }

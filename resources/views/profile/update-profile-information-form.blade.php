@@ -1,17 +1,15 @@
 <x-form-section submit="updateProfileInformation">
     <x-slot name="title">
-        {{ __('Informations du Profil') }}
+        {{ __('Informations du profil') }}
     </x-slot>
 
     <x-slot name="description">
-        {{ __('Mettez à jour les informations de votre profil et votre adresse email.') }}
+        {{ __('Mettez à jour vos informations personnelles et votre adresse email.') }}
     </x-slot>
 
     <x-slot name="form">
-        <!-- Profile Photo -->
         @if (Laravel\Jetstream\Jetstream::managesProfilePhotos())
-            <div x-data="{photoName: null, photoPreview: null}" class="col-span-6 sm:col-span-4">
-                <!-- Profile Photo File Input -->
+            <div x-data="{photoName: null, photoPreview: null}" class="col-span-6">
                 <input type="file" id="photo" class="hidden"
                             wire:model.live="photo"
                             x-ref="photo"
@@ -26,12 +24,10 @@
 
                 <x-label for="photo" value="{{ __('Photo') }}" />
 
-                <!-- Current Profile Photo -->
                 <div class="mt-2" x-show="! photoPreview">
-                    <img src="{{ $this->user->profile_photo_url }}" alt="{{ $this->user->name }}" class="rounded-full size-20 object-cover">
+                    <img src="{{ $this->user->profile_photo_url }}" alt="{{ $this->user->full_name ?: $this->user->name }}" class="rounded-full size-20 object-cover">
                 </div>
 
-                <!-- New Profile Photo Preview -->
                 <div class="mt-2" x-show="photoPreview" style="display: none;">
                     <span class="block rounded-full size-20 bg-cover bg-no-repeat bg-center"
                           x-bind:style="'background-image: url(\'' + photoPreview + '\');'">
@@ -52,17 +48,21 @@
             </div>
         @endif
 
-        <!-- Name -->
-        <div class="col-span-6 sm:col-span-4">
-            <x-label for="name" value="{{ __('Nom') }}" />
-            <x-input id="name" type="text" class="mt-1 block w-full" wire:model="state.name" required autocomplete="name" />
-            <x-input-error for="name" class="mt-2" />
+        <div class="col-span-6 sm:col-span-3">
+            <x-label for="nom" value="{{ __('Nom') }}" />
+            <x-input id="nom" type="text" class="mt-1 block w-full input-field" wire:model="state.nom" required autocomplete="family-name" />
+            <x-input-error for="nom" class="mt-2" />
         </div>
 
-        <!-- Email -->
-        <div class="col-span-6 sm:col-span-4">
+        <div class="col-span-6 sm:col-span-3">
+            <x-label for="prénom" value="{{ __('Prénom') }}" />
+            <x-input id="prénom" type="text" class="mt-1 block w-full input-field" wire:model="state.prénom" required autocomplete="given-name" />
+            <x-input-error for="prénom" class="mt-2" />
+        </div>
+
+        <div class="col-span-6 sm:col-span-3">
             <x-label for="email" value="{{ __('Email') }}" />
-            <x-input id="email" type="email" class="mt-1 block w-full" wire:model="state.email" required autocomplete="username" />
+            <x-input id="email" type="email" class="mt-1 block w-full input-field" wire:model="state.email" required autocomplete="username" />
             <x-input-error for="email" class="mt-2" />
 
             @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::emailVerification()) && ! $this->user->hasVerifiedEmail())
@@ -81,6 +81,31 @@
                 @endif
             @endif
         </div>
+
+        <div class="col-span-6 sm:col-span-3">
+            <x-label for="tél" value="{{ __('Téléphone') }}" />
+            <x-input id="tél" type="tel" class="mt-1 block w-full input-field" wire:model="state.tél" autocomplete="tel" />
+            <x-input-error for="tél" class="mt-2" />
+        </div>
+
+        <div class="col-span-6 sm:col-span-3">
+            <x-label for="gouvernorat" value="{{ __('Gouvernorat') }}" />
+            <x-input id="gouvernorat" type="text" class="mt-1 block w-full input-field" wire:model="state.gouvernorat" />
+            <x-input-error for="gouvernorat" class="mt-2" />
+        </div>
+
+        <div class="col-span-6 sm:col-span-3">
+            <x-label for="ville" value="{{ __('Ville') }}" />
+            <x-input id="ville" type="text" class="mt-1 block w-full input-field" wire:model="state.ville" />
+            <x-input-error for="ville" class="mt-2" />
+        </div>
+
+        <div class="col-span-6">
+            <x-label for="adresse" value="{{ __('Adresse') }}" />
+            <textarea id="adresse" rows="3" class="mt-1 block w-full input-field" wire:model="state.adresse"></textarea>
+            <x-input-error for="adresse" class="mt-2" />
+        </div>
+
     </x-slot>
 
     <x-slot name="actions">
