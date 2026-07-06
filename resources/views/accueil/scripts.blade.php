@@ -189,25 +189,89 @@
     const items = Array.from(document.querySelectorAll('[data-gallery-item]'));
     if (!lightbox || items.length === 0) return;
 
+    const isPremium = lightbox.classList.contains('gallery-lightbox--premium');
     const imageEl = document.getElementById('galleryLightboxImage');
     const titleEl = document.getElementById('galleryLightboxTitle');
     const descEl = document.getElementById('galleryLightboxDesc');
+    const titleInlineEl = document.getElementById('galleryLightboxTitleInline');
     const counterEl = document.getElementById('galleryLightboxCounter');
+    const progressEl = document.getElementById('galleryLightboxProgress');
+    const thumbsEl = document.getElementById('galleryLightboxThumbs');
     const captionEl = lightbox.querySelector('.gallery-lightbox-caption');
     const prevBtn = lightbox.querySelector('[data-gallery-lightbox-prev]');
     const nextBtn = lightbox.querySelector('[data-gallery-lightbox-next]');
     const closeEls = lightbox.querySelectorAll('[data-gallery-lightbox-close]');
     let currentIndex = 0;
     let lastFocused = null;
+    let imageSwapTimer = null;
 
     function setCaption(title, description) {
       titleEl.textContent = title || '';
       descEl.textContent = description || '';
       titleEl.hidden = !title;
       descEl.hidden = !description;
+      if (titleInlineEl) {
+        titleInlineEl.textContent = title || '';
+        titleInlineEl.hidden = !title;
+      }
       if (captionEl) {
         captionEl.hidden = !title && !description;
       }
+    }
+
+    function updateProgress(index) {
+      if (!progressEl || items.length <= 1) return;
+      progressEl.style.width = `${((index + 1) / items.length) * 100}%`;
+    }
+
+    function updateThumbs(index) {
+      if (!thumbsEl) return;
+      thumbsEl.querySelectorAll('.gallery-lightbox-thumb').forEach((thumb, thumbIndex) => {
+        thumb.classList.toggle('is-active', thumbIndex === index);
+        thumb.setAttribute('aria-selected', thumbIndex === index ? 'true' : 'false');
+      });
+
+      const activeThumb = thumbsEl.querySelector('.gallery-lightbox-thumb.is-active');
+      activeThumb?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+
+    function buildThumbs() {
+      if (!thumbsEl) return;
+      thumbsEl.innerHTML = '';
+
+      items.forEach((item, index) => {
+        const src = item.dataset.gallerySrc || '';
+        if (!src) return;
+
+        const thumb = document.createElement('button');
+        thumb.type = 'button';
+        thumb.className = 'gallery-lightbox-thumb';
+        thumb.setAttribute('role', 'tab');
+        thumb.setAttribute('aria-label', item.dataset.galleryTitle || `Image ${index + 1}`);
+        thumb.innerHTML = `<img src="${src}" alt="" loading="lazy">`;
+        thumb.addEventListener('click', () => showAt(index));
+        thumbsEl.appendChild(thumb);
+      });
+    }
+
+    function applyImage(src, title) {
+      if (!isPremium) {
+        imageEl.src = src;
+        imageEl.alt = title || 'Image galerie';
+        return;
+      }
+
+      window.clearTimeout(imageSwapTimer);
+      imageEl.classList.remove('is-entering');
+      imageEl.classList.add('is-changing');
+
+      imageSwapTimer = window.setTimeout(() => {
+        imageEl.src = src;
+        imageEl.alt = title || 'Image galerie';
+        imageEl.classList.remove('is-changing');
+        imageEl.classList.add('is-entering');
+        window.setTimeout(() => imageEl.classList.remove('is-entering'), 480);
+      }, 160);
     }
 
     function showAt(index) {
@@ -219,13 +283,15 @@
       const title = item.dataset.galleryTitle || '';
       const description = item.dataset.galleryDescription || '';
 
-      imageEl.src = src;
-      imageEl.alt = title || 'Image galerie';
+      applyImage(src, title);
       setCaption(title, description);
 
       if (counterEl) {
         counterEl.textContent = `${index + 1} / ${items.length}`;
       }
+
+      updateProgress(index);
+      updateThumbs(index);
 
       if (prevBtn) prevBtn.disabled = index <= 0;
       if (nextBtn) nextBtn.disabled = index >= items.length - 1;
@@ -245,6 +311,9 @@
 
     function close() {
       lightbox.classList.remove('is-active');
+      window.clearTimeout(imageSwapTimer);
+      imageEl.classList.remove('is-changing', 'is-entering');
+
       window.setTimeout(() => {
         lightbox.hidden = true;
         lightbox.setAttribute('aria-hidden', 'true');
@@ -253,8 +322,10 @@
         if (lastFocused && typeof lastFocused.focus === 'function') {
           lastFocused.focus();
         }
-      }, 220);
+      }, isPremium ? 320 : 220);
     }
+
+    buildThumbs();
 
     items.forEach((item, index) => {
       item.addEventListener('click', () => open(index));

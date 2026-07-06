@@ -21,6 +21,7 @@
       @include('accueil.partials.social-links', [
           'links' => $socialLinks,
           'modifier' => 'social-links--topbar',
+          'flagSrc' => asset('images/vitrine/drapeau-tunis.png'),
       ])
     </div>
   </div>
@@ -37,6 +38,7 @@
               (VitrineBlock::isPublicPageActive('academy') && str_contains($navHref, '/academy'))
               || (VitrineBlock::isPublicPageActive('services') && str_contains($navHref, '/services'))
               || (VitrineBlock::isPublicPageActive('process') && str_contains($navHref, '/process'))
+              || (VitrineBlock::isPublicPageActive('gallery') && str_contains($navHref, '/gallery'))
               || (VitrineBlock::isPublicPageActive('faq') && str_contains($navHref, '/faq'))
           );
         @endphp

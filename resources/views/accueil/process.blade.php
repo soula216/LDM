@@ -8,7 +8,9 @@
 
 @section('content')
 @php
-    $steps = collect($process['steps'] ?? []);
+    use App\Models\VitrineBlock;
+
+    $steps = VitrineBlock::activeProcessSteps($process['steps'] ?? []);
     $defaultIcons = ['fa-comments', 'fa-cube', 'fa-cogs', 'fa-truck-fast'];
 @endphp
 

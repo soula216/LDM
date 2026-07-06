@@ -1,5 +1,8 @@
+@php
+    $modern = $modern ?? false;
+@endphp
 <div id="galleryLightbox"
-     class="gallery-lightbox"
+     @class(['gallery-lightbox', 'gallery-lightbox--premium' => $modern])
      hidden
      aria-hidden="true"
      role="dialog"
@@ -8,10 +11,19 @@
   <div class="gallery-lightbox-backdrop" data-gallery-lightbox-close></div>
 
   <div class="gallery-lightbox-shell">
+    @if($modern)
+      <div class="gallery-lightbox-progress" aria-hidden="true">
+        <span id="galleryLightboxProgress"></span>
+      </div>
+    @endif
+
     <header class="gallery-lightbox-topbar">
       <div class="gallery-lightbox-meta">
         <span class="gallery-lightbox-badge">Galerie</span>
         <span id="galleryLightboxCounter" class="gallery-lightbox-counter"></span>
+        @if($modern)
+          <span id="galleryLightboxTitleInline" class="gallery-lightbox-title-inline"></span>
+        @endif
       </div>
       <button type="button" class="gallery-lightbox-close" data-gallery-lightbox-close aria-label="Fermer">
         <i class="fas fa-times" aria-hidden="true"></i>
@@ -32,6 +44,10 @@
         <i class="fas fa-chevron-right" aria-hidden="true"></i>
       </button>
     </div>
+
+    @if($modern)
+      <div id="galleryLightboxThumbs" class="gallery-lightbox-thumbs" role="tablist" aria-label="Miniatures galerie"></div>
+    @endif
 
     <footer class="gallery-lightbox-caption">
       <h3 id="galleryLightboxTitle"></h3>

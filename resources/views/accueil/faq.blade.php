@@ -8,7 +8,10 @@
 
 @section('content')
 @php
-    $items = collect($faq['items'] ?? [])->filter(fn ($item) => filled($item['question'] ?? null));
+    use App\Models\VitrineBlock;
+
+    $items = VitrineBlock::activeFaqItems($faq['items'] ?? [])
+        ->filter(fn ($item) => filled($item['question'] ?? null));
 @endphp
 
 <main class="faq-page">

@@ -125,6 +125,7 @@ class VitrineBlock extends Model
             'academy' => 'vitrine.academy',
             'services' => 'vitrine.services',
             'process' => 'vitrine.process',
+            'gallery' => 'vitrine.gallery',
             'faq' => 'vitrine.faq',
         ];
 
@@ -256,6 +257,94 @@ class VitrineBlock extends Model
     public static function isServiceItemActive(array $item): bool
     {
         return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $steps
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function activeProcessSteps(array $steps): \Illuminate\Support\Collection
+    {
+        return collect($steps)->filter(function (array $step): bool {
+            return filter_var($step['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        })->values();
+    }
+
+    public static function isProcessStepActive(array $step): bool
+    {
+        return filter_var($step['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function activeFaqItems(array $items): \Illuminate\Support\Collection
+    {
+        return collect($items)->filter(function (array $item): bool {
+            return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        })->values();
+    }
+
+    public static function isFaqItemActive(array $item): bool
+    {
+        return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function activeGalleryItems(array $items): \Illuminate\Support\Collection
+    {
+        return collect($items)->filter(function (array $item): bool {
+            return static::isGalleryItemActive($item);
+        })->values();
+    }
+
+    /**
+     * Images actives marquées favorites (aperçu page d'accueil).
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function activeFavoriteGalleryItems(array $items): \Illuminate\Support\Collection
+    {
+        return collect($items)->filter(function (array $item): bool {
+            return static::isGalleryItemActive($item) && static::isGalleryItemFavorite($item);
+        })->values();
+    }
+
+    public static function isGalleryItemActive(array $item): bool
+    {
+        return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    public static function isGalleryItemFavorite(array $item): bool
+    {
+        return filter_var($item['is_favorite'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Images affichées dans la galerie de la page d'accueil (actives + favorites uniquement).
+     *
+     * @param  array<string, mixed>  $gallery
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function homepageGalleryItems(array $gallery): \Illuminate\Support\Collection
+    {
+        return static::activeFavoriteGalleryItems($gallery['items'] ?? []);
+    }
+
+    /**
+     * Images affichées sur la page Galerie dédiée (actives, favorite ou non).
+     *
+     * @param  array<string, mixed>  $gallery
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function pageGalleryItems(array $gallery): \Illuminate\Support\Collection
+    {
+        return static::activeGalleryItems($gallery['items'] ?? []);
     }
 
     /**

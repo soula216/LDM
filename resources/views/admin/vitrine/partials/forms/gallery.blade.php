@@ -7,16 +7,38 @@
             'source_type' => ($item['source_type'] ?? null) ?: (
                 str_contains($item['image_url'] ?? '', '/storage/vitrine/') ? 'upload' : 'url'
             ),
+            'is_active' => filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'is_favorite' => filter_var($item['is_favorite'] ?? false, FILTER_VALIDATE_BOOLEAN),
         ]);
     })->values()->all();
+    $showAllOnSite = count($galleryItems) > 0
+        && collect($galleryItems)->every(fn (array $item): bool => $item['is_active']);
 @endphp
 
 <div class="vitrine-tab-form space-y-6 sm:space-y-8"
      x-data="{
         open: { header: true, items: true },
+        showAllOnSite: @js($showAllOnSite),
         lightbox: null,
         items: @js($galleryItems),
         itemPreview(item) { return item.preview_url || item.image_url || ''; },
+        updateShowAllFromItems() {
+            this.showAllOnSite = this.items.length > 0 && this.items.every(item => item.is_active);
+        },
+        toggleShowAllOnSite() {
+            this.items.forEach(item => {
+                item.is_active = this.showAllOnSite;
+                if (!this.showAllOnSite) {
+                    item.is_favorite = false;
+                }
+            });
+        },
+        onItemActiveChange(item) {
+            if (!item.is_active) {
+                item.is_favorite = false;
+            }
+            this.updateShowAllFromItems();
+        },
         openLightbox(item) {
             const src = this.itemPreview(item);
             if (!src) return;
@@ -41,11 +63,27 @@
             const item = this.items[index];
             if (item?.preview_url?.startsWith('blob:')) URL.revokeObjectURL(item.preview_url);
             this.items.splice(index, 1);
+            this.updateShowAllFromItems();
         },
         addItem() {
-            this.items.push({ image_url: '', title: '', description: '', source_type: 'url', preview_url: null });
+            this.items.push({
+                image_url: '',
+                title: '',
+                description: '',
+                source_type: 'url',
+                preview_url: null,
+                is_active: this.showAllOnSite,
+                is_favorite: false,
+            });
+            this.updateShowAllFromItems();
+        },
+        itemStatus(item) {
+            if (!item.is_active) return 'Masquée sur le site';
+            if (item.is_favorite) return 'Visible sur le site · Mise en avant accueil';
+            return 'Visible sur le site · Page galerie uniquement';
         }
-     }">
+     }"
+     x-init="updateShowAllFromItems()">
 
     <section class="rounded-2xl border border-border bg-card overflow-hidden">
         @component('admin.vitrine.partials.collapsible-header', [
@@ -74,7 +112,7 @@
         @component('admin.vitrine.partials.collapsible-header', [
             'section' => 'items',
             'title' => 'Réalisations',
-            'subtitle' => 'Images et légendes de la galerie',
+            'subtitle' => 'Activez et configurez chaque image de la galerie',
             'headerClass' => 'border-b border-border/60 bg-card/80',
         ])
             @slot('icon')
@@ -88,6 +126,24 @@
 
         <div x-show="open.items" x-cloak x-transition.opacity.duration.200ms>
             <div class="p-4 sm:p-6">
+                <div class="mb-6 p-4 rounded-xl border border-border bg-neutral-50/80">
+                    <input type="hidden" name="content[show_all_on_site]" value="0">
+                    <label class="inline-flex items-start gap-3 cursor-pointer group w-full">
+                        <input type="checkbox"
+                               name="content[show_all_on_site]"
+                               value="1"
+                               x-model="showAllOnSite"
+                               @change="toggleShowAllOnSite()"
+                               class="w-5 h-5 mt-0.5 rounded-md border-border text-primary focus:ring-primary/30 transition shrink-0">
+                        <span>
+                            <span class="block text-sm font-semibold text-primary group-hover:text-primary/90 transition-colors">Afficher tous les images dans le site</span>
+                            <span class="block text-xs text-secondary mt-1 leading-relaxed">
+                                Coche ou décoche en temps réel l'option « Afficher cette image sur le site » pour chaque réalisation.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+
                 <template x-if="items.length === 0">
                     <div class="text-center py-10 px-4 rounded-xl border-2 border-dashed border-border bg-neutral-50/50 mb-4">
                         <p class="text-sm text-secondary font-medium">Aucune réalisation configurée</p>
@@ -96,11 +152,18 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" x-show="items.length > 0">
                     <template x-for="(item, index) in items" :key="'gallery-' + index">
-                        <div class="rounded-xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
-                            <div class="flex items-center justify-between px-4 py-3 bg-neutral-50/80 border-b border-border/60">
-                                <span class="text-xs font-bold text-primary uppercase tracking-wide" x-text="'Réalisation ' + (index + 1)"></span>
+                        <div class="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col transition-colors"
+                             :class="item.is_active ? 'border-border' : 'border-amber-200/80 bg-amber-50/20'">
+                            <div class="flex items-center justify-between gap-3 px-4 py-3 bg-neutral-50/80 border-b border-border/60">
+                                <div class="flex items-center gap-3 min-w-0 flex-1">
+                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 text-xs font-bold shrink-0" x-text="index + 1"></span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-primary truncate" x-text="(item.title || '').trim() !== '' ? item.title : ('Réalisation ' + (index + 1))"></p>
+                                        <p class="text-xs text-secondary mt-0.5" x-text="itemStatus(item)"></p>
+                                    </div>
+                                </div>
                                 <button type="button" @click="removeItem(index)"
-                                        class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 transition-colors"
+                                        class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 transition-colors shrink-0"
                                         title="Supprimer">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -129,6 +192,27 @@
                             </div>
 
                             <div class="p-4 space-y-4 flex-1">
+                                <label class="inline-flex items-center gap-3 cursor-pointer group pb-4 mb-4 border-b border-border/50 w-full">
+                                    <input type="hidden" :name="'content[items][' + index + '][is_active]'" value="0">
+                                    <input type="checkbox"
+                                           :name="'content[items][' + index + '][is_active]'" value="1"
+                                           x-model="item.is_active"
+                                           @change="onItemActiveChange(item)"
+                                           class="w-5 h-5 rounded-md border-border text-primary focus:ring-primary/30 transition">
+                                    <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Afficher cette image sur le site</span>
+                                </label>
+
+                                <label class="inline-flex items-center gap-3 cursor-pointer group pb-4 mb-4 border-b border-border/50 w-full"
+                                       :class="!item.is_active ? 'opacity-50 pointer-events-none' : ''">
+                                    <input type="hidden" :name="'content[items][' + index + '][is_favorite]'" value="0">
+                                    <input type="checkbox"
+                                           :name="'content[items][' + index + '][is_favorite]'" value="1"
+                                           x-model="item.is_favorite"
+                                           :disabled="!item.is_active"
+                                           class="w-5 h-5 rounded-md border-border text-amber-500 focus:ring-amber-400/30 transition">
+                                    <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Favorite (aperçu page d'accueil)</span>
+                                </label>
+
                                 <input type="hidden" :name="'content[items][' + index + '][source_type]'" x-model="item.source_type">
 
                                 <div class="flex flex-wrap gap-2">

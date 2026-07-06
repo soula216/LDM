@@ -3,6 +3,7 @@
 
     $hero = $blocks['hero'] ?? [];
     $gallery = $blocks['gallery'] ?? [];
+    $galleryItems = VitrineBlock::homepageGalleryItems($gallery);
     $features = $blocks['features'] ?? [];
     $contact = $blocks['contact'] ?? [];
 @endphp
@@ -59,7 +60,7 @@
 </section>
 @endif
 
-@if(!empty($blocks['gallery']))
+@if(!empty($blocks['gallery']) && $galleryItems->isNotEmpty())
 {{-- Gallery - Nos Travaux --}}
 <section class="gallery" id="travaux">
   <div class="section-header reveal">
@@ -68,7 +69,7 @@
     <p class="section-subtitle">{{ $gallery['section_subtitle'] ?? '' }}</p>
   </div>
   <div class="gallery-grid">
-    @foreach($gallery['items'] ?? [] as $index => $item)
+    @foreach($galleryItems as $index => $item)
       <button type="button"
               class="gallery-item reveal"
               data-gallery-item
@@ -121,17 +122,23 @@
 @if(!empty($blocks['contact']))
 {{-- Contact Section --}}
 <section class="contact-section" id="contact">
+  <div class="contact-section__bg" aria-hidden="true">
+    <span class="contact-section__orb contact-section__orb--1"></span>
+    <span class="contact-section__orb contact-section__orb--2"></span>
+    <span class="contact-section__orb contact-section__orb--3"></span>
+  </div>
+
   <div class="contact-grid reveal">
-    <div class="contact-card">
+    <div class="contact-card contact-glass">
       <div class="contact-tag">
         <i class="{{ $contact['tag_icon'] ?? 'fas fa-comments' }}"></i>
         <span>{{ $contact['tag_text'] ?? '' }}</span>
       </div>
       <h2>{{ $contact['title'] ?? '' }}</h2>
-      <p>{{ $contact['description'] ?? '' }}</p>
+      <p class="contact-card__lead">{{ $contact['description'] ?? '' }}</p>
       <div class="contact-items">
         @foreach($contact['items'] ?? [] as $item)
-          <div class="contact-item">
+          <div class="contact-item contact-glass-item">
             <div class="contact-item-icon"><i class="{{ $item['icon'] ?? '' }}"></i></div>
             <div class="contact-item-text">
               <h4>{{ $item['title'] ?? '' }}</h4>
@@ -146,8 +153,12 @@
         @endforeach
       </div>
     </div>
-    <div class="contact-form-wrapper">
-      <div class="contact-form-title">{{ $contact['form_title'] ?? '' }}</div>
+
+    <div class="contact-form-wrapper contact-glass">
+      <div class="contact-form-header">
+        <div class="contact-form-title">{{ $contact['form_title'] ?? '' }}</div>
+        <p class="contact-form-subtitle">Réponse sous 24 h ouvrées</p>
+      </div>
 
       @if(session('contact_success'))
         <div class="contact-alert contact-alert--success" role="status">

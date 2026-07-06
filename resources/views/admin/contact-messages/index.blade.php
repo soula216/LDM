@@ -16,7 +16,31 @@
         </div>
     </x-slot>
 
-    <div x-data="{ showDeleteModal: false, deleteFormAction: '' }" x-cloak class="py-4 sm:py-8 bg-app min-h-screen">
+    <div
+        x-data="{
+            showDeleteModal: false,
+            showViewModal: false,
+            deleteFormAction: '',
+            selectedMessage: null,
+            openMessage(message) {
+                this.selectedMessage = message;
+                this.showViewModal = true;
+            },
+            closeViewModal() {
+                this.showViewModal = false;
+                this.selectedMessage = null;
+            },
+            confirmDeleteFromView() {
+                if (!this.selectedMessage) return;
+                this.deleteFormAction = this.selectedMessage.delete_url;
+                this.showViewModal = false;
+                this.showDeleteModal = true;
+            }
+        }"
+        x-cloak
+        class="py-4 sm:py-8 bg-app min-h-screen"
+        @keydown.escape.window="showViewModal ? closeViewModal() : (showDeleteModal = false)"
+    >
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             @if(session('success'))
                 <div class="mb-4 sm:mb-6 p-3 sm:p-4 bg-accent-secondary/10 border-l-4 border-accent-secondary rounded-lg">
@@ -55,6 +79,17 @@
                         </thead>
                         <tbody class="bg-card divide-y divide-border">
                             @forelse($messages as $message)
+                                @php
+                                    $messagePayload = [
+                                        'id' => $message->id,
+                                        'name' => $message->name,
+                                        'email' => $message->email,
+                                        'phone' => $message->phone,
+                                        'message' => $message->message,
+                                        'created_at' => $message->created_at->format('d/m/Y à H:i'),
+                                        'delete_url' => route('admin.contact-messages.destroy', $message),
+                                    ];
+                                @endphp
                                 <tr class="hover:bg-neutral-100/50 transition-colors">
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-secondary">
                                         {{ $message->created_at->format('d/m/Y H:i') }}
@@ -70,19 +105,33 @@
                                         {{ $message->phone ?: '—' }}
                                     </td>
                                     <td class="px-3 sm:px-6 py-4">
-                                        <p class="text-sm text-secondary max-w-md whitespace-pre-wrap">{{ Str::limit($message->message, 120) }}</p>
+                                        <p class="text-sm text-secondary max-w-md">{{ Str::limit($message->message, 100) }}</p>
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
-                                        <button
-                                            type="button"
-                                            @click="showDeleteModal = true; deleteFormAction = '{{ route('admin.contact-messages.destroy', $message) }}'"
-                                            class="text-danger hover:text-danger/80 transition-colors"
-                                            title="Supprimer"
-                                        >
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                            </svg>
-                                        </button>
+                                        <div class="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                @click="openMessage(@js($messagePayload))"
+                                                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-primary hover:bg-primary/10 border border-transparent hover:border-primary/20 transition-colors"
+                                                title="Lire le message"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                </svg>
+                                                <span class="hidden lg:inline text-xs font-medium">Lire</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                @click="deleteFormAction = '{{ route('admin.contact-messages.destroy', $message) }}'; showDeleteModal = true"
+                                                class="inline-flex items-center p-1.5 rounded-lg text-danger hover:bg-danger/10 transition-colors"
+                                                title="Supprimer"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
@@ -104,10 +153,70 @@
             </div>
         </div>
 
+        {{-- Modal lecture message --}}
+        <div
+            x-show="showViewModal"
+            x-transition.opacity
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+            style="display: none;"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="contact-message-view-title"
+        >
+            <div
+                class="bg-card rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-border"
+                @click.outside="closeViewModal()"
+            >
+                <div class="flex items-start justify-between gap-4 px-5 sm:px-6 py-4 border-b border-border">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-secondary mb-1">Message contact</p>
+                        <h3 id="contact-message-view-title" class="text-lg font-semibold text-primary truncate" x-text="selectedMessage?.name || ''"></h3>
+                        <p class="text-xs text-secondary mt-1" x-text="selectedMessage?.created_at || ''"></p>
+                    </div>
+                    <button type="button" @click="closeViewModal()" class="p-2 rounded-lg text-secondary hover:text-primary hover:bg-neutral-100 transition-colors" aria-label="Fermer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="px-5 sm:px-6 py-4 space-y-4 overflow-y-auto">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="rounded-xl border border-border bg-neutral-50/80 px-4 py-3">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-secondary mb-1">Email</p>
+                            <a :href="selectedMessage ? 'mailto:' + selectedMessage.email : '#'" class="text-sm text-primary hover:underline break-all" x-text="selectedMessage?.email || ''"></a>
+                        </div>
+                        <div class="rounded-xl border border-border bg-neutral-50/80 px-4 py-3">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-secondary mb-1">Téléphone</p>
+                            <p class="text-sm text-primary" x-text="selectedMessage?.phone || '—'"></p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-border bg-neutral-50/50 px-4 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-secondary mb-2">Message</p>
+                        <div class="text-sm text-primary whitespace-pre-wrap break-words leading-relaxed max-h-[40vh] overflow-y-auto" x-text="selectedMessage?.message || ''"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3 px-5 sm:px-6 py-4 border-t border-border bg-neutral-50/50 rounded-b-2xl">
+                    <button type="button" @click="confirmDeleteFromView()" class="btn-danger sm:order-2">Supprimer</button>
+                    <div class="flex flex-col sm:flex-row gap-2 sm:order-1">
+                        <button type="button" @click="closeViewModal()" class="btn-secondary">Fermer</button>
+                        <a
+                            :href="selectedMessage ? 'mailto:' + selectedMessage.email : '#'"
+                            class="btn-primary text-center"
+                            x-show="selectedMessage?.email"
+                        >Répondre par email</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Modal suppression --}}
         <div
             x-show="showDeleteModal"
-            x-transition
-            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+            x-transition.opacity
+            class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
             style="display: none;"
         >
             <div class="bg-card rounded-xl shadow-xl max-w-md w-full p-6 border border-border" @click.outside="showDeleteModal = false">

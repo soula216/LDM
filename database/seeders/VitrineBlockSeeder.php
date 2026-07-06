@@ -22,6 +22,7 @@ class VitrineBlockSeeder extends Seeder
                         ['label' => 'Accueil', 'href' => '/'],
                         ['label' => 'Services', 'href' => '/services'],
                         ['label' => 'Process', 'href' => '/process'],
+                        ['label' => 'Galerie', 'href' => '/gallery'],
                         ['label' => 'LDM Academy', 'href' => '/academy'],
                         ['label' => 'FAQ', 'href' => '/faq'],
                         ['label' => 'Contact', 'href' => '#contact'],

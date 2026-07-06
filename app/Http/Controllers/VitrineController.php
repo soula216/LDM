@@ -98,6 +98,21 @@ class VitrineController extends Controller
         ]);
     }
 
+    public function gallery(): View
+    {
+        $blocks = $this->loadBlocks();
+
+        return view('accueil.gallery', [
+            'blocks' => $blocks,
+            'gallery' => $blocks['gallery'] ?? [
+                'section_label' => 'Nos Travaux',
+                'section_title' => 'Découvrez Nos Réalisations',
+                'section_subtitle' => '',
+                'items' => [],
+            ],
+        ]);
+    }
+
     public function faq(): View
     {
         $blocks = $this->loadBlocks();

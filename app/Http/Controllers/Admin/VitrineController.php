@@ -182,11 +182,16 @@ class VitrineController extends Controller
                 continue;
             }
 
+            $isActive = filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+            $isFavorite = $isActive && filter_var($item['is_favorite'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
             $processed[] = [
                 'image_url' => $imageUrl !== '' ? VitrineBlock::resolveImageUrl($imageUrl) : '',
                 'source_type' => $sourceType,
                 'title' => trim((string) ($item['title'] ?? '')),
                 'description' => trim((string) ($item['description'] ?? '')),
+                'is_active' => $isActive,
+                'is_favorite' => $isFavorite,
             ];
         }
 
@@ -199,6 +204,8 @@ class VitrineController extends Controller
         }
 
         $content['items'] = array_values($processed);
+        $content['show_all_on_site'] = count($processed) > 0
+            && collect($processed)->every(fn (array $item): bool => $item['is_active']);
 
         return $content;
     }
@@ -420,15 +427,23 @@ class VitrineController extends Controller
         foreach ($steps as $step) {
             $title = trim((string) ($step['title'] ?? ''));
             $description = trim((string) ($step['description'] ?? ''));
+            $icon = trim((string) ($step['icon'] ?? ''));
 
             if ($title === '' && $description === '') {
                 continue;
             }
 
-            $processed[] = [
+            $processedStep = [
                 'title' => $title,
                 'description' => $description,
+                'is_active' => filter_var($step['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ];
+
+            if ($icon !== '') {
+                $processedStep['icon'] = $icon;
+            }
+
+            $processed[] = $processedStep;
         }
 
         $content['steps'] = array_values($processed);
@@ -452,6 +467,7 @@ class VitrineController extends Controller
             $processed[] = [
                 'question' => $question,
                 'answer' => $answer,
+                'is_active' => filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ];
         }
 
