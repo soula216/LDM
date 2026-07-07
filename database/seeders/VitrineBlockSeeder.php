@@ -217,6 +217,8 @@ class VitrineBlockSeeder extends Seeder
                 'label' => 'Contact',
                 'sort_order' => 9,
                 'content' => [
+                    'info_is_active' => true,
+                    'form_is_active' => true,
                     'tag_icon' => 'fas fa-comments',
                     'tag_text' => 'Contactez-nous',
                     'title' => 'Prêt à démarrer votre projet ?',
@@ -228,7 +230,12 @@ class VitrineBlockSeeder extends Seeder
                         ['icon' => 'fas fa-clock', 'title' => 'Horaires', 'value_1' => 'Lun – Ven', 'value_2' => '8h00 – 18h00'],
                     ],
                     'form_title' => 'Demander un devis personnalisé',
+                    'form_subtitle' => 'Réponse sous 24 h ouvrées',
                     'form_submit_label' => 'Envoyer ma demande',
+                    'map_is_active' => true,
+                    'map_title' => 'Notre localisation',
+                    'map_address' => '123 Avenue de la Dentisterie, 75001 Paris, France',
+                    'map_embed_url' => '',
                 ],
             ],
             [

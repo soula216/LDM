@@ -22,23 +22,25 @@
           'flagSrc' => asset('images/vitrine/drapeau-tunis.png'),
       ])
     </div>
-    @foreach($columns as $column)
-      <div class="footer-column">
-        <h4>{{ $column['title'] ?? '' }}</h4>
-        <ul>
-          @foreach($column['links'] ?? [] as $link)
-            <li>
-              <a href="{{ VitrineBlock::resolvePublicHref($link['href'] ?? '#') }}" @if(!empty($link['icon'])) class="footer-link-with-icon" @endif>
-                @if(!empty($link['icon']))
-                  <i class="{{ $link['icon'] }}" aria-hidden="true"></i>
-                @endif
-                <span>{{ $link['label'] ?? '' }}</span>
-              </a>
-            </li>
-          @endforeach
-        </ul>
-      </div>
-    @endforeach
+    <div class="footer-columns">
+      @foreach($columns as $column)
+        <div class="footer-column">
+          <h4>{{ $column['title'] ?? '' }}</h4>
+          <ul>
+            @foreach($column['links'] ?? [] as $link)
+              <li>
+                <a href="{{ VitrineBlock::resolvePublicHref($link['href'] ?? '#') }}" @if(!empty($link['icon'])) class="footer-link-with-icon" @endif>
+                  @if(!empty($link['icon']))
+                    <i class="{{ $link['icon'] }}" aria-hidden="true"></i>
+                  @endif
+                  <span>{{ $link['label'] ?? '' }}</span>
+                </a>
+              </li>
+            @endforeach
+          </ul>
+        </div>
+      @endforeach
+    </div>
   </div>
   <div class="footer-bottom">
     <p>© {{ date('Y') }} {{ $copyright }} | <a href="{{ VitrineBlock::resolvePublicHref($legalLink['href'] ?? '#') }}" style="color: var(--primary);">{{ $legalLink['label'] ?? 'Mentions légales' }}</a></p>

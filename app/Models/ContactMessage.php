@@ -14,5 +14,12 @@ class ContactMessage extends Model
         'email',
         'phone',
         'message',
+        'attachment_path',
+        'attachment_name',
     ];
+
+    public function hasAttachment(): bool
+    {
+        return filled($this->attachment_path);
+    }
 }

@@ -502,6 +502,16 @@ class VitrineController extends Controller
         $content['items'] = array_values($processed);
         unset($content['form_options']);
 
+        $content['info_is_active'] = filter_var($content['info_is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $content['form_is_active'] = filter_var($content['form_is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $content['map_is_active'] = filter_var($content['map_is_active'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $content['map_title'] = trim((string) ($content['map_title'] ?? ''));
+        $content['map_address'] = trim((string) ($content['map_address'] ?? ''));
+        $content['map_embed_url'] = trim((string) ($content['map_embed_url'] ?? ''));
+        $content['form_title'] = trim((string) ($content['form_title'] ?? ''));
+        $content['form_subtitle'] = trim((string) ($content['form_subtitle'] ?? ''));
+        $content['form_submit_label'] = trim((string) ($content['form_submit_label'] ?? ''));
+
         return $content;
     }
 

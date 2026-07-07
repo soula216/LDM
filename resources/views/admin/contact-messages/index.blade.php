@@ -74,6 +74,7 @@
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden sm:table-cell">Email</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden md:table-cell">Téléphone</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Message</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden lg:table-cell">Fichier</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -87,6 +88,11 @@
                                         'phone' => $message->phone,
                                         'message' => $message->message,
                                         'created_at' => $message->created_at->format('d/m/Y à H:i'),
+                                        'has_attachment' => $message->hasAttachment(),
+                                        'attachment_name' => $message->attachment_name,
+                                        'attachment_url' => $message->hasAttachment()
+                                            ? route('admin.contact-messages.attachment', $message)
+                                            : null,
                                         'delete_url' => route('admin.contact-messages.destroy', $message),
                                     ];
                                 @endphp
@@ -106,6 +112,20 @@
                                     </td>
                                     <td class="px-3 sm:px-6 py-4">
                                         <p class="text-sm text-secondary max-w-md">{{ Str::limit($message->message, 100) }}</p>
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                                        @if($message->hasAttachment())
+                                            <a href="{{ route('admin.contact-messages.attachment', $message) }}"
+                                               class="inline-flex items-center gap-1.5 text-sm text-primary hover:underline max-w-[180px] truncate"
+                                               title="{{ $message->attachment_name }}">
+                                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                                </svg>
+                                                <span class="truncate">{{ $message->attachment_name }}</span>
+                                            </a>
+                                        @else
+                                            <span class="text-sm text-secondary">—</span>
+                                        @endif
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
                                         <div class="flex items-center gap-2">
@@ -136,7 +156,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-6 py-12 text-center text-secondary">
+                                    <td colspan="7" class="px-6 py-12 text-center text-secondary">
                                         Aucun message reçu pour le moment.
                                     </td>
                                 </tr>
@@ -195,6 +215,20 @@
                     <div class="rounded-xl border border-border bg-neutral-50/50 px-4 py-4">
                         <p class="text-xs font-semibold uppercase tracking-wide text-secondary mb-2">Message</p>
                         <div class="text-sm text-primary whitespace-pre-wrap break-words leading-relaxed max-h-[40vh] overflow-y-auto" x-text="selectedMessage?.message || ''"></div>
+                    </div>
+
+                    <div x-show="selectedMessage?.has_attachment" class="rounded-xl border border-border bg-neutral-50/80 px-4 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-secondary mb-2">Pièce jointe</p>
+                        <a
+                            :href="selectedMessage?.attachment_url || '#'"
+                            class="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline break-all"
+                            x-show="selectedMessage?.attachment_url"
+                        >
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span x-text="selectedMessage?.attachment_name || 'Télécharger le fichier'"></span>
+                        </a>
                     </div>
                 </div>
 

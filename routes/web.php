@@ -162,6 +162,9 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
         Route::get('/', [AdminContactMessageController::class, 'index'])
             ->name('admin.contact-messages.index');
 
+        Route::get('{contactMessage}/attachment', [AdminContactMessageController::class, 'downloadAttachment'])
+            ->name('admin.contact-messages.attachment');
+
         Route::delete('{contactMessage}', [AdminContactMessageController::class, 'destroy'])
             ->name('admin.contact-messages.destroy');
     });

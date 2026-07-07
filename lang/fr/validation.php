@@ -178,6 +178,7 @@ return [
         'name' => 'nom',
         'phone' => 'téléphone',
         'message' => 'message',
+        'attachment' => 'pièce jointe',
     ],
 
 ];

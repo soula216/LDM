@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ContactMessage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ContactMessageController extends Controller
 {
@@ -29,7 +31,8 @@ class ContactMessageController extends Controller
                 $q->where('name', 'like', '%' . $search . '%')
                     ->orWhere('email', 'like', '%' . $search . '%')
                     ->orWhere('phone', 'like', '%' . $search . '%')
-                    ->orWhere('message', 'like', '%' . $search . '%');
+                    ->orWhere('message', 'like', '%' . $search . '%')
+                    ->orWhere('attachment_name', 'like', '%' . $search . '%');
             });
         }
 
@@ -41,9 +44,28 @@ class ContactMessageController extends Controller
         return view('admin.contact-messages.index', compact('messages'));
     }
 
+    public function downloadAttachment(ContactMessage $contactMessage): StreamedResponse
+    {
+        $this->ensureAdmin();
+
+        if (! $contactMessage->hasAttachment()
+            || ! Storage::disk('public')->exists($contactMessage->attachment_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->download(
+            $contactMessage->attachment_path,
+            $contactMessage->attachment_name ?: basename($contactMessage->attachment_path)
+        );
+    }
+
     public function destroy(ContactMessage $contactMessage)
     {
         $this->ensureAdmin();
+
+        if ($contactMessage->hasAttachment()) {
+            Storage::disk('public')->delete($contactMessage->attachment_path);
+        }
 
         $contactMessage->delete();
 

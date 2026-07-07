@@ -57,7 +57,7 @@
 
   document.querySelectorAll('.nav-links a').forEach(link => {
     link.addEventListener('click', () => {
-      if (window.innerWidth <= 768) {
+      if (window.innerWidth <= 1100) {
         closeMenu();
       }
     });
@@ -154,7 +154,7 @@
   }
 
   window.addEventListener('resize', () => {
-    if (window.innerWidth > 768 && navbar.classList.contains('mobile-menu-open')) {
+    if (window.innerWidth > 1100 && navbar.classList.contains('mobile-menu-open')) {
       closeMenu();
     }
   });

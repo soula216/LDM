@@ -147,6 +147,17 @@
 @endif
 
 @if(!empty($blocks['contact']))
+@php
+    $showContactInfo = filter_var($contact['info_is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    $showContactForm = filter_var($contact['form_is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    $showContactMap = VitrineBlock::isContactMapActive($contact);
+    $contactMapEmbedUrl = VitrineBlock::contactMapEmbedUrl($contact);
+    $contactMapLinkUrl = VitrineBlock::contactMapLinkUrl($contact);
+    $mapBelowRow = $showContactMap && $showContactInfo && $showContactForm;
+    $mapInRow = $showContactMap && ! $mapBelowRow;
+    $contactRowBlocks = (int) $showContactInfo + (int) $showContactForm + (int) $mapInRow;
+@endphp
+@if($showContactInfo || $showContactForm || $showContactMap)
 {{-- Contact Section --}}
 <section class="contact-section" id="contact">
   <div class="contact-section__bg" aria-hidden="true">
@@ -155,7 +166,14 @@
     <span class="contact-section__orb contact-section__orb--3"></span>
   </div>
 
-  <div class="contact-grid reveal">
+  <div class="contact-layout">
+    <div @class([
+      'contact-row reveal',
+      'contact-row--single' => $contactRowBlocks === 1,
+      'contact-row--duo' => $contactRowBlocks === 2,
+      'contact-row--info-form' => $showContactInfo && $showContactForm && ! $mapInRow,
+    ])>
+    @if($showContactInfo)
     <div class="contact-card contact-glass">
       <div class="contact-tag">
         <i class="{{ $contact['tag_icon'] ?? 'fas fa-comments' }}"></i>
@@ -180,11 +198,13 @@
         @endforeach
       </div>
     </div>
+    @endif
 
+    @if($showContactForm)
     <div class="contact-form-wrapper contact-glass">
       <div class="contact-form-header">
         <div class="contact-form-title">{{ $contact['form_title'] ?? '' }}</div>
-        <p class="contact-form-subtitle">Réponse sous 24 h ouvrées</p>
+        <p class="contact-form-subtitle">{{ $contact['form_subtitle'] ?? 'Réponse sous 24 h ouvrées' }}</p>
       </div>
 
       @if(session('contact_success'))
@@ -201,7 +221,7 @@
         </div>
       @endif
 
-      <form class="contact-form" action="{{ route('contact.store') }}" method="post" novalidate>
+      <form class="contact-form" action="{{ route('contact.store') }}" method="post" enctype="multipart/form-data" novalidate>
         @csrf
         <div class="contact-form-grid">
           <div>
@@ -232,6 +252,14 @@
               <p class="contact-field-error">{{ $message }}</p>
             @enderror
           </div>
+          <div class="full-row">
+            <label class="contact-label" for="contact-attachment">Pièce jointe <span class="contact-label-optional">(optionnel)</span></label>
+            <input id="contact-attachment" name="attachment" type="file" class="contact-file @error('attachment') contact-input--error @enderror" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,application/pdf,image/jpeg,image/png,image/webp,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+            <p class="contact-file-hint">PDF, images ou Word — 10 Mo maximum</p>
+            @error('attachment')
+              <p class="contact-field-error">{{ $message }}</p>
+            @enderror
+          </div>
         </div>
         <div class="contact-actions">
           <button type="submit" class="contact-submit">
@@ -241,6 +269,69 @@
         </div>
       </form>
     </div>
+    @endif
+
+    @if($mapInRow)
+    <div class="contact-map contact-map--inline contact-glass">
+      @if(filled($contact['map_title'] ?? null))
+        <div class="contact-map__head">
+          <h3 class="contact-map__title">{{ $contact['map_title'] }}</h3>
+          @if(filled($contact['map_address'] ?? null))
+            <p class="contact-map__address">{{ $contact['map_address'] }}</p>
+          @endif
+        </div>
+      @endif
+      <div class="contact-map__frame">
+        <iframe
+          src="{{ $contactMapEmbedUrl }}"
+          title="{{ $contact['map_title'] ?? 'Localisation' }}"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          allowfullscreen>
+        </iframe>
+      </div>
+      @if(filled($contactMapLinkUrl))
+        <div class="contact-map__actions">
+          <a href="{{ $contactMapLinkUrl }}" class="contact-map__link" target="_blank" rel="noopener noreferrer">
+            <i class="fas fa-location-arrow" aria-hidden="true"></i>
+            <span>Ouvrir dans Google Maps</span>
+          </a>
+        </div>
+      @endif
+    </div>
+    @endif
+    </div>
+
+  @if($mapBelowRow)
+    <div class="contact-map contact-map--below contact-glass reveal">
+      @if(filled($contact['map_title'] ?? null))
+        <div class="contact-map__head">
+          <h3 class="contact-map__title">{{ $contact['map_title'] }}</h3>
+          @if(filled($contact['map_address'] ?? null))
+            <p class="contact-map__address">{{ $contact['map_address'] }}</p>
+          @endif
+        </div>
+      @endif
+      <div class="contact-map__frame">
+        <iframe
+          src="{{ $contactMapEmbedUrl }}"
+          title="{{ $contact['map_title'] ?? 'Localisation' }}"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          allowfullscreen>
+        </iframe>
+      </div>
+      @if(filled($contactMapLinkUrl))
+        <div class="contact-map__actions">
+          <a href="{{ $contactMapLinkUrl }}" class="contact-map__link" target="_blank" rel="noopener noreferrer">
+            <i class="fas fa-location-arrow" aria-hidden="true"></i>
+            <span>Ouvrir dans Google Maps</span>
+          </a>
+        </div>
+      @endif
+    </div>
+  @endif
   </div>
 </section>
+@endif
 @endif

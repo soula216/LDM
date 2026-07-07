@@ -361,6 +361,50 @@ class VitrineBlock extends Model
     }
 
     /**
+     * URL d'intégration Google Maps pour le bloc contact.
+     *
+     * @param  array<string, mixed>  $contact
+     */
+    public static function contactMapEmbedUrl(array $contact): string
+    {
+        $custom = trim((string) ($contact['map_embed_url'] ?? ''));
+        if ($custom !== '' && str_contains($custom, 'google.com/maps')) {
+            return $custom;
+        }
+
+        $address = trim((string) ($contact['map_address'] ?? ''));
+        if ($address === '') {
+            return '';
+        }
+
+        return 'https://www.google.com/maps?q=' . rawurlencode($address) . '&output=embed';
+    }
+
+    /**
+     * Lien Google Maps (itinéraire / ouverture dans Maps).
+     *
+     * @param  array<string, mixed>  $contact
+     */
+    public static function contactMapLinkUrl(array $contact): string
+    {
+        $address = trim((string) ($contact['map_address'] ?? ''));
+        if ($address === '') {
+            return '';
+        }
+
+        return 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($address);
+    }
+
+    public static function isContactMapActive(array $contact): bool
+    {
+        if (! filter_var($contact['map_is_active'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            return false;
+        }
+
+        return static::contactMapEmbedUrl($contact) !== '';
+    }
+
+    /**
      * URL d'affichage pour l'image d'un service vitrine (hexagone ou détail).
      *
      * @param  array<string, mixed>  $item
