@@ -29,7 +29,7 @@
           <ul>
             @foreach($column['links'] ?? [] as $link)
               <li>
-                <a href="{{ VitrineBlock::resolvePublicHref($link['href'] ?? '#') }}" @if(!empty($link['icon'])) class="footer-link-with-icon" @endif>
+                <a href="{{ VitrineBlock::resolveFooterLinkHref($link['href'] ?? '#', $link['label'] ?? '', $link['icon'] ?? null) }}" @if(!empty($link['icon'])) class="footer-link-with-icon" @endif>
                   @if(!empty($link['icon']))
                     <i class="{{ $link['icon'] }}" aria-hidden="true"></i>
                   @endif

@@ -149,6 +149,93 @@ class VitrineBlock extends Model
         return $href;
     }
 
+    /**
+     * Lien footer : mailto / tel pour e-mail et téléphone, sinon résolution habituelle.
+     */
+    public static function resolveFooterLinkHref(?string $href, ?string $label = null, ?string $icon = null): string
+    {
+        $href = trim((string) $href);
+        $label = trim((string) $label);
+        $icon = strtolower(trim((string) $icon));
+
+        if (str_starts_with(strtolower($href), 'mailto:')) {
+            return $href;
+        }
+
+        if (str_starts_with(strtolower($href), 'tel:')) {
+            return $href;
+        }
+
+        foreach ([$href, $label] as $candidate) {
+            if ($candidate === '' || $candidate === '#') {
+                continue;
+            }
+
+            if (filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
+                return 'mailto:' . $candidate;
+            }
+
+            $phone = static::extractPhoneNumber($candidate);
+            if ($phone !== null) {
+                return 'tel:' . $phone;
+            }
+        }
+
+        if (str_contains($href, '@') && ! str_starts_with($href, 'http') && ! str_starts_with($href, '/')) {
+            $email = preg_replace('/^mailto:/i', '', $href);
+            if (is_string($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return 'mailto:' . $email;
+            }
+        }
+
+        if ($icon !== '' && str_contains($icon, 'fa-phone')) {
+            $phone = static::extractPhoneNumber($label) ?? static::extractPhoneNumber($href);
+            if ($phone !== null) {
+                return 'tel:' . $phone;
+            }
+        }
+
+        return static::resolvePublicHref($href);
+    }
+
+    private static function extractPhoneNumber(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '' || $value === '#') {
+            return null;
+        }
+
+        if (str_starts_with(strtolower($value), 'tel:')) {
+            $value = substr($value, 4);
+        }
+
+        if (
+            str_contains($value, '@')
+            || preg_match('/^https?:\/\//i', $value)
+            || str_starts_with($value, '/')
+            || str_starts_with($value, '#')
+        ) {
+            return null;
+        }
+
+        if (! preg_match('/^[\d+\s().\-\/]+$/', $value)) {
+            return null;
+        }
+
+        $digitsOnly = preg_replace('/\D/', '', $value);
+        if (strlen($digitsOnly) < 8) {
+            return null;
+        }
+
+        $normalized = preg_replace('/[^\d+]/', '', $value);
+        if (str_contains($normalized, '+')) {
+            $normalized = '+' . str_replace('+', '', $normalized);
+        }
+
+        return $normalized !== '' ? $normalized : null;
+    }
+
     public static function isPublicPageActive(string $page): bool
     {
         return request()->routeIs('vitrine.' . $page)
