@@ -337,6 +337,19 @@ class VitrineBlock extends Model
     }
 
     /**
+     * Images actives non favorites (affichées après « Voir la suite » sur l'accueil).
+     *
+     * @param  array<string, mixed>  $gallery
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function homepageGalleryMoreItems(array $gallery): \Illuminate\Support\Collection
+    {
+        return static::activeGalleryItems($gallery['items'] ?? [])
+            ->reject(fn (array $item): bool => static::isGalleryItemFavorite($item))
+            ->values();
+    }
+
+    /**
      * Images affichées sur la page Galerie dédiée (actives, favorite ou non).
      *
      * @param  array<string, mixed>  $gallery

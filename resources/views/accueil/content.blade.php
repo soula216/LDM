@@ -3,7 +3,9 @@
 
     $hero = $blocks['hero'] ?? [];
     $gallery = $blocks['gallery'] ?? [];
-    $galleryItems = VitrineBlock::homepageGalleryItems($gallery);
+    $galleryFavorites = VitrineBlock::homepageGalleryItems($gallery);
+    $galleryMore = VitrineBlock::homepageGalleryMoreItems($gallery);
+    $hasGallery = $galleryFavorites->isNotEmpty() || $galleryMore->isNotEmpty();
     $features = $blocks['features'] ?? [];
     $contact = $blocks['contact'] ?? [];
 @endphp
@@ -60,7 +62,7 @@
 </section>
 @endif
 
-@if(!empty($blocks['gallery']) && $galleryItems->isNotEmpty())
+@if(!empty($blocks['gallery']) && $hasGallery)
 {{-- Gallery - Nos Travaux --}}
 <section class="gallery" id="travaux">
   <div class="section-header reveal">
@@ -68,8 +70,8 @@
     <h2 class="section-title">{{ $gallery['section_title'] ?? '' }}</h2>
     <p class="section-subtitle">{{ $gallery['section_subtitle'] ?? '' }}</p>
   </div>
-  <div class="gallery-grid">
-    @foreach($galleryItems as $index => $item)
+  <div class="gallery-grid" data-homepage-gallery>
+    @foreach($galleryFavorites as $index => $item)
       <button type="button"
               class="gallery-item reveal"
               data-gallery-item
@@ -78,7 +80,24 @@
               data-gallery-title="{{ $item['title'] ?? '' }}"
               data-gallery-description="{{ $item['description'] ?? '' }}"
               aria-label="Agrandir : {{ $item['title'] ?? 'Image galerie' }}">
-        <img src="{{ $item['image_url'] ?? '' }}" alt="{{ $item['title'] ?? '' }}">
+        <img src="{{ $item['image_url'] ?? '' }}" alt="{{ $item['title'] ?? '' }}" loading="lazy">
+        <div class="gallery-overlay">
+          <h3>{{ $item['title'] ?? '' }}</h3>
+          <p>{{ $item['description'] ?? '' }}</p>
+        </div>
+      </button>
+    @endforeach
+    @foreach($galleryMore as $index => $item)
+      <button type="button"
+              class="gallery-item reveal gallery-item--extra"
+              data-gallery-item
+              data-gallery-index="{{ $galleryFavorites->count() + $index }}"
+              data-gallery-src="{{ $item['image_url'] ?? '' }}"
+              data-gallery-title="{{ $item['title'] ?? '' }}"
+              data-gallery-description="{{ $item['description'] ?? '' }}"
+              aria-label="Agrandir : {{ $item['title'] ?? 'Image galerie' }}"
+              hidden>
+        <img src="{{ $item['image_url'] ?? '' }}" alt="{{ $item['title'] ?? '' }}" loading="lazy">
         <div class="gallery-overlay">
           <h3>{{ $item['title'] ?? '' }}</h3>
           <p>{{ $item['description'] ?? '' }}</p>
@@ -86,7 +105,15 @@
       </button>
     @endforeach
   </div>
-  @include('accueil.partials.gallery-lightbox')
+  @if($galleryMore->isNotEmpty())
+    <div class="gallery-more" data-gallery-more>
+      <button type="button" class="btn btn-secondary gallery-more__btn" data-gallery-expand aria-expanded="false">
+        Voir la suite
+        <i class="fas fa-chevron-down" aria-hidden="true"></i>
+      </button>
+    </div>
+  @endif
+  @include('accueil.partials.gallery-lightbox', ['modern' => true])
 </section>
 @endif
 

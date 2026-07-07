@@ -186,8 +186,13 @@
   // Galerie — lightbox
   (function initGalleryLightbox() {
     const lightbox = document.getElementById('galleryLightbox');
-    const items = Array.from(document.querySelectorAll('[data-gallery-item]'));
-    if (!lightbox || items.length === 0) return;
+    const gallerySection = document.getElementById('travaux');
+    const siteHeader = document.getElementById('siteHeader');
+    if (!lightbox) return;
+
+    if (lightbox.parentElement !== document.body) {
+      document.body.appendChild(lightbox);
+    }
 
     const isPremium = lightbox.classList.contains('gallery-lightbox--premium');
     const imageEl = document.getElementById('galleryLightboxImage');
@@ -201,9 +206,20 @@
     const prevBtn = lightbox.querySelector('[data-gallery-lightbox-prev]');
     const nextBtn = lightbox.querySelector('[data-gallery-lightbox-next]');
     const closeEls = lightbox.querySelectorAll('[data-gallery-lightbox-close]');
+    let items = collectItems();
     let currentIndex = 0;
     let lastFocused = null;
     let imageSwapTimer = null;
+
+    function collectItems() {
+      const scope = gallerySection || document;
+      return Array.from(scope.querySelectorAll('[data-gallery-item]')).filter((item) => !item.hidden);
+    }
+
+    function refreshItems() {
+      items = collectItems();
+      buildThumbs();
+    }
 
     function setCaption(title, description) {
       titleEl.textContent = title || '';
@@ -248,7 +264,14 @@
         thumb.className = 'gallery-lightbox-thumb';
         thumb.setAttribute('role', 'tab');
         thumb.setAttribute('aria-label', item.dataset.galleryTitle || `Image ${index + 1}`);
-        thumb.innerHTML = `<img src="${src}" alt="" loading="lazy">`;
+
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = '';
+        img.loading = 'eager';
+        img.decoding = 'async';
+        thumb.appendChild(img);
+
         thumb.addEventListener('click', () => showAt(index));
         thumbsEl.appendChild(thumb);
       });
@@ -299,10 +322,14 @@
 
     function open(index) {
       lastFocused = document.activeElement;
+      if (thumbsEl) {
+        buildThumbs();
+      }
       showAt(index);
       lightbox.hidden = false;
       lightbox.setAttribute('aria-hidden', 'false');
       document.body.classList.add('gallery-lightbox-open');
+      siteHeader?.setAttribute('aria-hidden', 'true');
       requestAnimationFrame(() => {
         lightbox.classList.add('is-active');
       });
@@ -318,6 +345,7 @@
         lightbox.hidden = true;
         lightbox.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('gallery-lightbox-open');
+        siteHeader?.removeAttribute('aria-hidden');
         imageEl.removeAttribute('src');
         if (lastFocused && typeof lastFocused.focus === 'function') {
           lastFocused.focus();
@@ -327,14 +355,38 @@
 
     buildThumbs();
 
-    items.forEach((item, index) => {
-      item.addEventListener('click', () => open(index));
-      item.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          open(index);
-        }
+    if (items.length === 0) return;
+
+    const galleryRoot = gallerySection || document;
+
+    galleryRoot.addEventListener('click', (event) => {
+      const item = event.target.closest('[data-gallery-item]');
+      if (!item || item.hidden) return;
+      const index = items.indexOf(item);
+      if (index >= 0) open(index);
+    });
+
+    galleryRoot.addEventListener('keydown', (event) => {
+      const item = event.target.closest('[data-gallery-item]');
+      if (!item || item.hidden) return;
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        const index = items.indexOf(item);
+        if (index >= 0) open(index);
+      }
+    });
+
+    const expandBtn = document.querySelector('[data-gallery-expand]');
+    expandBtn?.addEventListener('click', () => {
+      const extraItems = gallerySection?.querySelectorAll('.gallery-item--extra') ?? [];
+      extraItems.forEach((item, index) => {
+        item.hidden = false;
+        window.setTimeout(() => item.classList.add('active'), index * 60);
       });
+
+      expandBtn.setAttribute('aria-expanded', 'true');
+      expandBtn.closest('[data-gallery-more]')?.remove();
+      refreshItems();
     });
 
     prevBtn?.addEventListener('click', () => {
