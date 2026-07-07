@@ -46,7 +46,6 @@
         <div class="gallery-showcase__head reveal">
           <div class="gallery-showcase__head-left">
             <span class="gallery-showcase__pill">{{ $items->count() }} visuel{{ $items->count() > 1 ? 's' : '' }}</span>
-            <h2 class="gallery-showcase__title">Portfolio clinique</h2>
           </div>
           <p class="gallery-showcase__hint">
             <i class="fas fa-up-right-and-down-left-from-center" aria-hidden="true"></i>

@@ -544,13 +544,24 @@
 
     .btn-secondary {
       background: transparent;
-      color: var(--text);
+      color: #fff;
       border: 1px solid var(--primary);
     }
 
     .btn-secondary:hover {
       border-color: var(--primary);
       color: var(--primary);
+      background: rgba(14, 165, 233, 0.1);
+    }
+
+    .gallery-more__btn.btn-secondary {
+      color: var(--text);
+      border-color: var(--primary);
+    }
+
+    .gallery-more__btn.btn-secondary:hover {
+      color: var(--primary);
+      background: rgba(14, 165, 233, 0.08);
     }
 
     @@keyframes fadeInUp {
