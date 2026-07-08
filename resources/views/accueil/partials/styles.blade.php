@@ -1106,12 +1106,12 @@
     }
 
     .services-honeycomb {
-      --hex-size: 250px;
+      --hex-size: 300px;
       --hex-overlap: calc(var(--hex-size) * 0.22);
       --hex-gap-x: 2rem;
       position: relative;
       width: 100%;
-      max-width: 1080px;
+      max-width: 1180px;
       margin: 0 auto;
       padding: 1.5rem 0 2.5rem;
     }
@@ -1220,7 +1220,7 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      width: min(360px, 58%);
+      width: min(420px, 58%);
       aspect-ratio: 0.866 / 1;
       transform: translate(-50%, -50%);
       display: flex;
@@ -1407,7 +1407,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 3.25rem;
+      font-size: 3.9rem;
       color: rgba(255, 255, 255, 0.35);
       pointer-events: none;
       transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), color 0.4s ease;
@@ -1448,7 +1448,7 @@
       max-width: 58%;
       text-align: center;
       font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(0.9rem, 1.7vw, 1.12rem);
+      font-size: clamp(1rem, 1.8vw, 1.25rem);
       font-weight: 700;
       letter-spacing: 0.03em;
       line-height: 1.22;
@@ -1474,7 +1474,7 @@
     .services-hex-label.is-compact {
       width: 54%;
       max-width: 54%;
-      font-size: clamp(0.74rem, 1.4vw, 0.94rem);
+      font-size: clamp(0.82rem, 1.5vw, 1.04rem);
       line-height: 1.18;
       letter-spacing: 0.02em;
     }
