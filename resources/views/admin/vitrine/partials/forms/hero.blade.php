@@ -361,6 +361,7 @@
                             <select :name="'content[buttons][' + index + '][style]'" x-model="btn.style" class="input-field w-full text-sm">
                                 <option value="primary">Primaire (plein)</option>
                                 <option value="secondary">Secondaire (contour)</option>
+                                <option value="whatsapp">WhatsApp</option>
                             </select>
                         </div>
                         <div>
@@ -372,7 +373,11 @@
                     <div class="px-4 pb-4">
                         <p class="text-xs text-secondary mb-2">Aperçu</p>
                         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
-                              :class="btn.style === 'primary' ? 'bg-primary text-white' : 'bg-card border border-border text-primary'"
+                              :class="btn.style === 'primary'
+                                  ? 'bg-primary text-white'
+                                  : (btn.style === 'whatsapp'
+                                      ? 'bg-[#25D366] text-white'
+                                      : 'bg-card border border-border text-primary')"
                               x-text="btn.label || 'Libellé du bouton'"></span>
                     </div>
                 </div>

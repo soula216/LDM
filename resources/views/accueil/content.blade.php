@@ -33,7 +33,11 @@
     <p>{{ $hero['description'] ?? '' }}</p>
     <div class="hero-buttons">
       @foreach($hero['buttons'] ?? [] as $btn)
-        <a href="{{ VitrineBlock::resolvePublicHref($btn['href'] ?? '#') }}" class="btn btn-{{ $btn['style'] ?? 'primary' }}">
+        @php
+          $btnHref = VitrineBlock::resolvePublicHref($btn['href'] ?? '#');
+          $isWhatsAppLink = VitrineBlock::isWhatsAppHref($btn['href'] ?? '') || VitrineBlock::isWhatsAppHref($btnHref);
+        @endphp
+        <a href="{{ $btnHref }}" class="btn btn-{{ $btn['style'] ?? 'primary' }}"@if($isWhatsAppLink) target="_blank" rel="noopener noreferrer"@endif>
           @if(!empty($btn['icon']))
             <i class="{{ $btn['icon'] }}"></i>
           @endif

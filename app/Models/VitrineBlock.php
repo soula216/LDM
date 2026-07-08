@@ -150,8 +150,30 @@ class VitrineBlock extends Model
     }
 
     /**
-     * Lien footer : mailto / tel pour e-mail et téléphone, sinon résolution habituelle.
+     * Détecte un lien WhatsApp (wa.me, api.whatsapp.com, etc.).
      */
+    public static function isWhatsAppHref(?string $href): bool
+    {
+        $href = trim((string) $href);
+
+        if ($href === '' || $href === '#') {
+            return false;
+        }
+
+        if (str_starts_with(strtolower($href), 'whatsapp://')) {
+            return true;
+        }
+
+        $host = parse_url($href, PHP_URL_HOST);
+
+        if (! is_string($host) || $host === '') {
+            return false;
+        }
+
+        $host = strtolower($host);
+
+        return in_array($host, ['wa.me', 'api.whatsapp.com', 'web.whatsapp.com', 'chat.whatsapp.com'], true);
+    }
     public static function resolveFooterLinkHref(?string $href, ?string $label = null, ?string $icon = null): string
     {
         $href = trim((string) $href);

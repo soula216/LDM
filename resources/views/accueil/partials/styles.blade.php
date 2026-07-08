@@ -554,6 +554,22 @@
       background: rgba(14, 165, 233, 0.1);
     }
 
+    .btn-whatsapp {
+      background: #25D366;
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(37, 211, 102, 0.35);
+    }
+
+    .btn-whatsapp:hover {
+      background: #1ebe5d;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(37, 211, 102, 0.45);
+    }
+
+    .btn-whatsapp i {
+      font-size: 1.15em;
+    }
+
     .gallery-more__btn.btn-secondary {
       color: var(--text);
       border-color: var(--primary);
