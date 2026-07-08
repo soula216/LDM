@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class VitrineBlock extends Model
 {
@@ -529,7 +530,196 @@ class VitrineBlock extends Model
     }
 
     /**
-     * Image de fond d'une carte Academy : couverture personnalisée ou 1re page du PDF.
+     * @return array<string, array{label: string, icon: string}>
+     */
+    public static function defaultAcademyCategories(): array
+    {
+        return [
+            'catalogue' => ['label' => 'Catalogues', 'icon' => 'fas fa-book-open'],
+            'guide' => ['label' => 'Guides techniques', 'icon' => 'fas fa-drafting-compass'],
+            'protocole' => ['label' => 'Protocoles', 'icon' => 'fas fa-clipboard-list'],
+            'notice' => ['label' => 'Notices', 'icon' => 'fas fa-file-alt'],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $academyContent
+     * @return array<string, array{label: string, icon: string}>
+     */
+    public static function resolveAcademyCategories(array $academyContent): array
+    {
+        $stored = $academyContent['categories'] ?? [];
+        $resolved = [];
+
+        if (! is_array($stored)) {
+            return static::defaultAcademyCategories();
+        }
+
+        foreach ($stored as $category) {
+            if (! is_array($category)) {
+                continue;
+            }
+
+            $label = trim((string) ($category['label'] ?? ''));
+            $icon = trim((string) ($category['icon'] ?? ''));
+            $key = Str::slug(trim((string) ($category['key'] ?? '')));
+
+            if ($key === '' && $label !== '') {
+                $key = Str::slug($label);
+            }
+
+            if ($key === '' || $label === '') {
+                continue;
+            }
+
+            $resolved[$key] = [
+                'label' => $label,
+                'icon' => static::normalizeAcademyCategoryIcon($icon),
+            ];
+        }
+
+        return $resolved !== [] ? $resolved : static::defaultAcademyCategories();
+    }
+
+    /**
+     * Retourne une icône de catégorie utilisable, ou une chaîne vide.
+     */
+    public static function normalizeAcademyCategoryIcon(?string $icon): string
+    {
+        $icon = trim((string) $icon);
+
+        if ($icon === '') {
+            return '';
+        }
+
+        // Placeholder injecté par l'ancienne version de l'admin.
+        if (in_array(strtolower($icon), [
+            'fas fa-file-pdf',
+            'fa-solid fa-file-pdf',
+            'fa fa-file-pdf',
+        ], true)) {
+            return '';
+        }
+
+        return $icon;
+    }
+
+    /**
+     * @param  array<string, mixed>  $academyContent
+     * @return list<array{key: string, label: string, icon: string}>
+     */
+    public static function academyCategoriesList(array $academyContent): array
+    {
+        return collect(static::resolveAcademyCategories($academyContent))
+            ->map(fn (array $meta, string $key) => [
+                'key' => $key,
+                'label' => $meta['label'],
+                'icon' => $meta['icon'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<array{key: string, label: string, icon: string}>  $categories
+     */
+    public static function resolveAcademyDocumentCategory(?string $category, array $categories): string
+    {
+        $category = trim((string) $category);
+        $default = $categories[0]['key'] ?? 'catalogue';
+
+        if ($category === '') {
+            return $default;
+        }
+
+        foreach ($categories as $item) {
+            $key = trim((string) ($item['key'] ?? ''));
+            $label = trim((string) ($item['label'] ?? ''));
+
+            if ($key === '' && $label !== '') {
+                $key = Str::slug($label);
+            }
+
+            if ($key === '') {
+                continue;
+            }
+
+            if ($category === $key || Str::slug($category) === $key) {
+                return $key;
+            }
+
+            if ($label !== '' && ($category === $label || Str::slug($category) === Str::slug($label))) {
+                return $key;
+            }
+        }
+
+        return $default;
+    }
+
+    /**
+     * @return array<string, array{label: string, icon: string, action: string}>
+     */
+    public static function academyFileTypes(): array
+    {
+        return [
+            'pdf' => ['label' => 'PDF', 'icon' => 'fas fa-file-pdf', 'action' => 'Télécharger'],
+            'image' => ['label' => 'Image', 'icon' => 'fas fa-file-image', 'action' => 'Voir'],
+            'video' => ['label' => 'Vidéo', 'icon' => 'fas fa-file-video', 'action' => 'Regarder'],
+            'word' => ['label' => 'Word', 'icon' => 'fas fa-file-word', 'action' => 'Télécharger'],
+        ];
+    }
+
+    public static function normalizeAcademyFileType(?string $type): string
+    {
+        $type = strtolower(trim((string) $type));
+
+        return array_key_exists($type, static::academyFileTypes()) ? $type : 'pdf';
+    }
+
+    /**
+     * @param  array<string, mixed>  $doc
+     * @return array{label: string, icon: string, action: string}
+     */
+    public static function academyFileTypeMeta(array $doc): array
+    {
+        $type = static::normalizeAcademyFileType($doc['file_type'] ?? 'pdf');
+
+        return static::academyFileTypes()[$type];
+    }
+
+    /**
+     * @return array{mode: string, src: string}|null
+     */
+    public static function academyVideoPlayerConfig(?string $url): ?array
+    {
+        $url = trim((string) $url);
+
+        if ($url === '') {
+            return null;
+        }
+
+        if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/i', $url, $matches)) {
+            return [
+                'mode' => 'iframe',
+                'src' => 'https://www.youtube.com/embed/' . $matches[1] . '?autoplay=1&rel=0',
+            ];
+        }
+
+        if (preg_match('/vimeo\.com\/(?:video\/)?(\d+)/i', $url, $matches)) {
+            return [
+                'mode' => 'iframe',
+                'src' => 'https://player.vimeo.com/video/' . $matches[1] . '?autoplay=1',
+            ];
+        }
+
+        return [
+            'mode' => 'video',
+            'src' => static::resolveImageAbsoluteUrl($url),
+        ];
+    }
+
+    /**
+     * Image de fond d'une carte Academy : couverture, aperçu PDF ou fichier image.
      *
      * @param  array<string, mixed>  $doc
      */
@@ -538,6 +728,15 @@ class VitrineBlock extends Model
         $coverUrl = trim((string) ($doc['cover_image_url'] ?? ''));
         if ($coverUrl !== '') {
             return static::resolveImageAbsoluteUrl($coverUrl);
+        }
+
+        $fileType = static::normalizeAcademyFileType($doc['file_type'] ?? 'pdf');
+
+        if ($fileType === 'image') {
+            $fileUrl = trim((string) ($doc['file_url'] ?? ''));
+            if ($fileUrl !== '') {
+                return static::resolveImageAbsoluteUrl($fileUrl);
+            }
         }
 
         $previewUrl = trim((string) ($doc['pdf_preview_url'] ?? ''));

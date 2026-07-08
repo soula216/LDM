@@ -209,6 +209,12 @@ class VitrineBlockSeeder extends Seeder
                     'section_label' => 'LDM Academy',
                     'section_title' => 'Ressources pour les praticiens',
                     'section_subtitle' => 'Catalogues, guides techniques, protocoles et notices à télécharger',
+                    'categories' => [
+                        ['key' => 'catalogue', 'label' => 'Catalogues', 'icon' => 'fas fa-book-open'],
+                        ['key' => 'guide', 'label' => 'Guides techniques', 'icon' => 'fas fa-drafting-compass'],
+                        ['key' => 'protocole', 'label' => 'Protocoles', 'icon' => 'fas fa-clipboard-list'],
+                        ['key' => 'notice', 'label' => 'Notices', 'icon' => 'fas fa-file-alt'],
+                    ],
                     'documents' => [],
                 ],
             ],

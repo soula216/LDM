@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class VitrineController extends Controller
@@ -26,8 +27,6 @@ class VitrineController extends Controller
     private const ACADEMY_STORAGE_PREFIX = 'vitrine/academy/';
 
     private const ACADEMY_COVER_STORAGE_PREFIX = 'vitrine/academy/covers/';
-
-    private const ACADEMY_CATEGORIES = ['catalogue', 'guide', 'protocole', 'notice'];
 
     public function index(Request $request): View
     {
@@ -63,6 +62,7 @@ class VitrineController extends Controller
         }
 
         if ($vitrineBlock->key === 'academy') {
+            $content = $this->processAcademyCategories($content);
             $content = $this->processAcademyDocuments($request, $content, $existingContent);
         }
 
@@ -300,31 +300,82 @@ class VitrineController extends Controller
         return $content;
     }
 
+    private function processAcademyCategories(array $content): array
+    {
+        $incoming = $content['categories'] ?? [];
+        $processed = [];
+        $usedKeys = [];
+
+        foreach ($incoming as $category) {
+            $label = trim((string) ($category['label'] ?? ''));
+            $icon = trim((string) ($category['icon'] ?? ''));
+            $key = Str::slug(trim((string) ($category['key'] ?? '')));
+
+            if ($key === '' && $label !== '') {
+                $key = Str::slug($label);
+            }
+
+            if ($label === '' || $key === '') {
+                continue;
+            }
+
+            $baseKey = $key;
+            $suffix = 2;
+            while (in_array($key, $usedKeys, true)) {
+                $key = $baseKey . '-' . $suffix;
+                $suffix++;
+            }
+            $usedKeys[] = $key;
+
+            $processed[] = [
+                'key' => $key,
+                'label' => $label,
+                'icon' => VitrineBlock::normalizeAcademyCategoryIcon($icon),
+            ];
+        }
+
+        $content['categories'] = $processed;
+
+        return $content;
+    }
+
     private function processAcademyDocuments(Request $request, array $content, array $existingContent): array
     {
         $incoming = $content['documents'] ?? [];
         $existing = $existingContent['documents'] ?? [];
         $processed = [];
+        $categoryList = $content['categories'] ?? [];
+
+        if ($categoryList === []) {
+            $categoryList = collect(VitrineBlock::defaultAcademyCategories())
+                ->map(fn (array $meta, string $key) => ['key' => $key, 'label' => $meta['label'], 'icon' => $meta['icon']])
+                ->values()
+                ->all();
+        }
 
         foreach ($incoming as $index => $doc) {
             $title = trim((string) ($doc['title'] ?? ''));
             $description = trim((string) ($doc['description'] ?? ''));
-            $category = (string) ($doc['category'] ?? 'catalogue');
-            if (! in_array($category, self::ACADEMY_CATEGORIES, true)) {
-                $category = 'catalogue';
+            $category = VitrineBlock::resolveAcademyDocumentCategory($doc['category'] ?? null, $categoryList);
+
+            $fileType = VitrineBlock::normalizeAcademyFileType($doc['file_type'] ?? 'pdf');
+            $fileSourceType = ($doc['file_source_type'] ?? 'upload') === 'url' ? 'url' : 'upload';
+            if ($fileType !== 'video') {
+                $fileSourceType = 'upload';
             }
 
             $fileUrl = trim((string) ($doc['file_url'] ?? ''));
             $fileName = trim((string) ($doc['file_name'] ?? ''));
             $existingUrl = trim((string) ($existing[$index]['file_url'] ?? ''));
             $existingName = trim((string) ($existing[$index]['file_name'] ?? ''));
+            $existingFileType = VitrineBlock::normalizeAcademyFileType($existing[$index]['file_type'] ?? 'pdf');
 
             $coverSourceType = ($doc['cover_image_source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
             $coverImageUrl = trim((string) ($doc['cover_image_url'] ?? ''));
             $existingCoverUrl = trim((string) ($existing[$index]['cover_image_url'] ?? ''));
             $existingPreviewUrl = trim((string) ($existing[$index]['pdf_preview_url'] ?? ''));
-            $pdfPreviewUrl = $existingPreviewUrl;
-            $pdfWasReplaced = false;
+            $pdfPreviewUrl = $fileType === 'pdf' ? $existingPreviewUrl : '';
+            $fileWasReplaced = false;
 
             if ($request->hasFile("academy_cover_uploads.$index")) {
                 $file = $request->file("academy_cover_uploads.$index");
@@ -344,27 +395,52 @@ class VitrineController extends Controller
                 $this->deleteVitrineImageIfStored($existingCoverUrl);
             }
 
-            if ($request->hasFile("academy_pdf_uploads.$index")) {
-                $file = $request->file("academy_pdf_uploads.$index");
-                $this->validateAcademyPdfUpload($file, $index);
+            $uploadField = $request->hasFile("academy_file_uploads.$index")
+                ? "academy_file_uploads.$index"
+                : ($request->hasFile("academy_pdf_uploads.$index") ? "academy_pdf_uploads.$index" : null);
 
-                if ($existingUrl !== '') {
+            if ($uploadField !== null) {
+                $file = $request->file($uploadField);
+                $this->validateAcademyFileUpload($file, $index, $fileType, $uploadField);
+
+                if ($existingUrl !== '' && $this->isStoredVitrineImage($existingUrl)) {
                     $this->deleteVitrineImageIfStored($existingUrl);
                 }
 
-                $fileUrl = $this->storeAcademyPdf($file);
+                $fileUrl = $this->storeAcademyFile($file, $fileType);
                 $fileName = $file->getClientOriginalName() ?: basename($fileUrl);
-                $pdfWasReplaced = true;
+                $fileWasReplaced = true;
 
                 if ($existingPreviewUrl !== '') {
                     $this->deleteVitrineImageIfStored($existingPreviewUrl);
                     $pdfPreviewUrl = '';
+                }
+            } elseif ($fileType === 'video' && $fileSourceType === 'url') {
+                $incomingUrl = trim((string) ($doc['file_url'] ?? ''));
+                if ($incomingUrl !== '' && filter_var($incomingUrl, FILTER_VALIDATE_URL)) {
+                    if ($existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $incomingUrl) {
+                        $this->deleteVitrineImageIfStored($existingUrl);
+                    }
+                    $fileUrl = $incomingUrl;
+                    if ($fileName === '') {
+                        $fileName = $existingName !== '' ? $existingName : basename(parse_url($incomingUrl, PHP_URL_PATH) ?: 'video');
+                    }
+                } elseif ($fileUrl === '' && $existingUrl !== '' && ! $this->isStoredVitrineImage($existingUrl)) {
+                    $fileUrl = $existingUrl;
+                    if ($fileName === '') {
+                        $fileName = $existingName;
+                    }
                 }
             } elseif ($fileUrl === '' && $existingUrl !== '') {
                 $fileUrl = $existingUrl;
                 if ($fileName === '') {
                     $fileName = $existingName;
                 }
+            }
+
+            if ($existingFileType === 'pdf' && $fileType !== 'pdf' && $existingPreviewUrl !== '') {
+                $this->deleteVitrineImageIfStored($existingPreviewUrl);
+                $pdfPreviewUrl = '';
             }
 
             if ($title === '' && $description === '' && $fileUrl === '') {
@@ -375,17 +451,26 @@ class VitrineController extends Controller
                 continue;
             }
 
-            if ($pdfPreviewUrl === '' || $pdfWasReplaced) {
+            if ($fileType === 'pdf' && ($pdfPreviewUrl === '' || $fileWasReplaced)) {
                 $generatedPreview = $this->generateAcademyPdfPreview($fileUrl);
                 if ($generatedPreview !== '') {
                     $pdfPreviewUrl = $generatedPreview;
                 }
             }
 
+            $defaultTitle = match ($fileType) {
+                'image' => 'Image',
+                'video' => 'Vidéo',
+                'word' => 'Document Word',
+                default => 'Document PDF',
+            };
+
             $processed[] = [
-                'title' => $title !== '' ? $title : ($fileName !== '' ? $fileName : 'Document PDF'),
+                'title' => $title !== '' ? $title : ($fileName !== '' ? $fileName : $defaultTitle),
                 'category' => $category,
                 'description' => $description,
+                'file_type' => $fileType,
+                'file_source_type' => $fileSourceType,
                 'file_url' => VitrineBlock::resolveImageUrl($fileUrl),
                 'file_name' => $fileName,
                 'cover_image_source_type' => $coverSourceType,
@@ -642,19 +727,57 @@ class VitrineController extends Controller
         return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
     }
 
-    private function validateAcademyPdfUpload(UploadedFile $file, int $index): void
+    private function validateAcademyFileUpload(UploadedFile $file, int $index, string $fileType, string $field): void
     {
-        request()->validate([
-            "academy_pdf_uploads.$index" => 'required|file|mimes:pdf|max:20480',
-        ], [
-            "academy_pdf_uploads.$index.mimes" => 'Seuls les fichiers PDF sont acceptés.',
-            "academy_pdf_uploads.$index.max" => 'Le PDF ne doit pas dépasser 20 Mo.',
-        ]);
+        $fileType = VitrineBlock::normalizeAcademyFileType($fileType);
+
+        $rules = match ($fileType) {
+            'image' => [$field => 'required|file|mimes:jpeg,jpg,png,webp,gif|max:10240'],
+            'video' => [$field => 'required|file|mimes:mp4,webm,mov,quicktime|max:102400'],
+            'word' => [$field => 'required|file|mimes:doc,docx|max:20480'],
+            default => [$field => 'required|file|mimes:pdf|max:20480'],
+        };
+
+        $messages = match ($fileType) {
+            'image' => [
+                "$field.mimes" => 'Formats acceptés : JPEG, PNG, WebP, GIF.',
+                "$field.max" => 'L\'image ne doit pas dépasser 10 Mo.',
+            ],
+            'video' => [
+                "$field.mimes" => 'Formats acceptés : MP4, WebM, MOV.',
+                "$field.max" => 'La vidéo ne doit pas dépasser 100 Mo.',
+            ],
+            'word' => [
+                "$field.mimes" => 'Formats acceptés : DOC, DOCX.',
+                "$field.max" => 'Le document Word ne doit pas dépasser 20 Mo.',
+            ],
+            default => [
+                "$field.mimes" => 'Seuls les fichiers PDF sont acceptés.',
+                "$field.max" => 'Le PDF ne doit pas dépasser 20 Mo.',
+            ],
+        };
+
+        request()->validate($rules, $messages);
     }
 
-    private function storeAcademyPdf(UploadedFile $file): string
+    private function storeAcademyFile(UploadedFile $file, string $fileType): string
     {
-        $filename = 'academy_' . time() . '_' . uniqid() . '.pdf';
+        $fileType = VitrineBlock::normalizeAcademyFileType($fileType);
+        $extension = strtolower($file->getClientOriginalExtension() ?: match ($fileType) {
+            'image' => 'jpg',
+            'video' => 'mp4',
+            'word' => 'docx',
+            default => 'pdf',
+        });
+
+        $prefix = match ($fileType) {
+            'image' => 'academy_image_',
+            'video' => 'academy_video_',
+            'word' => 'academy_word_',
+            default => 'academy_pdf_',
+        };
+
+        $filename = $prefix . time() . '_' . uniqid() . '.' . $extension;
         $path = $file->storeAs('vitrine/academy', $filename, 'public');
 
         return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));

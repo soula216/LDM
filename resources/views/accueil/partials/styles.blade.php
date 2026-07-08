@@ -2438,6 +2438,149 @@
       color: #fff;
     }
 
+    button.academy-download {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .academy-media-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 12000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+    }
+
+    .academy-media-modal[hidden] {
+      display: none !important;
+    }
+
+    .academy-media-modal__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(10px);
+    }
+
+    .academy-media-modal__shell {
+      position: relative;
+      z-index: 1;
+      width: min(960px, 100%);
+      max-height: calc(100vh - 2.5rem);
+      animation: academyModalIn 0.28s ease;
+    }
+
+    @@keyframes academyModalIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .academy-media-modal__close {
+      position: absolute;
+      top: -0.25rem;
+      right: 0;
+      transform: translateY(-100%);
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease;
+    }
+
+    .academy-media-modal__close:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .academy-media-modal__figure {
+      margin: 0;
+      background: #0f172a;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    .academy-media-modal__figure img {
+      display: block;
+      width: 100%;
+      max-height: calc(100vh - 8rem);
+      object-fit: contain;
+      background: #020617;
+    }
+
+    .academy-media-modal__figure figcaption {
+      padding: 0.85rem 1.1rem;
+      color: #e2e8f0;
+      font-size: 0.92rem;
+      font-weight: 600;
+      background: rgba(15, 23, 42, 0.96);
+    }
+
+    .academy-media-modal__figure figcaption:empty {
+      display: none;
+    }
+
+    .academy-media-modal__video-wrap {
+      background: #0f172a;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    .academy-media-modal__player {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+    }
+
+    .academy-media-modal__player iframe,
+    .academy-media-modal__player video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #000;
+    }
+
+    .academy-media-modal__video-title {
+      margin: 0;
+      padding: 0.85rem 1.1rem;
+      color: #e2e8f0;
+      font-size: 0.92rem;
+      font-weight: 600;
+      background: rgba(15, 23, 42, 0.96);
+    }
+
+    .academy-media-modal__video-title:empty {
+      display: none;
+    }
+
+    body.academy-modal-open {
+      overflow: hidden;
+    }
+
+    body.academy-modal-open .site-header {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
     .academy-empty {
       max-width: 520px;
       margin: 0 auto;

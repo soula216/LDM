@@ -14,13 +14,6 @@ class VitrineController extends Controller
 {
     private const ACADEMY_PER_PAGE = 20;
 
-    private const ACADEMY_CATEGORIES = [
-        'catalogue' => ['label' => 'Catalogues', 'icon' => 'fas fa-book-open'],
-        'guide' => ['label' => 'Guides techniques', 'icon' => 'fas fa-drafting-compass'],
-        'protocole' => ['label' => 'Protocoles', 'icon' => 'fas fa-clipboard-list'],
-        'notice' => ['label' => 'Notices', 'icon' => 'fas fa-file-alt'],
-    ];
-
     public function show(): View
     {
         return view('accueil', [
@@ -140,14 +133,15 @@ class VitrineController extends Controller
 
         $allDocuments = $this->academyDocumentsCollection($academy);
         $pageData = $this->paginateAcademyDocuments($allDocuments, 1);
+        $academyCategories = VitrineBlock::resolveAcademyCategories($academy);
 
         return view('accueil.academy', [
             'blocks' => $blocks,
             'academy' => $academy,
-            'academyCategories' => self::ACADEMY_CATEGORIES,
+            'academyCategories' => $academyCategories,
             'academyDocuments' => $pageData['documents'],
             'academyTotal' => $allDocuments->count(),
-            'academyCategoryCounts' => $this->academyCategoryCounts($allDocuments),
+            'academyCategoryCounts' => $this->academyCategoryCounts($allDocuments, $academyCategories),
             'academyPage' => 1,
             'academyHasMore' => $pageData['has_more'],
         ]);
@@ -158,9 +152,10 @@ class VitrineController extends Controller
         $blocks = $this->loadBlocks();
         $academy = $blocks['academy'] ?? ['documents' => []];
         $allDocuments = $this->academyDocumentsCollection($academy);
+        $academyCategories = VitrineBlock::resolveAcademyCategories($academy);
 
         $category = trim((string) $request->query('category', 'all'));
-        if ($category !== 'all' && ! array_key_exists($category, self::ACADEMY_CATEGORIES)) {
+        if ($category !== 'all' && ! array_key_exists($category, $academyCategories)) {
             $category = 'all';
         }
 
@@ -176,7 +171,7 @@ class VitrineController extends Controller
         return response()->json([
             'html' => view('accueil.partials.academy-cards', [
                 'documents' => $pageData['documents'],
-                'academyCategories' => self::ACADEMY_CATEGORIES,
+                'academyCategories' => $academyCategories,
             ])->render(),
             'has_more' => $pageData['has_more'],
             'page' => $page,
@@ -191,10 +186,10 @@ class VitrineController extends Controller
             ->values();
     }
 
-    private function academyCategoryCounts(Collection $documents): array
+    private function academyCategoryCounts(Collection $documents, array $academyCategories): array
     {
         $counts = [];
-        foreach (array_keys(self::ACADEMY_CATEGORIES) as $category) {
+        foreach (array_keys($academyCategories) as $category) {
             $count = $documents->where('category', $category)->count();
             if ($count > 0) {
                 $counts[$category] = $count;

@@ -36,15 +36,15 @@
         <div class="academy-hero-stats">
           <div class="academy-hero-stat">
             <strong>{{ $academyTotal }}</strong>
-            <span>document{{ $academyTotal > 1 ? 's' : '' }}</span>
+            <span>ressource{{ $academyTotal > 1 ? 's' : '' }}</span>
           </div>
           <div class="academy-hero-stat">
             <strong>{{ count($academyCategoryCounts) }}</strong>
             <span>catégorie{{ count($academyCategoryCounts) > 1 ? 's' : '' }}</span>
           </div>
           <div class="academy-hero-stat">
-            <strong>PDF</strong>
-            <span>téléchargeables</span>
+            <strong>Multi</strong>
+            <span>formats</span>
           </div>
         </div>
       @endif
@@ -58,7 +58,7 @@
           <i class="fas fa-folder-open" aria-hidden="true"></i>
         </div>
         <h2>Aucun document pour le moment</h2>
-        <p>Les catalogues, guides techniques, protocoles et notices seront bientôt disponibles au téléchargement.</p>
+        <p>Les catalogues, guides, vidéos et documents seront bientôt disponibles.</p>
       </div>
     @else
       <div class="academy-toolbar"
@@ -76,13 +76,15 @@
             <span>{{ $academyTotal }}</span>
           </button>
           @foreach($academyCategoryCounts as $categoryKey => $count)
-            @php $meta = $academyCategories[$categoryKey] ?? ['label' => ucfirst($categoryKey), 'icon' => 'fas fa-file-pdf']; @endphp
+            @php $meta = $academyCategories[$categoryKey] ?? ['label' => ucfirst($categoryKey), 'icon' => '']; @endphp
             <button type="button"
                     class="academy-filter"
                     data-filter="{{ $categoryKey }}"
                     role="tab"
                     aria-selected="false">
-              <i class="{{ $meta['icon'] }}" aria-hidden="true"></i>
+              @if(filled($meta['icon'] ?? null))
+                <i class="{{ $meta['icon'] }}" aria-hidden="true"></i>
+              @endif
               {{ $meta['label'] }}
               <span>{{ $count }}</span>
             </button>
@@ -113,6 +115,122 @@
     @endif
   </section>
 </main>
+
+@include('accueil.partials.academy-media-modals')
+
+<script>
+  (function () {
+    const imageModal = document.getElementById('academyImageModal');
+    const videoModal = document.getElementById('academyVideoModal');
+    const imageEl = document.getElementById('academyImageModalImg');
+    const imageCaption = document.getElementById('academyImageModalCaption');
+    const videoPlayer = document.getElementById('academyVideoModalPlayer');
+    const videoCaption = document.getElementById('academyVideoModalCaption');
+    let lastFocusedElement = null;
+
+    [imageModal, videoModal].forEach((modal) => {
+      if (modal && modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+    });
+
+    function setBodyLock(active) {
+      document.body.classList.toggle('academy-modal-open', active);
+    }
+
+    function closeImageModal() {
+      if (!imageModal || imageModal.hidden) return;
+      imageModal.hidden = true;
+      imageModal.setAttribute('aria-hidden', 'true');
+      if (imageEl) {
+        imageEl.removeAttribute('src');
+        imageEl.alt = '';
+      }
+      if (imageCaption) imageCaption.textContent = '';
+      if (videoModal?.hidden) setBodyLock(false);
+      lastFocusedElement?.focus?.();
+    }
+
+    function closeVideoModal() {
+      if (!videoModal || videoModal.hidden) return;
+      videoModal.hidden = true;
+      videoModal.setAttribute('aria-hidden', 'true');
+      if (videoPlayer) videoPlayer.innerHTML = '';
+      if (videoCaption) videoCaption.textContent = '';
+      if (imageModal?.hidden) setBodyLock(false);
+      lastFocusedElement?.focus?.();
+    }
+
+    function openImageModal(src, title) {
+      if (!imageModal || !imageEl) return;
+      closeVideoModal();
+      lastFocusedElement = document.activeElement;
+      imageEl.src = src;
+      imageEl.alt = title || 'Image';
+      if (imageCaption) imageCaption.textContent = title || '';
+      imageModal.hidden = false;
+      imageModal.setAttribute('aria-hidden', 'false');
+      setBodyLock(true);
+      imageModal.querySelector('.academy-media-modal__close')?.focus();
+    }
+
+    function openVideoModal(mode, src, title) {
+      if (!videoModal || !videoPlayer || !src) return;
+      closeImageModal();
+      lastFocusedElement = document.activeElement;
+      videoPlayer.innerHTML = '';
+
+      if (mode === 'iframe') {
+        const iframe = document.createElement('iframe');
+        iframe.src = src;
+        iframe.title = title || 'Vidéo';
+        iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+        iframe.allowFullscreen = true;
+        videoPlayer.appendChild(iframe);
+      } else {
+        const video = document.createElement('video');
+        video.src = src;
+        video.controls = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        videoPlayer.appendChild(video);
+      }
+
+      if (videoCaption) videoCaption.textContent = title || '';
+      videoModal.hidden = false;
+      videoModal.setAttribute('aria-hidden', 'false');
+      setBodyLock(true);
+      videoModal.querySelector('.academy-media-modal__close')?.focus();
+    }
+
+    document.addEventListener('click', (event) => {
+      const imageTrigger = event.target.closest('[data-academy-image]');
+      if (imageTrigger) {
+        event.preventDefault();
+        openImageModal(imageTrigger.dataset.src || '', imageTrigger.dataset.title || '');
+        return;
+      }
+
+      const videoTrigger = event.target.closest('[data-academy-video]');
+      if (videoTrigger) {
+        event.preventDefault();
+        openVideoModal(videoTrigger.dataset.videoMode || 'video', videoTrigger.dataset.src || '', videoTrigger.dataset.title || '');
+        return;
+      }
+
+      if (event.target.closest('[data-academy-modal-close]')) {
+        if (imageModal && !imageModal.hidden) closeImageModal();
+        if (videoModal && !videoModal.hidden) closeVideoModal();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (imageModal && !imageModal.hidden) closeImageModal();
+      else if (videoModal && !videoModal.hidden) closeVideoModal();
+    });
+  })();
+</script>
 
 <script>
   (function () {
