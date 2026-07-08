@@ -111,10 +111,10 @@
   </div>
   @if($galleryMore->isNotEmpty())
     <div class="gallery-more" data-gallery-more>
-      <button type="button" class="btn btn-secondary gallery-more__btn" data-gallery-expand aria-expanded="false">
+      <a href="{{ route('vitrine.gallery') }}" class="btn btn-secondary gallery-more__btn">
         Voir la suite
-        <i class="fas fa-chevron-down" aria-hidden="true"></i>
-      </button>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
     </div>
   @endif
   @include('accueil.partials.gallery-lightbox', ['modern' => true])
@@ -258,8 +258,8 @@
           </div>
           <div class="full-row">
             <label class="contact-label" for="contact-attachment">Pièce jointe <span class="contact-label-optional">(optionnel)</span></label>
-            <input id="contact-attachment" name="attachment" type="file" class="contact-file @error('attachment') contact-input--error @enderror" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,application/pdf,image/jpeg,image/png,image/webp,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-            <p class="contact-file-hint">PDF, images ou Word — 10 Mo maximum</p>
+            <input id="contact-attachment" name="attachment" type="file" class="contact-file @error('attachment') contact-input--error @enderror" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.stl,application/pdf,image/jpeg,image/png,image/webp,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,model/stl,application/sla,application/vnd.ms-pki.stl,application/octet-stream">
+            <p class="contact-file-hint">PDF, images, Word ou STL — 45 Mo maximum</p>
             @error('attachment')
               <p class="contact-field-error">{{ $message }}</p>
             @enderror

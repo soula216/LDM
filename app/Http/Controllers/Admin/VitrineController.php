@@ -734,8 +734,8 @@ class VitrineController extends Controller
         $rules = match ($fileType) {
             'image' => [$field => 'required|file|mimes:jpeg,jpg,png,webp,gif|max:10240'],
             'video' => [$field => 'required|file|mimes:mp4,webm,mov,quicktime|max:102400'],
-            'word' => [$field => 'required|file|mimes:doc,docx|max:20480'],
-            default => [$field => 'required|file|mimes:pdf|max:20480'],
+            'word' => [$field => 'required|file|mimes:doc,docx|max:51200'],
+            default => [$field => 'required|file|mimes:pdf|max:51200'],
         };
 
         $messages = match ($fileType) {
@@ -749,11 +749,11 @@ class VitrineController extends Controller
             ],
             'word' => [
                 "$field.mimes" => 'Formats acceptés : DOC, DOCX.',
-                "$field.max" => 'Le document Word ne doit pas dépasser 20 Mo.',
+                "$field.max" => 'Le document Word ne doit pas dépasser 50 Mo.',
             ],
             default => [
                 "$field.mimes" => 'Seuls les fichiers PDF sont acceptés.',
-                "$field.max" => 'Le PDF ne doit pas dépasser 20 Mo.',
+                "$field.max" => 'Le PDF ne doit pas dépasser 50 Mo.',
             ],
         };
 

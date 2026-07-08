@@ -77,11 +77,11 @@
         },
         fileTypeUploadHint(type) {
             return ({
-                pdf: 'PDF uniquement — max 20 Mo',
+                pdf: 'PDF uniquement — max 50 Mo',
                 image: 'JPEG, PNG, WebP, GIF — max 10 Mo',
                 video: 'MP4, WebM, MOV — max 100 Mo',
-                word: 'DOC, DOCX — max 20 Mo',
-            })[type] || 'PDF uniquement — max 20 Mo';
+                word: 'DOC, DOCX — max 50 Mo',
+            })[type] || 'PDF uniquement — max 50 Mo';
         },
         coverHelpText(doc) {
             if (doc.file_type === 'pdf') {

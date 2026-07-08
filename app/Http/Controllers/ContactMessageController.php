@@ -16,7 +16,10 @@ class ContactMessageController extends Controller
             'email' => 'required|email|max:255',
             'phone' => 'nullable|string|max:50',
             'message' => 'required|string|max:5000',
-            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp,doc,docx|max:10240',
+            'attachment' => 'nullable|file|extensions:pdf,jpg,jpeg,png,webp,doc,docx,stl|max:46080',
+        ], [
+            'attachment.extensions' => 'La pièce jointe doit être un fichier PDF, image, Word ou STL.',
+            'attachment.max' => 'La pièce jointe ne doit pas dépasser 45 Mo.',
         ]);
 
         if ($validator->fails()) {

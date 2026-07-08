@@ -376,19 +376,6 @@
       }
     });
 
-    const expandBtn = document.querySelector('[data-gallery-expand]');
-    expandBtn?.addEventListener('click', () => {
-      const extraItems = gallerySection?.querySelectorAll('.gallery-item--extra') ?? [];
-      extraItems.forEach((item, index) => {
-        item.hidden = false;
-        window.setTimeout(() => item.classList.add('active'), index * 60);
-      });
-
-      expandBtn.setAttribute('aria-expanded', 'true');
-      expandBtn.closest('[data-gallery-more]')?.remove();
-      refreshItems();
-    });
-
     prevBtn?.addEventListener('click', () => {
       if (currentIndex > 0) showAt(currentIndex - 1);
     });
