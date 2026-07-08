@@ -3457,6 +3457,41 @@
       transform: translateX(3px);
     }
 
+    .contact-submit__spinner {
+      display: none;
+      width: 1.05rem;
+      height: 1.05rem;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      animation: contactSubmitSpin 0.7s linear infinite;
+    }
+
+    .contact-submit.is-loading {
+      cursor: progress;
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .contact-submit.is-loading:hover {
+      transform: none;
+    }
+
+    .contact-submit.is-loading .contact-submit__icon {
+      display: none;
+    }
+
+    .contact-submit.is-loading .contact-submit__spinner {
+      display: inline-block;
+    }
+
+    @@keyframes contactSubmitSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .contact-alert {
       display: flex;
       align-items: flex-start;

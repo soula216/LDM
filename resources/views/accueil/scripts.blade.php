@@ -404,6 +404,25 @@
     });
   })();
 
+  // Formulaire de contact — état d'envoi (spinner + « Envoi en cours »)
+  (function initContactSubmit() {
+    const form = document.querySelector('[data-contact-form]');
+    if (!form) return;
+
+    const btn = form.querySelector('[data-contact-submit]');
+    if (!btn) return;
+
+    form.addEventListener('submit', () => {
+      if (btn.classList.contains('is-loading')) return;
+
+      btn.classList.add('is-loading');
+      btn.setAttribute('aria-busy', 'true');
+
+      const label = btn.querySelector('.contact-submit__label');
+      if (label) label.textContent = 'Envoi en cours';
+    });
+  })();
+
   // FAQ accordion
   (function () {
     const accordion = document.querySelector('[data-faq-accordion]');

@@ -225,7 +225,7 @@
         </div>
       @endif
 
-      <form class="contact-form" action="{{ route('contact.store') }}" method="post" enctype="multipart/form-data" novalidate>
+      <form class="contact-form" action="{{ route('contact.store') }}" method="post" enctype="multipart/form-data" novalidate data-contact-form>
         @csrf
         <div class="contact-form-grid">
           <div>
@@ -266,9 +266,10 @@
           </div>
         </div>
         <div class="contact-actions">
-          <button type="submit" class="contact-submit">
-            <span>{{ $contact['form_submit_label'] ?? 'Envoyer ma demande' }}</span>
-            <i class="fas fa-arrow-right"></i>
+          <button type="submit" class="contact-submit" data-contact-submit>
+            <span class="contact-submit__spinner" aria-hidden="true"></span>
+            <span class="contact-submit__label">{{ $contact['form_submit_label'] ?? 'Envoyer ma demande' }}</span>
+            <i class="fas fa-arrow-right contact-submit__icon"></i>
           </button>
         </div>
       </form>
