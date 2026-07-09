@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ContactFormSubmitted;
 use App\Models\ContactMessage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class ContactMessageController extends Controller
@@ -42,7 +45,17 @@ class ContactMessageController extends Controller
             $data['attachment_name'] = $file->getClientOriginalName();
         }
 
-        ContactMessage::create($data);
+        $contactMessage = ContactMessage::create($data);
+
+        try {
+            Mail::to(config('contact.notification_email'))
+                ->send(new ContactFormSubmitted($contactMessage));
+        } catch (\Throwable $e) {
+            Log::error('Échec envoi email formulaire contact', [
+                'contact_message_id' => $contactMessage->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return redirect()
             ->route('vitrine')
