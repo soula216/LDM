@@ -39,6 +39,7 @@ Route::get('/services', [VitrineController::class, 'services'])->name('vitrine.s
 Route::get('/services/{slug}', [VitrineController::class, 'serviceShow'])->name('vitrine.services.show');
 Route::get('/process', [VitrineController::class, 'process'])->name('vitrine.process');
 Route::get('/gallery', [VitrineController::class, 'gallery'])->name('vitrine.gallery');
+Route::get('/about', [VitrineController::class, 'about'])->name('vitrine.about');
 Route::get('/academy', [VitrineController::class, 'academy'])->name('vitrine.academy');
 Route::get('/academy/documents', [VitrineController::class, 'academyDocuments'])->name('vitrine.academy.documents');
 Route::get('/faq', [VitrineController::class, 'faq'])->name('vitrine.faq');

@@ -35,7 +35,8 @@
         @php
           $navHref = VitrineBlock::resolvePublicHref($link['href'] ?? '#');
           $isActive = (
-              (VitrineBlock::isPublicPageActive('academy') && str_contains($navHref, '/academy'))
+              (VitrineBlock::isPublicPageActive('about') && str_contains($navHref, '/about'))
+              || (VitrineBlock::isPublicPageActive('academy') && str_contains($navHref, '/academy'))
               || (VitrineBlock::isPublicPageActive('services') && str_contains($navHref, '/services'))
               || (VitrineBlock::isPublicPageActive('process') && str_contains($navHref, '/process'))
               || (VitrineBlock::isPublicPageActive('gallery') && str_contains($navHref, '/gallery'))

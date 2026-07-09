@@ -7,6 +7,8 @@
     $galleryMore = VitrineBlock::homepageGalleryMoreItems($gallery);
     $hasGallery = $galleryFavorites->isNotEmpty() || $galleryMore->isNotEmpty();
     $features = $blocks['features'] ?? [];
+    $partners = $blocks['partners'] ?? [];
+    $partnerItems = VitrineBlock::activePartnerItems($partners['items'] ?? []);
     $contact = $blocks['contact'] ?? [];
 @endphp
 {{-- Contenu principal : Hero, Gallery, Features, Contact --}}
@@ -145,6 +147,85 @@
         <h3>{{ $features['card']['title'] ?? '' }}</h3>
         <p>{{ $features['card']['description'] ?? '' }}</p>
       </div>
+    </div>
+  </div>
+</section>
+@endif
+
+@if(!empty($blocks['partners']) && $partnerItems->isNotEmpty())
+{{-- Partners - Nos Partenaires --}}
+<section class="partners" id="partenaires">
+  <div class="partners__bg" aria-hidden="true">
+    <span class="partners__mesh"></span>
+    <span class="partners__orb partners__orb--1"></span>
+    <span class="partners__orb partners__orb--2"></span>
+    <span class="partners__orb partners__orb--3"></span>
+  </div>
+
+  <div class="partners__container">
+    <div class="partners-showcase__head reveal">
+      <div class="partners-showcase__badge">
+        <i class="fas fa-handshake" aria-hidden="true"></i>
+        <span>{{ $partners['section_label'] ?? 'Nos Partenaires' }}</span>
+      </div>
+      <h2 class="partners-showcase__title">{{ $partners['section_title'] ?? 'Ils Nous Font Confiance' }}</h2>
+      @if(filled($partners['section_subtitle'] ?? null))
+        <p class="partners-showcase__subtitle">{{ $partners['section_subtitle'] }}</p>
+      @endif
+      <div class="partners-showcase__meta">
+        <span class="partners-showcase__pill">{{ $partnerItems->count() }} partenaire{{ $partnerItems->count() > 1 ? 's' : '' }} de référence</span>
+      </div>
+    </div>
+
+    <div class="partners-showcase reveal" data-partners-carousel>
+      <div class="partners-showcase__rim" aria-hidden="true"></div>
+      <div class="partners-showcase__glow" aria-hidden="true"></div>
+
+      <div class="partners-carousel">
+        <div class="partners-carousel__fade partners-carousel__fade--left" aria-hidden="true"></div>
+        <div class="partners-carousel__fade partners-carousel__fade--right" aria-hidden="true"></div>
+
+        <div class="partners-carousel__viewport">
+          <div class="partners-carousel__track" data-partners-track>
+            @foreach([1, 2] as $loopPass)
+              @foreach($partnerItems as $item)
+                @php
+                  $partnerUrl = filled($item['url'] ?? null) ? VitrineBlock::resolvePublicHref($item['url']) : null;
+                  $partnerName = $item['name'] ?? 'Partenaire';
+                @endphp
+                <article class="partners-carousel__slide">
+                  @if($partnerUrl)
+                    <a href="{{ $partnerUrl }}" class="partners-card" target="_blank" rel="noopener noreferrer" aria-label="{{ $partnerName }}">
+                  @else
+                    <div class="partners-card" aria-label="{{ $partnerName }}">
+                  @endif
+                      <span class="partners-card__shine" aria-hidden="true"></span>
+                      <div class="partners-card__inner">
+                        <img src="{{ $item['image_url'] ?? '' }}"
+                             alt="{{ $partnerName }}"
+                             loading="lazy"
+                             decoding="async"
+                             class="partners-card__logo">
+                      </div>
+                      @if(filled($partnerName))
+                        <span class="partners-card__name">{{ $partnerName }}</span>
+                      @endif
+                  @if($partnerUrl)
+                    </a>
+                  @else
+                    </div>
+                  @endif
+                </article>
+              @endforeach
+            @endforeach
+          </div>
+        </div>
+      </div>
+
+      <p class="partners-showcase__hint">
+        <i class="fas fa-arrows-left-right" aria-hidden="true"></i>
+        Survolez un logo pour l'agrandir · défilement automatique
+      </p>
     </div>
   </div>
 </section>

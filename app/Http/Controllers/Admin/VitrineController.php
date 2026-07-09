@@ -18,6 +18,8 @@ class VitrineController extends Controller
 
     private const GALLERY_STORAGE_PREFIX = 'vitrine/gallery/';
 
+    private const PARTNERS_STORAGE_PREFIX = 'vitrine/partners/';
+
     private const LOGO_STORAGE_PREFIX = 'vitrine/logo/';
 
     private const SOCIAL_STORAGE_PREFIX = 'vitrine/social/';
@@ -27,6 +29,12 @@ class VitrineController extends Controller
     private const ACADEMY_STORAGE_PREFIX = 'vitrine/academy/';
 
     private const ACADEMY_COVER_STORAGE_PREFIX = 'vitrine/academy/covers/';
+
+    private const ABOUT_PHOTO_STORAGE_PREFIX = 'vitrine/about/photos/';
+
+    private const ABOUT_VIDEO_STORAGE_PREFIX = 'vitrine/about/videos/';
+
+    private const ABOUT_POSTER_STORAGE_PREFIX = 'vitrine/about/posters/';
 
     public function index(Request $request): View
     {
@@ -57,6 +65,10 @@ class VitrineController extends Controller
             $content = $this->processGalleryItems($request, $content, $existingContent);
         }
 
+        if ($vitrineBlock->key === 'partners') {
+            $content = $this->processPartnerItems($request, $content, $existingContent);
+        }
+
         if ($vitrineBlock->key === 'services') {
             $content = $this->processServiceItems($request, $content, $existingContent);
         }
@@ -64,6 +76,10 @@ class VitrineController extends Controller
         if ($vitrineBlock->key === 'academy') {
             $content = $this->processAcademyCategories($content);
             $content = $this->processAcademyDocuments($request, $content, $existingContent);
+        }
+
+        if ($vitrineBlock->key === 'about') {
+            $content = $this->processAboutContent($request, $content, $existingContent);
         }
 
         if ($vitrineBlock->key === 'process') {
@@ -206,6 +222,61 @@ class VitrineController extends Controller
         $content['items'] = array_values($processed);
         $content['show_all_on_site'] = count($processed) > 0
             && collect($processed)->every(fn (array $item): bool => $item['is_active']);
+
+        return $content;
+    }
+
+    private function processPartnerItems(Request $request, array $content, array $existingContent): array
+    {
+        $incomingItems = $content['items'] ?? [];
+        $existingItems = $existingContent['items'] ?? [];
+        $processed = [];
+
+        foreach ($incomingItems as $index => $item) {
+            $sourceType = ($item['source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
+            $imageUrl = trim((string) ($item['image_url'] ?? ''));
+            $existingUrl = trim((string) ($existingItems[$index]['image_url'] ?? ''));
+
+            if ($request->hasFile("partner_uploads.$index")) {
+                $file = $request->file("partner_uploads.$index");
+                $this->validatePartnerUpload($file, $index);
+
+                if ($existingUrl !== '') {
+                    $this->deleteVitrineImageIfStored($existingUrl);
+                }
+
+                $imageUrl = $this->storePartnerImage($file);
+                $sourceType = 'upload';
+            } elseif ($sourceType === 'upload') {
+                if ($imageUrl === '' && $existingUrl !== '') {
+                    $imageUrl = $existingUrl;
+                }
+            } elseif ($sourceType === 'url' && $existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $imageUrl) {
+                $this->deleteVitrineImageIfStored($existingUrl);
+            }
+
+            if ($imageUrl === '' && trim((string) ($item['name'] ?? '')) === '') {
+                continue;
+            }
+
+            $processed[] = [
+                'name' => trim((string) ($item['name'] ?? '')),
+                'url' => trim((string) ($item['url'] ?? '')),
+                'image_url' => $imageUrl !== '' ? VitrineBlock::resolveImageUrl($imageUrl) : '',
+                'source_type' => $sourceType,
+                'is_active' => filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            ];
+        }
+
+        $newUrls = collect($processed)->pluck('image_url')->filter()->all();
+        foreach ($existingItems as $oldItem) {
+            $oldUrl = trim((string) ($oldItem['image_url'] ?? ''));
+            if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldUrl);
+            }
+        }
+
+        $content['items'] = array_values($processed);
 
         return $content;
     }
@@ -504,6 +575,166 @@ class VitrineController extends Controller
         return $content;
     }
 
+    private function processAboutContent(Request $request, array $content, array $existingContent): array
+    {
+        $content['title'] = trim((string) ($content['title'] ?? ''));
+        $content['description'] = trim((string) ($content['description'] ?? ''));
+        $content['section_label'] = trim((string) ($content['section_label'] ?? 'À propos'));
+        $content['photos'] = $this->processAboutPhotos($request, $content['photos'] ?? [], $existingContent['photos'] ?? []);
+        $content['videos'] = $this->processAboutVideos($request, $content['videos'] ?? [], $existingContent['videos'] ?? []);
+
+        return $content;
+    }
+
+    private function processAboutPhotos(Request $request, array $incoming, array $existing): array
+    {
+        $processed = [];
+
+        foreach ($incoming as $index => $photo) {
+            $title = trim((string) ($photo['title'] ?? ''));
+            $caption = trim((string) ($photo['caption'] ?? ''));
+            $sourceType = ($photo['source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
+            $imageUrl = trim((string) ($photo['image_url'] ?? ''));
+            $existingUrl = trim((string) ($existing[$index]['image_url'] ?? ''));
+
+            if ($request->hasFile("about_photo_uploads.$index")) {
+                $file = $request->file("about_photo_uploads.$index");
+                $this->validateAboutPhotoUpload($file, $index);
+
+                if ($existingUrl !== '') {
+                    $this->deleteVitrineImageIfStored($existingUrl);
+                }
+
+                $imageUrl = $this->storeAboutPhoto($file);
+                $sourceType = 'upload';
+            } elseif ($sourceType === 'upload') {
+                if ($imageUrl === '' && $existingUrl !== '') {
+                    $imageUrl = $existingUrl;
+                }
+            } elseif ($sourceType === 'url' && $existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $imageUrl) {
+                $this->deleteVitrineImageIfStored($existingUrl);
+            }
+
+            if ($imageUrl === '' && $title === '' && $caption === '') {
+                continue;
+            }
+
+            if ($imageUrl === '') {
+                continue;
+            }
+
+            $processed[] = [
+                'image_url' => VitrineBlock::resolveImageUrl($imageUrl),
+                'source_type' => $sourceType,
+                'title' => $title,
+                'caption' => $caption,
+            ];
+        }
+
+        $newUrls = collect($processed)->pluck('image_url')->filter()->all();
+        foreach ($existing as $oldPhoto) {
+            $oldUrl = trim((string) ($oldPhoto['image_url'] ?? ''));
+            if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldUrl);
+            }
+        }
+
+        return array_values($processed);
+    }
+
+    private function processAboutVideos(Request $request, array $incoming, array $existing): array
+    {
+        $processed = [];
+
+        foreach ($incoming as $index => $video) {
+            $title = trim((string) ($video['title'] ?? ''));
+            $description = trim((string) ($video['description'] ?? ''));
+            $sourceType = ($video['source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
+            $videoUrl = trim((string) ($video['video_url'] ?? ''));
+            $existingUrl = trim((string) ($existing[$index]['video_url'] ?? ''));
+            $posterSourceType = ($video['poster_source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
+            $posterUrl = trim((string) ($video['poster_url'] ?? ''));
+            $existingPosterUrl = trim((string) ($existing[$index]['poster_url'] ?? ''));
+
+            if ($request->hasFile("about_video_uploads.$index")) {
+                $file = $request->file("about_video_uploads.$index");
+                $this->validateAboutVideoUpload($file, $index);
+
+                if ($existingUrl !== '' && $this->isStoredVitrineImage($existingUrl)) {
+                    $this->deleteVitrineImageIfStored($existingUrl);
+                }
+
+                $videoUrl = $this->storeAboutVideo($file);
+                $sourceType = 'upload';
+            } elseif ($sourceType === 'upload') {
+                if ($videoUrl === '' && $existingUrl !== '') {
+                    $videoUrl = $existingUrl;
+                }
+            } elseif ($sourceType === 'url') {
+                $incomingUrl = trim((string) ($video['video_url'] ?? ''));
+                if ($incomingUrl !== '' && (filter_var($incomingUrl, FILTER_VALIDATE_URL) || str_starts_with($incomingUrl, '/'))) {
+                    if ($existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $incomingUrl) {
+                        $this->deleteVitrineImageIfStored($existingUrl);
+                    }
+                    $videoUrl = $incomingUrl;
+                } elseif ($videoUrl === '' && $existingUrl !== '') {
+                    $videoUrl = $existingUrl;
+                }
+            }
+
+            if ($request->hasFile("about_poster_uploads.$index")) {
+                $file = $request->file("about_poster_uploads.$index");
+                $this->validateAboutPhotoUpload($file, $index, 'about_poster_uploads');
+
+                if ($existingPosterUrl !== '') {
+                    $this->deleteVitrineImageIfStored($existingPosterUrl);
+                }
+
+                $posterUrl = $this->storeAboutPoster($file);
+                $posterSourceType = 'upload';
+            } elseif ($posterSourceType === 'upload') {
+                if ($posterUrl === '' && $existingPosterUrl !== '') {
+                    $posterUrl = $existingPosterUrl;
+                }
+            } elseif ($posterSourceType === 'url' && $existingPosterUrl !== '' && $this->isStoredVitrineImage($existingPosterUrl) && $existingPosterUrl !== $posterUrl) {
+                $this->deleteVitrineImageIfStored($existingPosterUrl);
+            }
+
+            if ($videoUrl === '' && $title === '' && $description === '') {
+                continue;
+            }
+
+            if ($videoUrl === '') {
+                continue;
+            }
+
+            $processed[] = [
+                'title' => $title,
+                'description' => $description,
+                'source_type' => $sourceType,
+                'video_url' => VitrineBlock::resolveImageUrl($videoUrl),
+                'poster_source_type' => $posterSourceType,
+                'poster_url' => $posterUrl !== '' ? VitrineBlock::resolveImageUrl($posterUrl) : '',
+            ];
+        }
+
+        $newVideoUrls = collect($processed)->pluck('video_url')->filter()->all();
+        $newPosterUrls = collect($processed)->pluck('poster_url')->filter()->all();
+        foreach ($existing as $oldVideo) {
+            $oldUrl = trim((string) ($oldVideo['video_url'] ?? ''));
+            if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newVideoUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldUrl);
+            }
+
+            $oldPosterUrl = trim((string) ($oldVideo['poster_url'] ?? ''));
+            if ($oldPosterUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldPosterUrl), $newPosterUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldPosterUrl);
+            }
+        }
+
+        return array_values($processed);
+    }
+
     private function processProcessSteps(array $content): array
     {
         $steps = $content['steps'] ?? [];
@@ -707,6 +938,26 @@ class VitrineController extends Controller
         return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
     }
 
+    private function validatePartnerUpload(UploadedFile $file, int $index): void
+    {
+        request()->validate([
+            "partner_uploads.$index" => 'required|image|mimes:jpeg,jpg,png,webp,gif,svg|max:5120',
+        ], [
+            "partner_uploads.$index.image" => 'Le fichier doit être une image valide.',
+            "partner_uploads.$index.mimes" => 'Formats acceptés : JPEG, PNG, WebP, GIF, SVG.',
+            "partner_uploads.$index.max" => 'Le logo ne doit pas dépasser 5 Mo.',
+        ]);
+    }
+
+    private function storePartnerImage(UploadedFile $file): string
+    {
+        $extension = $file->getClientOriginalExtension() ?: 'png';
+        $filename = 'partner_' . time() . '_' . uniqid() . '.' . strtolower($extension);
+        $path = $file->storeAs('vitrine/partners', $filename, 'public');
+
+        return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
     private function validateSlideUpload(UploadedFile $file, int $index): void
     {
         request()->validate([
@@ -779,6 +1030,54 @@ class VitrineController extends Controller
 
         $filename = $prefix . time() . '_' . uniqid() . '.' . $extension;
         $path = $file->storeAs('vitrine/academy', $filename, 'public');
+
+        return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
+    private function validateAboutPhotoUpload(UploadedFile $file, int $index, string $fieldPrefix = 'about_photo_uploads'): void
+    {
+        $field = "{$fieldPrefix}.$index";
+        request()->validate([
+            $field => 'required|file|mimes:jpeg,jpg,png,webp,gif|max:10240',
+        ], [
+            "$field.mimes" => 'Formats acceptés : JPEG, PNG, WebP, GIF.',
+            "$field.max" => 'L\'image ne doit pas dépasser 10 Mo.',
+        ]);
+    }
+
+    private function storeAboutPhoto(UploadedFile $file): string
+    {
+        $extension = $file->getClientOriginalExtension() ?: 'jpg';
+        $filename = 'about_photo_' . time() . '_' . uniqid() . '.' . strtolower($extension);
+        $path = $file->storeAs('vitrine/about/photos', $filename, 'public');
+
+        return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
+    private function storeAboutPoster(UploadedFile $file): string
+    {
+        $extension = $file->getClientOriginalExtension() ?: 'jpg';
+        $filename = 'about_poster_' . time() . '_' . uniqid() . '.' . strtolower($extension);
+        $path = $file->storeAs('vitrine/about/posters', $filename, 'public');
+
+        return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
+    private function validateAboutVideoUpload(UploadedFile $file, int $index): void
+    {
+        request()->validate([
+            "about_video_uploads.$index" => 'required|file|mimes:mp4,webm,mov,quicktime|max:102400',
+        ], [
+            "about_video_uploads.$index.mimes" => 'Formats acceptés : MP4, WebM, MOV.',
+            "about_video_uploads.$index.max" => 'La vidéo ne doit pas dépasser 100 Mo.',
+        ]);
+    }
+
+    private function storeAboutVideo(UploadedFile $file): string
+    {
+        $extension = strtolower($file->getClientOriginalExtension() ?: 'mp4');
+        $filename = 'about_video_' . time() . '_' . uniqid() . '.' . $extension;
+        $path = $file->storeAs('vitrine/about/videos', $filename, 'public');
 
         return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
     }
@@ -860,11 +1159,15 @@ class VitrineController extends Controller
         if ($path && (
             str_starts_with($path, self::SLIDER_STORAGE_PREFIX)
             || str_starts_with($path, self::GALLERY_STORAGE_PREFIX)
+            || str_starts_with($path, self::PARTNERS_STORAGE_PREFIX)
             || str_starts_with($path, self::LOGO_STORAGE_PREFIX)
             || str_starts_with($path, self::SOCIAL_STORAGE_PREFIX)
             || str_starts_with($path, self::SERVICE_STORAGE_PREFIX)
             || str_starts_with($path, self::ACADEMY_STORAGE_PREFIX)
             || str_starts_with($path, self::ACADEMY_COVER_STORAGE_PREFIX)
+            || str_starts_with($path, self::ABOUT_PHOTO_STORAGE_PREFIX)
+            || str_starts_with($path, self::ABOUT_VIDEO_STORAGE_PREFIX)
+            || str_starts_with($path, self::ABOUT_POSTER_STORAGE_PREFIX)
         )) {
             Storage::disk('public')->delete($path);
         }
@@ -885,7 +1188,10 @@ class VitrineController extends Controller
             || str_starts_with($imageUrl, self::SOCIAL_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::SERVICE_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::ACADEMY_STORAGE_PREFIX)
-            || str_starts_with($imageUrl, self::ACADEMY_COVER_STORAGE_PREFIX)) {
+            || str_starts_with($imageUrl, self::ACADEMY_COVER_STORAGE_PREFIX)
+            || str_starts_with($imageUrl, self::ABOUT_PHOTO_STORAGE_PREFIX)
+            || str_starts_with($imageUrl, self::ABOUT_VIDEO_STORAGE_PREFIX)
+            || str_starts_with($imageUrl, self::ABOUT_POSTER_STORAGE_PREFIX)) {
             return $imageUrl;
         }
 

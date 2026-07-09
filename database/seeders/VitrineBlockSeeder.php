@@ -21,6 +21,7 @@ class VitrineBlockSeeder extends Seeder
                     'nav_links' => [
                         ['label' => 'Accueil', 'href' => '/'],
                         ['label' => 'Services', 'href' => '/services'],
+                        ['label' => 'À propos', 'href' => '/about'],
                         ['label' => 'Process', 'href' => '/process'],
                         ['label' => 'Galerie', 'href' => '/gallery'],
                         ['label' => 'LDM Academy', 'href' => '/academy'],
@@ -162,9 +163,39 @@ class VitrineBlockSeeder extends Seeder
                 ],
             ],
             [
+                'key' => 'about',
+                'label' => 'Page À propos',
+                'sort_order' => 7,
+                'content' => [
+                    'section_label' => 'À propos',
+                    'title' => 'Notre laboratoire, notre engagement',
+                    'description' => 'Depuis plus de 15 ans, LDM accompagne les chirurgiens-dentistes avec des prothèses de précision, une expertise technique reconnue et un service client réactif. Découvrez notre univers, notre équipe et notre savoir-faire à travers images et vidéos.',
+                    'photos' => [],
+                    'videos' => [],
+                ],
+            ],
+            [
+                'key' => 'partners',
+                'label' => 'Partenaires',
+                'sort_order' => 8,
+                'content' => [
+                    'section_label' => 'Nos Partenaires',
+                    'section_title' => 'Ils Nous Font Confiance',
+                    'section_subtitle' => 'Des collaborations solides avec les leaders du secteur dentaire pour vous offrir excellence et innovation.',
+                    'items' => [
+                        ['name' => 'Straumann', 'url' => '', 'image_url' => 'https://logo.clearbit.com/straumann.com', 'source_type' => 'url', 'is_active' => true],
+                        ['name' => 'Ivoclar', 'url' => '', 'image_url' => 'https://logo.clearbit.com/ivoclar.com', 'source_type' => 'url', 'is_active' => true],
+                        ['name' => '3Shape', 'url' => '', 'image_url' => 'https://logo.clearbit.com/3shape.com', 'source_type' => 'url', 'is_active' => true],
+                        ['name' => 'Dentsply Sirona', 'url' => '', 'image_url' => 'https://logo.clearbit.com/dentsplysirona.com', 'source_type' => 'url', 'is_active' => true],
+                        ['name' => 'Nobel Biocare', 'url' => '', 'image_url' => 'https://logo.clearbit.com/nobelbiocare.com', 'source_type' => 'url', 'is_active' => true],
+                        ['name' => 'VITA Zahnfabrik', 'url' => '', 'image_url' => 'https://logo.clearbit.com/vita-zahnfabrik.com', 'source_type' => 'url', 'is_active' => true],
+                    ],
+                ],
+            ],
+            [
                 'key' => 'faq',
                 'label' => 'FAQ',
-                'sort_order' => 7,
+                'sort_order' => 9,
                 'content' => [
                     'section_label' => 'FAQ',
                     'section_title' => 'Foire Aux Questions',
@@ -204,7 +235,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'academy',
                 'label' => 'LDM Academy',
-                'sort_order' => 8,
+                'sort_order' => 10,
                 'content' => [
                     'section_label' => 'LDM Academy',
                     'section_title' => 'Ressources pour les praticiens',
@@ -221,7 +252,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'contact',
                 'label' => 'Contact',
-                'sort_order' => 9,
+                'sort_order' => 11,
                 'content' => [
                     'info_is_active' => true,
                     'form_is_active' => true,
@@ -247,7 +278,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'footer',
                 'label' => 'Pied de page',
-                'sort_order' => 10,
+                'sort_order' => 12,
                 'content' => [
                     'logo_url' => 'logo_ldm.png',
                     'logo_source_type' => 'url',
@@ -271,7 +302,7 @@ class VitrineBlockSeeder extends Seeder
                         [
                             'title' => 'Entreprise',
                             'links' => [
-                                ['label' => 'À propos', 'href' => '#'],
+                                ['label' => 'À propos', 'href' => '/about'],
                                 ['label' => 'Équipe', 'href' => '#'],
                                 ['label' => 'Carrières', 'href' => '#'],
                                 ['label' => 'Actualités', 'href' => '#'],

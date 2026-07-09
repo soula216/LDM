@@ -123,6 +123,7 @@ class VitrineBlock extends Model
         $normalized = rtrim(strtolower($href), '/');
 
         $pageRoutes = [
+            'about' => 'vitrine.about',
             'academy' => 'vitrine.academy',
             'services' => 'vitrine.services',
             'process' => 'vitrine.process',
@@ -318,6 +319,16 @@ class VitrineBlock extends Model
             }, $content['items']);
         }
 
+        if ($blockKey === 'partners' && isset($content['items']) && is_array($content['items'])) {
+            $content['items'] = array_map(function (array $item) {
+                if (isset($item['image_url'])) {
+                    $item['image_url'] = static::resolveImageAbsoluteUrl($item['image_url']);
+                }
+
+                return $item;
+            }, $content['items']);
+        }
+
         if ($blockKey === 'services' && isset($content['items']) && is_array($content['items'])) {
             $content['items'] = array_map(function (array $item) {
                 if (! empty($item['image_url'])) {
@@ -348,6 +359,32 @@ class VitrineBlock extends Model
 
                 return $doc;
             }, $content['documents']);
+        }
+
+        if ($blockKey === 'about') {
+            if (isset($content['photos']) && is_array($content['photos'])) {
+                $content['photos'] = array_map(function (array $photo) {
+                    if (! empty($photo['image_url'])) {
+                        $photo['image_url'] = static::resolveImageAbsoluteUrl($photo['image_url']);
+                    }
+
+                    return $photo;
+                }, $content['photos']);
+            }
+
+            if (isset($content['videos']) && is_array($content['videos'])) {
+                $content['videos'] = array_map(function (array $video) {
+                    if (! empty($video['video_url'])) {
+                        $video['video_url'] = static::resolveImageAbsoluteUrl($video['video_url']);
+                    }
+
+                    if (! empty($video['poster_url'])) {
+                        $video['poster_url'] = static::resolveImageAbsoluteUrl($video['poster_url']);
+                    }
+
+                    return $video;
+                }, $content['videos']);
+            }
         }
 
         return $content;
@@ -397,6 +434,22 @@ class VitrineBlock extends Model
     }
 
     public static function isFaqItemActive(array $item): bool
+    {
+        return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function activePartnerItems(array $items): \Illuminate\Support\Collection
+    {
+        return collect($items)->filter(function (array $item): bool {
+            return static::isPartnerItemActive($item) && filled($item['image_url'] ?? null);
+        })->values();
+    }
+
+    public static function isPartnerItemActive(array $item): bool
     {
         return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
     }
@@ -698,10 +751,11 @@ class VitrineBlock extends Model
             return null;
         }
 
-        if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/i', $url, $matches)) {
+        $youtubeVideoId = static::extractYouTubeVideoId($url);
+        if ($youtubeVideoId !== null) {
             return [
                 'mode' => 'iframe',
-                'src' => 'https://www.youtube.com/embed/' . $matches[1] . '?autoplay=1&rel=0',
+                'src' => 'https://www.youtube.com/embed/' . $youtubeVideoId . '?autoplay=1&rel=0',
             ];
         }
 
@@ -716,6 +770,45 @@ class VitrineBlock extends Model
             'mode' => 'video',
             'src' => static::resolveImageAbsoluteUrl($url),
         ];
+    }
+
+    public static function extractYouTubeVideoId(?string $url): ?string
+    {
+        $url = trim((string) $url);
+
+        if ($url === '') {
+            return null;
+        }
+
+        if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/i', $url, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    public static function youtubeThumbnailUrl(?string $url, string $quality = 'hqdefault'): string
+    {
+        $videoId = static::extractYouTubeVideoId($url);
+
+        if ($videoId === null) {
+            return '';
+        }
+
+        return 'https://img.youtube.com/vi/' . $videoId . '/' . $quality . '.jpg';
+    }
+
+    /**
+     * @param  array<string, mixed>  $video
+     */
+    public static function aboutVideoPosterUrl(array $video): string
+    {
+        $posterUrl = trim((string) ($video['poster_url'] ?? ''));
+        if ($posterUrl !== '') {
+            return static::resolveImageAbsoluteUrl($posterUrl);
+        }
+
+        return static::youtubeThumbnailUrl((string) ($video['video_url'] ?? ''));
     }
 
     /**
@@ -745,6 +838,28 @@ class VitrineBlock extends Model
         }
 
         return '';
+    }
+
+    /**
+     * @param  array<string, mixed>  $about
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function aboutPhotos(array $about): \Illuminate\Support\Collection
+    {
+        return collect($about['photos'] ?? [])
+            ->filter(fn (array $photo): bool => filled($photo['image_url'] ?? null))
+            ->values();
+    }
+
+    /**
+     * @param  array<string, mixed>  $about
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function aboutVideos(array $about): \Illuminate\Support\Collection
+    {
+        return collect($about['videos'] ?? [])
+            ->filter(fn (array $video): bool => filled($video['video_url'] ?? null))
+            ->values();
     }
 
     /**
