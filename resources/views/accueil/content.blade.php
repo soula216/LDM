@@ -221,11 +221,6 @@
           </div>
         </div>
       </div>
-
-      <p class="partners-showcase__hint">
-        <i class="fas fa-arrows-left-right" aria-hidden="true"></i>
-        Survolez un logo pour l'agrandir · défilement automatique
-      </p>
     </div>
   </div>
 </section>

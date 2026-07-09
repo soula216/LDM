@@ -20,8 +20,8 @@ class VitrineBlockSeeder extends Seeder
                     'logo_alt' => 'LDM',
                     'nav_links' => [
                         ['label' => 'Accueil', 'href' => '/'],
-                        ['label' => 'Services', 'href' => '/services'],
                         ['label' => 'À propos', 'href' => '/about'],
+                        ['label' => 'Services', 'href' => '/services'],
                         ['label' => 'Process', 'href' => '/process'],
                         ['label' => 'Galerie', 'href' => '/gallery'],
                         ['label' => 'LDM Academy', 'href' => '/academy'],
