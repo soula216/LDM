@@ -122,6 +122,21 @@ class VitrineController extends Controller
         ]);
     }
 
+    public function laboratory(): View
+    {
+        $blocks = $this->loadBlocks();
+
+        return view('accueil.laboratory', [
+            'blocks' => $blocks,
+            'laboratory' => $blocks['laboratory'] ?? [
+                'section_label' => 'Laboratoire / Équipe',
+                'title' => 'Notre équipe & nos installations',
+                'description' => '',
+                'photos' => [],
+            ],
+        ]);
+    }
+
     public function faq(): View
     {
         $blocks = $this->loadBlocks();
@@ -245,6 +260,7 @@ class VitrineController extends Controller
                 'process' => ['section_title' => 'Process', 'steps' => []],
                 'gallery' => ['section_title' => 'Galerie', 'items' => []],
                 'about' => ['title' => 'À propos', 'description' => '', 'photos' => [], 'videos' => []],
+                'laboratory' => ['title' => 'Laboratoire / Équipe', 'description' => '', 'photos' => []],
                 'features' => ['title_before' => 'Pourquoi', 'title_highlight' => 'LDM', 'list' => [], 'card' => []],
                 'partners' => ['section_title' => 'Nos Partenaires', 'items' => []],
                 'academy' => ['section_title' => 'LDM Academy', 'documents' => []],

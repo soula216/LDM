@@ -124,6 +124,7 @@ class VitrineBlock extends Model
 
         $pageRoutes = [
             'about' => 'vitrine.about',
+            'laboratory' => 'vitrine.laboratory',
             'academy' => 'vitrine.academy',
             'services' => 'vitrine.services',
             'process' => 'vitrine.process',
@@ -138,6 +139,10 @@ class VitrineBlock extends Model
             ) {
                 return route($routeName);
             }
+        }
+
+        if (in_array($normalized, ['#laboratoire', '/laboratoire', 'laboratoire'], true)) {
+            return route('vitrine.laboratory');
         }
 
         if ($normalized === '#accueil') {
@@ -384,6 +389,20 @@ class VitrineBlock extends Model
 
                     return $video;
                 }, $content['videos']);
+            }
+        }
+
+        if ($blockKey === 'laboratory') {
+            if (isset($content['photos']) && is_array($content['photos'])) {
+                $content['photos'] = array_map(function (array $photo) {
+                    if (! empty($photo['image_url'])) {
+                        $photo['image_url'] = static::resolveImageAbsoluteUrl($photo['image_url']);
+                    }
+
+                    $photo['category'] = static::normalizeLaboratoryCategory($photo['category'] ?? null);
+
+                    return $photo;
+                }, $content['photos']);
             }
         }
 
@@ -859,6 +878,41 @@ class VitrineBlock extends Model
     {
         return collect($about['videos'] ?? [])
             ->filter(fn (array $video): bool => filled($video['video_url'] ?? null))
+            ->values();
+    }
+
+    /**
+     * @return array<string, array{label: string, icon: string}>
+     */
+    public static function laboratoryCategories(): array
+    {
+        return [
+            'equipe' => ['label' => 'Équipe', 'icon' => 'fas fa-users'],
+            'laboratoire' => ['label' => 'Laboratoire', 'icon' => 'fas fa-building'],
+            'machines' => ['label' => 'Machines et équipements', 'icon' => 'fas fa-cogs'],
+        ];
+    }
+
+    public static function normalizeLaboratoryCategory(?string $category): string
+    {
+        $category = strtolower(trim((string) $category));
+
+        return array_key_exists($category, static::laboratoryCategories()) ? $category : 'equipe';
+    }
+
+    /**
+     * @param  array<string, mixed>  $laboratory
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function laboratoryPhotos(array $laboratory): \Illuminate\Support\Collection
+    {
+        return collect($laboratory['photos'] ?? [])
+            ->filter(fn (array $photo): bool => filled($photo['image_url'] ?? null))
+            ->map(function (array $photo) {
+                $photo['category'] = static::normalizeLaboratoryCategory($photo['category'] ?? null);
+
+                return $photo;
+            })
             ->values();
     }
 

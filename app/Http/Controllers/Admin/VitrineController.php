@@ -36,6 +36,8 @@ class VitrineController extends Controller
 
     private const ABOUT_POSTER_STORAGE_PREFIX = 'vitrine/about/posters/';
 
+    private const LABORATORY_PHOTO_STORAGE_PREFIX = 'vitrine/laboratory/photos/';
+
     public function index(Request $request): View
     {
         $this->authorize('manage_vitrine');
@@ -80,6 +82,10 @@ class VitrineController extends Controller
 
         if ($vitrineBlock->key === 'about') {
             $content = $this->processAboutContent($request, $content, $existingContent);
+        }
+
+        if ($vitrineBlock->key === 'laboratory') {
+            $content = $this->processLaboratoryContent($request, $content, $existingContent);
         }
 
         if ($vitrineBlock->key === 'process') {
@@ -575,6 +581,74 @@ class VitrineController extends Controller
         return $content;
     }
 
+    private function processLaboratoryContent(Request $request, array $content, array $existingContent): array
+    {
+        $content['title'] = trim((string) ($content['title'] ?? ''));
+        $content['description'] = trim((string) ($content['description'] ?? ''));
+        $content['section_label'] = trim((string) ($content['section_label'] ?? 'Laboratoire / Équipe'));
+        $content['photos'] = $this->processLaboratoryPhotos($request, $content['photos'] ?? [], $existingContent['photos'] ?? []);
+
+        return $content;
+    }
+
+    private function processLaboratoryPhotos(Request $request, array $incoming, array $existing): array
+    {
+        $processed = [];
+
+        foreach ($incoming as $index => $photo) {
+            $title = trim((string) ($photo['title'] ?? ''));
+            $description = trim((string) ($photo['description'] ?? ''));
+            $category = VitrineBlock::normalizeLaboratoryCategory($photo['category'] ?? null);
+            $sourceType = ($photo['source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
+            $imageUrl = trim((string) ($photo['image_url'] ?? ''));
+            $existingUrl = trim((string) ($existing[$index]['image_url'] ?? ''));
+
+            if ($request->hasFile("laboratory_photo_uploads.$index")) {
+                $file = $request->file("laboratory_photo_uploads.$index");
+                $this->validateAboutPhotoUpload($file, $index, 'laboratory_photo_uploads');
+
+                if ($existingUrl !== '') {
+                    $this->deleteVitrineImageIfStored($existingUrl);
+                }
+
+                $imageUrl = $this->storeLaboratoryPhoto($file);
+                $sourceType = 'upload';
+            } elseif ($sourceType === 'upload') {
+                if ($imageUrl === '' && $existingUrl !== '') {
+                    $imageUrl = $existingUrl;
+                }
+            } elseif ($sourceType === 'url' && $existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $imageUrl) {
+                $this->deleteVitrineImageIfStored($existingUrl);
+            }
+
+            if ($imageUrl === '' && $title === '' && $description === '') {
+                continue;
+            }
+
+            if ($imageUrl === '') {
+                continue;
+            }
+
+            $processed[] = [
+                'image_url' => VitrineBlock::resolveImageUrl($imageUrl),
+                'source_type' => $sourceType,
+                'title' => $title,
+                'description' => $description,
+                'category' => $category,
+            ];
+        }
+
+        $newUrls = collect($processed)->pluck('image_url')->filter()->all();
+        foreach ($existing as $oldPhoto) {
+            $oldUrl = trim((string) ($oldPhoto['image_url'] ?? ''));
+            if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldUrl);
+            }
+        }
+
+        return array_values($processed);
+    }
+
     private function processAboutContent(Request $request, array $content, array $existingContent): array
     {
         $content['title'] = trim((string) ($content['title'] ?? ''));
@@ -1054,6 +1128,15 @@ class VitrineController extends Controller
         return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
     }
 
+    private function storeLaboratoryPhoto(UploadedFile $file): string
+    {
+        $extension = $file->getClientOriginalExtension() ?: 'jpg';
+        $filename = 'laboratory_photo_' . time() . '_' . uniqid() . '.' . strtolower($extension);
+        $path = $file->storeAs('vitrine/laboratory/photos', $filename, 'public');
+
+        return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
     private function storeAboutPoster(UploadedFile $file): string
     {
         $extension = $file->getClientOriginalExtension() ?: 'jpg';
@@ -1168,6 +1251,7 @@ class VitrineController extends Controller
             || str_starts_with($path, self::ABOUT_PHOTO_STORAGE_PREFIX)
             || str_starts_with($path, self::ABOUT_VIDEO_STORAGE_PREFIX)
             || str_starts_with($path, self::ABOUT_POSTER_STORAGE_PREFIX)
+            || str_starts_with($path, self::LABORATORY_PHOTO_STORAGE_PREFIX)
         )) {
             Storage::disk('public')->delete($path);
         }
@@ -1191,7 +1275,8 @@ class VitrineController extends Controller
             || str_starts_with($imageUrl, self::ACADEMY_COVER_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::ABOUT_PHOTO_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::ABOUT_VIDEO_STORAGE_PREFIX)
-            || str_starts_with($imageUrl, self::ABOUT_POSTER_STORAGE_PREFIX)) {
+            || str_starts_with($imageUrl, self::ABOUT_POSTER_STORAGE_PREFIX)
+            || str_starts_with($imageUrl, self::LABORATORY_PHOTO_STORAGE_PREFIX)) {
             return $imageUrl;
         }
 

@@ -21,6 +21,7 @@ class VitrineBlockSeeder extends Seeder
                     'nav_links' => [
                         ['label' => 'Accueil', 'href' => '/'],
                         ['label' => 'À propos', 'href' => '/about'],
+                        ['label' => 'Laboratoire / Équipe', 'href' => '/laboratoire'],
                         ['label' => 'Services', 'href' => '/services'],
                         ['label' => 'Process', 'href' => '/process'],
                         ['label' => 'Galerie', 'href' => '/gallery'],
@@ -175,9 +176,20 @@ class VitrineBlockSeeder extends Seeder
                 ],
             ],
             [
+                'key' => 'laboratory',
+                'label' => 'Laboratoire / Équipe',
+                'sort_order' => 8,
+                'content' => [
+                    'section_label' => 'Laboratoire / Équipe',
+                    'title' => 'Notre équipe & nos installations',
+                    'description' => 'Découvrez les professionnels qui composent LDM, nos espaces de travail et les équipements de pointe qui garantissent la précision de nos prothèses.',
+                    'photos' => [],
+                ],
+            ],
+            [
                 'key' => 'partners',
                 'label' => 'Partenaires',
-                'sort_order' => 8,
+                'sort_order' => 9,
                 'content' => [
                     'section_label' => 'Nos Partenaires',
                     'section_title' => 'Ils Nous Font Confiance',
@@ -195,7 +207,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'faq',
                 'label' => 'FAQ',
-                'sort_order' => 9,
+                'sort_order' => 10,
                 'content' => [
                     'section_label' => 'FAQ',
                     'section_title' => 'Foire Aux Questions',
@@ -235,7 +247,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'academy',
                 'label' => 'LDM Academy',
-                'sort_order' => 10,
+                'sort_order' => 11,
                 'content' => [
                     'section_label' => 'LDM Academy',
                     'section_title' => 'Ressources pour les praticiens',
@@ -252,7 +264,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'contact',
                 'label' => 'Contact',
-                'sort_order' => 11,
+                'sort_order' => 12,
                 'content' => [
                     'info_is_active' => true,
                     'form_is_active' => true,
@@ -278,7 +290,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'footer',
                 'label' => 'Pied de page',
-                'sort_order' => 12,
+                'sort_order' => 13,
                 'content' => [
                     'logo_url' => 'logo_ldm.png',
                     'logo_source_type' => 'url',
