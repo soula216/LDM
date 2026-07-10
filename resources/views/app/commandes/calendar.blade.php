@@ -171,6 +171,7 @@
                                     <div class="font-semibold text-primary" x-text="ev.title"></div>
                                     <div class="text-sm text-secondary mt-1" x-text="ev.heure"></div>
                                     <div class="text-sm text-secondary" x-text="ev.display_name"></div>
+                                    <div class="text-sm text-secondary" x-show="ev.patient_line" x-text="ev.patient_line"></div>
                                 </button>
                             </li>
                         </template>
@@ -495,6 +496,25 @@
             let activeTooltipEl = null;
             let activeTooltipOwnerEl = null;
 
+            function formatCalendarServiceLabel(props) {
+                const urgentPrefix = props.urgent ? '⚡ ' : '';
+                const nbPrefix = (props.nb_elem != null && props.nb_elem !== '') ? props.nb_elem + ' ' : '';
+                const serviceName = props.service || 'N/A';
+                return urgentPrefix + nbPrefix + serviceName;
+            }
+
+            function appendCalendarPatientLine(parent, props) {
+                const patientName = (props.nom_patient || '').trim();
+                if (!isDentist && patientName) {
+                    const patientDiv = document.createElement('div');
+                    patientDiv.style.fontSize = '0.8rem';
+                    patientDiv.style.opacity = '0.95';
+                    patientDiv.style.marginTop = '2px';
+                    patientDiv.textContent = 'Patient: ' + patientName;
+                    parent.appendChild(patientDiv);
+                }
+            }
+
             function hideActiveEventTooltip() {
                 if (activeTooltipEl) {
                     activeTooltipEl.remove();
@@ -683,8 +703,7 @@
                 aspectRatio: 1.8,
                 eventContent: function(arg) {
                     const props = arg.event.extendedProps;
-                    const urgentPrefix = props.urgent ? '⚡ ' : '';
-                    const serviceName = props.service || 'N/A';
+                    const serviceLabel = formatCalendarServiceLabel(props);
                     const heure = props.heure || '';
                     const displayName = props.display_name || '';
                     const isDayView = arg.view.type === 'timeGridDay';
@@ -716,7 +735,7 @@
                     titleDiv.style.overflowWrap = 'break-word';
                     titleDiv.style.whiteSpace = 'normal';
                     titleDiv.style.lineHeight = '1.2';
-                    titleDiv.textContent = urgentPrefix + serviceName;
+                    titleDiv.textContent = serviceLabel;
                     content.appendChild(titleDiv);
 
                     if (heure) {
@@ -736,6 +755,8 @@
                         nameDiv.textContent = displayName;
                         content.appendChild(nameDiv);
                     }
+
+                    appendCalendarPatientLine(content, props);
 
                     wrapper.appendChild(content);
 
@@ -816,10 +837,12 @@
                     var events = (info.allSegs || []).map(function(seg) {
                         var ev = seg.event;
                         var props = ev.extendedProps || {};
+                        var patientName = (props.nom_patient || '').trim();
                         return {
-                            title: (props.urgent ? '⚡ ' : '') + (props.service || ev.title || 'N/A'),
+                            title: formatCalendarServiceLabel(props),
                             heure: props.heure || '',
                             display_name: props.display_name || '',
+                            patient_line: (!isDentist && patientName) ? ('Patient: ' + patientName) : '',
                             backgroundColor: ev.backgroundColor || ev.backgroundColor,
                             payload: Object.assign({}, props, { url: ev.url })
                         };

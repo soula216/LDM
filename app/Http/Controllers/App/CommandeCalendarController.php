@@ -216,13 +216,14 @@ class CommandeCalendarController extends Controller
                         ? $commande->nom_patient 
                         : ($commande->dentiste->full_name ?? $commande->dentiste->name ?? 'N/A');
                     
-                    // Construire le titre avec le nom du service
+                    // Construire le titre avec le nombre d'éléments et le nom du service
                     $urgentPrefix = $commande->urgent ? '⚡ ' : '';
                     $serviceName = $tache->service_nom !== '-' ? $tache->service_nom : 'N/A';
+                    $nbElemPrefix = $tache->nb_elem !== null && $tache->nb_elem !== '' ? $tache->nb_elem . ' ' : '';
                     
                     $calendarEvents[] = [
                         'id' => "commande-{$commande->id}-tache-{$tache->id}",
-                        'title' => $urgentPrefix . $serviceName, // Titre principal avec le nom du service
+                        'title' => $urgentPrefix . $nbElemPrefix . $serviceName,
                         'start' => $tache->date_livraison->toDateString(),
                         'backgroundColor' => $color,
                         'borderColor' => $borderColor,
