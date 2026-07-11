@@ -12,8 +12,25 @@
 
     $photos = VitrineBlock::aboutPhotos($about);
     $videos = VitrineBlock::aboutVideos($about);
+    $sections = VitrineBlock::aboutSections($about);
     $hasMedia = $photos->isNotEmpty() || $videos->isNotEmpty();
     $hasDescription = filled($about['description'] ?? null);
+    $hasSections = $sections->isNotEmpty();
+
+    $sectionsKicker = trim((string) ($about['sections_kicker'] ?? ''));
+    $sectionsHeading = trim((string) ($about['sections_heading'] ?? ''));
+    $sectionsLead = trim((string) ($about['sections_lead'] ?? ''));
+
+    if ($hasSections) {
+        $sectionsKicker = $sectionsKicker !== '' ? $sectionsKicker : 'En détail';
+        $sectionsHeading = $sectionsHeading !== '' ? $sectionsHeading : 'Nos engagements & expertises';
+        $sectionsLead = $sectionsLead !== '' ? $sectionsLead : 'Découvrez les piliers qui structurent notre laboratoire et notre relation avec les praticiens.';
+    }
+
+    $hasSectionsBlock = $hasSections
+        || $sectionsKicker !== ''
+        || $sectionsHeading !== ''
+        || $sectionsLead !== '';
     $hasBothMediaTypes = $photos->isNotEmpty() && $videos->isNotEmpty();
     $mediaIndex = 0;
 @endphp
@@ -162,7 +179,53 @@
       @endif
     </div>
 
-    @if(!$hasMedia && !$hasDescription)
+    @if($hasSectionsBlock)
+      <section class="about-sections reveal" aria-label="Sections complémentaires">
+        @if($sectionsKicker !== '' || $sectionsHeading !== '' || $sectionsLead !== '')
+          <div class="about-sections__head">
+            @if($sectionsKicker !== '')
+              <span class="about-sections__kicker">{{ $sectionsKicker }}</span>
+            @endif
+            @if($sectionsHeading !== '')
+              <h2 class="about-sections__heading">{{ $sectionsHeading }}</h2>
+            @endif
+            @if($sectionsLead !== '')
+              <p class="about-sections__lead">{{ $sectionsLead }}</p>
+            @endif
+          </div>
+        @endif
+
+        @if($hasSections)
+        <div class="about-sections__track">
+          @foreach($sections as $index => $section)
+            <article class="about-sections__item @if($index % 2 === 1) about-sections__item--alt @endif reveal"
+                     style="--about-section-delay: {{ min($index * 0.08, 0.48) }}s">
+              <div class="about-sections__index" aria-hidden="true">
+                <span>{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</span>
+              </div>
+              <div class="about-sections__body">
+                @if(filled($section['title']))
+                  <h3 class="about-sections__title">{{ $section['title'] }}</h3>
+                @endif
+                @if(filled($section['description']))
+                  <div class="about-sections__content">
+                    @foreach(preg_split('/\R{2,}/', trim($section['description'])) as $paragraph)
+                      @if(filled($paragraph))
+                        <p>{{ $paragraph }}</p>
+                      @endif
+                    @endforeach
+                  </div>
+                @endif
+              </div>
+              <div class="about-sections__glow" aria-hidden="true"></div>
+            </article>
+          @endforeach
+        </div>
+        @endif
+      </section>
+    @endif
+
+    @if(!$hasMedia && !$hasDescription && !$hasSectionsBlock)
       <div class="about-empty reveal">
         <div class="about-empty__icon"><i class="fas fa-info-circle" aria-hidden="true"></i></div>
         <h2>Contenu à venir</h2>

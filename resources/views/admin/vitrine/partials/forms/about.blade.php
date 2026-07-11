@@ -23,13 +23,21 @@
             'poster_preview_url' => null,
         ];
     })->values()->all();
+
+    $sections = collect($c['sections'] ?? [])->map(function ($section) {
+        return [
+            'title' => $section['title'] ?? '',
+            'description' => $section['description'] ?? '',
+        ];
+    })->values()->all();
 @endphp
 
 <div class="vitrine-tab-form space-y-6 sm:space-y-8"
      x-data="{
-        open: { content: true, photos: true, videos: true },
+        open: { content: true, sections: true, photos: true, videos: true },
         photos: @js($photos),
         videos: @js($videos),
+        sections: @js($sections),
         addPhoto() {
             this.photos.push({ image_url: '', source_type: 'url', title: '', caption: '', preview_url: null });
         },
@@ -43,6 +51,9 @@
                 poster_url: '',
                 poster_preview_url: null,
             });
+        },
+        addSection() {
+            this.sections.push({ title: '', description: '' });
         },
         photoPreview(photo) { return photo.preview_url || photo.image_url || ''; },
         youtubeVideoId(url) {
@@ -104,6 +115,104 @@
                 <div>
                     <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Description</label>
                     <textarea name="content[description]" rows="5" class="input-field w-full text-sm resize-y min-h-[120px]" placeholder="Présentez votre laboratoire, votre histoire et vos valeurs…">{{ $c['description'] ?? '' }}</textarea>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="rounded-2xl border border-border bg-card overflow-hidden">
+        @component('admin.vitrine.partials.collapsible-header', [
+            'section' => 'sections',
+            'title' => 'Contenu secondaire',
+            'subtitle' => 'Sections affichées sous la présentation sur la page publique',
+            'headerClass' => 'border-b border-border/60 bg-gradient-to-r from-emerald-500/5 to-transparent',
+        ])
+            @slot('icon')
+                <div class="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h16"></path>
+                    </svg>
+                </div>
+            @endslot
+        @endcomponent
+
+        <div x-show="open.sections" x-cloak x-transition.opacity.duration.200ms>
+            <div class="p-4 sm:p-6 space-y-6">
+                <div class="rounded-xl border border-border bg-neutral-50/60 p-4 sm:p-5 space-y-4">
+                    <div>
+                        <h4 class="text-sm font-semibold text-primary">En-tête du bloc</h4>
+                        <p class="text-xs text-secondary mt-1">Badge, titre et sous-titre affichés au-dessus des sections sur la page publique.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Badge</label>
+                            <input type="text" name="content[sections_kicker]" value="{{ $c['sections_kicker'] ?? 'En détail' }}" class="input-field w-full text-sm" placeholder="En détail">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>
+                            <input type="text" name="content[sections_heading]" value="{{ $c['sections_heading'] ?? '' }}" class="input-field w-full text-sm" placeholder="Nos engagements & expertises">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Sous-titre</label>
+                        <textarea name="content[sections_lead]" rows="2" class="input-field w-full text-sm resize-y min-h-[72px]" placeholder="Découvrez les piliers qui structurent notre laboratoire…">{{ $c['sections_lead'] ?? '' }}</textarea>
+                    </div>
+                </div>
+
+                <div>
+                <p class="text-sm text-secondary mb-4">
+                    Ajoutez une ou plusieurs sections. Chaque section comporte un titre et une description, affichés dans l'ordre sous le bloc « Présentation ».
+                </p>
+
+                <template x-if="sections.length === 0">
+                    <div class="text-center py-8 px-4 rounded-xl border-2 border-dashed border-border bg-neutral-50/50 mb-4">
+                        <p class="text-sm text-secondary font-medium">Aucune section — ajoutez du contenu complémentaire (valeurs, expertise, engagements…)</p>
+                    </div>
+                </template>
+
+                <div class="space-y-4" x-show="sections.length > 0">
+                    <template x-for="(section, index) in sections" :key="'about-section-' + index">
+                        <div class="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+                            <div class="flex items-center justify-between px-4 py-3 bg-neutral-50/80 border-b border-border/60">
+                                <span class="text-xs font-bold text-primary uppercase tracking-wide" x-text="section.title || ('Section ' + (index + 1))"></span>
+                                <div class="flex items-center gap-1">
+                                    <button type="button"
+                                            @click="if (index > 0) { const item = sections.splice(index, 1)[0]; sections.splice(index - 1, 0, item); }"
+                                            :disabled="index === 0"
+                                            class="inline-flex items-center justify-center p-1.5 rounded-lg text-secondary hover:bg-neutral-100 disabled:opacity-30 disabled:pointer-events-none"
+                                            title="Monter">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                                    </button>
+                                    <button type="button"
+                                            @click="if (index < sections.length - 1) { const item = sections.splice(index, 1)[0]; sections.splice(index + 1, 0, item); }"
+                                            :disabled="index === sections.length - 1"
+                                            class="inline-flex items-center justify-center p-1.5 rounded-lg text-secondary hover:bg-neutral-100 disabled:opacity-30 disabled:pointer-events-none"
+                                            title="Descendre">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </button>
+                                    <button type="button" @click="sections.splice(index, 1)" class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger hover:bg-danger/10" title="Supprimer">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="p-4 sm:p-5 space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>
+                                    <input type="text" :name="'content[sections][' + index + '][title]'" x-model="section.title" class="input-field w-full text-sm" placeholder="Ex. Notre expertise">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Description</label>
+                                    <textarea :name="'content[sections][' + index + '][description]'" x-model="section.description" rows="4" class="input-field w-full text-sm resize-y min-h-[100px]" placeholder="Décrivez cette section…"></textarea>
+                                    <p class="mt-1.5 text-xs text-secondary">Séparez les paragraphes par une ligne vide.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-border/60">
+                    @include('admin.vitrine.partials.btn-add', ['label' => 'Ajouter une section', 'click' => 'addSection()'])
+                </div>
                 </div>
             </div>
         </div>

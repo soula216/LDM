@@ -654,10 +654,39 @@ class VitrineController extends Controller
         $content['title'] = trim((string) ($content['title'] ?? ''));
         $content['description'] = trim((string) ($content['description'] ?? ''));
         $content['section_label'] = trim((string) ($content['section_label'] ?? 'À propos'));
+        $content['sections_kicker'] = trim((string) ($content['sections_kicker'] ?? ''));
+        $content['sections_heading'] = trim((string) ($content['sections_heading'] ?? ''));
+        $content['sections_lead'] = trim((string) ($content['sections_lead'] ?? ''));
+        $content['sections'] = $this->processAboutSections($content['sections'] ?? []);
         $content['photos'] = $this->processAboutPhotos($request, $content['photos'] ?? [], $existingContent['photos'] ?? []);
         $content['videos'] = $this->processAboutVideos($request, $content['videos'] ?? [], $existingContent['videos'] ?? []);
 
         return $content;
+    }
+
+    private function processAboutSections(array $incoming): array
+    {
+        $processed = [];
+
+        foreach ($incoming as $section) {
+            if (! is_array($section)) {
+                continue;
+            }
+
+            $title = trim((string) ($section['title'] ?? ''));
+            $description = trim((string) ($section['description'] ?? ''));
+
+            if ($title === '' && $description === '') {
+                continue;
+            }
+
+            $processed[] = [
+                'title' => $title,
+                'description' => $description,
+            ];
+        }
+
+        return $processed;
     }
 
     private function processAboutPhotos(Request $request, array $incoming, array $existing): array

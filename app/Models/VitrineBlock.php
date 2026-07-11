@@ -859,6 +859,17 @@ class VitrineBlock extends Model
         return '';
     }
 
+    public static function aboutSections(array $about): \Illuminate\Support\Collection
+    {
+        return collect($about['sections'] ?? [])
+            ->map(fn (array $section): array => [
+                'title' => trim((string) ($section['title'] ?? '')),
+                'description' => trim((string) ($section['description'] ?? '')),
+            ])
+            ->filter(fn (array $section): bool => filled($section['title']) || filled($section['description']))
+            ->values();
+    }
+
     /**
      * @param  array<string, mixed>  $about
      * @return \Illuminate\Support\Collection<int, array<string, mixed>>
