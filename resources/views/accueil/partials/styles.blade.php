@@ -1481,7 +1481,8 @@
       z-index: 1;
       display: grid;
       grid-template-columns: var(--hex-size) var(--hex-size) var(--hex-size);
-      grid-template-rows: repeat(4, auto);
+      grid-template-rows: repeat(var(--honeycomb-rows, 4), auto);
+      grid-auto-rows: auto;
       column-gap: var(--hex-gap-x);
       row-gap: 1rem;
       justify-content: center;
@@ -1489,7 +1490,7 @@
       width: fit-content;
       margin: 0 auto;
       padding: 4rem 3.5rem 4.5rem;
-      overflow: hidden;
+      overflow: visible;
       isolation: isolate;
       border-radius: 12px;
       box-shadow:
@@ -1672,38 +1673,7 @@
       z-index: 2;
     }
 
-    .services-hex-item[data-pos="top"] {
-      grid-column: 2;
-      grid-row: 1;
-    }
-
-    .services-hex-item[data-pos="left-upper"] {
-      grid-column: 1;
-      grid-row: 2;
-      margin-top: calc(var(--hex-overlap) * -1);
-    }
-
-    .services-hex-item[data-pos="right-upper"] {
-      grid-column: 3;
-      grid-row: 2;
-      margin-top: calc(var(--hex-overlap) * -1);
-    }
-
-    .services-hex-item[data-pos="left-lower"] {
-      grid-column: 1;
-      grid-row: 3;
-      margin-top: calc(var(--hex-overlap) * -1);
-    }
-
-    .services-hex-item[data-pos="right-lower"] {
-      grid-column: 3;
-      grid-row: 3;
-      margin-top: calc(var(--hex-overlap) * -1);
-    }
-
-    .services-hex-item[data-pos="bottom"] {
-      grid-column: 2;
-      grid-row: 4;
+    .services-hex-item[data-grid-row]:not([data-grid-row="1"]) {
       margin-top: calc(var(--hex-overlap) * -1);
     }
 

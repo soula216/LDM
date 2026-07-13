@@ -426,6 +426,48 @@ class VitrineBlock extends Model
     }
 
     /**
+     * Placement honeycomb : 1er service en haut au centre, dernier en bas au centre,
+     * les intermédiaires en alternance gauche / droite.
+     *
+     * @return array{row: int, col: int, role: 'only'|'first'|'middle'|'last'}
+     */
+    public static function serviceHoneycombPlacement(int $index, int $total): array
+    {
+        if ($total <= 1) {
+            return ['row' => 1, 'col' => 2, 'role' => 'only'];
+        }
+
+        if ($index === 0) {
+            return ['row' => 1, 'col' => 2, 'role' => 'first'];
+        }
+
+        if ($index === $total - 1) {
+            return [
+                'row' => 2 + intdiv($total - 1, 2),
+                'col' => 2,
+                'role' => 'last',
+            ];
+        }
+
+        $middleIndex = $index - 1;
+
+        return [
+            'row' => 2 + intdiv($middleIndex, 2),
+            'col' => ($middleIndex % 2 === 0) ? 1 : 3,
+            'role' => 'middle',
+        ];
+    }
+
+    public static function serviceHoneycombRowCount(int $total): int
+    {
+        if ($total <= 1) {
+            return 1;
+        }
+
+        return 2 + intdiv($total - 1, 2);
+    }
+
+    /**
      * @param  array<int, array<string, mixed>>  $steps
      * @return \Illuminate\Support\Collection<int, array<string, mixed>>
      */
