@@ -28,5 +28,6 @@
   @yield('footer')
 
   @include('accueil.scripts')
+  @stack('scripts')
 </body>
 </html>

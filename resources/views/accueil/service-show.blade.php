@@ -69,10 +69,14 @@
           @foreach($sections as $index => $section)
             @php
               $sectionPhotos = VitrineBlock::serviceSectionPhotos($section);
-              $sectionParagraphs = preg_split('/\R{2,}/', trim((string) ($section['description'] ?? ''))) ?: [];
+              $sectionDescription = trim((string) ($section['description'] ?? ''));
+              $sectionParagraphs = preg_split('/\R{2,}/', $sectionDescription) ?: [];
               $sectionParagraphs = array_values(array_filter(array_map('trim', $sectionParagraphs)));
               $photoCount = $sectionPhotos->count();
               $galleryGroup = 'service-section-' . $index;
+              $sectionTitle = trim((string) ($section['title'] ?? ''));
+              $descriptionLength = mb_strlen($sectionDescription);
+              $isLongDescription = $descriptionLength > 260 || count($sectionParagraphs) > 2;
               $mosaicClass = match (true) {
                 $photoCount <= 1 => 'service-showcase__mosaic--1',
                 $photoCount === 2 => 'service-showcase__mosaic--2',
@@ -91,16 +95,36 @@
                     <span>{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</span>
                   </div>
 
-                  @if(filled($section['title'] ?? null))
-                    <h3 class="service-showcase__title">{{ $section['title'] }}</h3>
+                  @if($sectionTitle !== '')
+                    <h3 class="service-showcase__title">{{ $sectionTitle }}</h3>
                   @endif
 
                   @if($sectionParagraphs !== [])
-                    <div class="service-showcase__text">
+                    <div @class([
+                      'service-showcase__text',
+                      'service-showcase__text--clamp' => $isLongDescription,
+                    ]) data-service-section-text>
                       @foreach($sectionParagraphs as $paragraph)
                         <p>{{ $paragraph }}</p>
                       @endforeach
                     </div>
+
+                    @if($isLongDescription)
+                      <button type="button"
+                              class="service-showcase__read-more"
+                              data-service-section-read-more
+                              data-section-index="{{ $index + 1 }}"
+                              data-section-title="{{ $sectionTitle !== '' ? $sectionTitle : 'Section ' . ($index + 1) }}"
+                              aria-haspopup="dialog">
+                        <span>Lire la suite</span>
+                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                      </button>
+                      <div class="service-showcase__full-text" hidden data-service-section-full-text>
+                        @foreach($sectionParagraphs as $paragraph)
+                          <p>{{ $paragraph }}</p>
+                        @endforeach
+                      </div>
+                    @endif
                   @endif
                 </div>
 
@@ -147,6 +171,35 @@
       </div>
 
       @include('accueil.partials.gallery-lightbox', ['modern' => true])
+
+      <div id="serviceSectionTextModal"
+           class="service-section-modal"
+           hidden
+           aria-hidden="true"
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="serviceSectionTextModalTitle">
+        <div class="service-section-modal__backdrop" data-service-section-modal-close></div>
+        <div class="service-section-modal__shell">
+          <header class="service-section-modal__header">
+            <div class="service-section-modal__meta">
+              <span class="service-section-modal__badge">Section</span>
+              <span id="serviceSectionTextModalIndex" class="service-section-modal__index"></span>
+            </div>
+            <button type="button"
+                    class="service-section-modal__close"
+                    data-service-section-modal-close
+                    aria-label="Fermer">
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+          </header>
+
+          <div class="service-section-modal__body">
+            <h2 id="serviceSectionTextModalTitle" class="service-section-modal__title"></h2>
+            <div id="serviceSectionTextModalContent" class="service-section-modal__content"></div>
+          </div>
+        </div>
+      </div>
     @endif
   </section>
 </main>
@@ -155,3 +208,77 @@
 @section('footer')
   @include('accueil.footer')
 @endsection
+
+@push('scripts')
+<script>
+  (function initServiceSectionTextModal() {
+    const modal = document.getElementById('serviceSectionTextModal');
+    if (!modal) return;
+
+    if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+
+    const titleEl = document.getElementById('serviceSectionTextModalTitle');
+    const indexEl = document.getElementById('serviceSectionTextModalIndex');
+    const contentEl = document.getElementById('serviceSectionTextModalContent');
+    const closeEls = modal.querySelectorAll('[data-service-section-modal-close]');
+    let lastFocused = null;
+
+    function lockBody(lock) {
+      document.body.classList.toggle('service-section-modal-open', lock);
+    }
+
+    function openModal(button) {
+      lastFocused = document.activeElement;
+
+      const title = button.dataset.sectionTitle || 'Section';
+      const index = button.dataset.sectionIndex || '';
+      const fullText = button.parentElement?.querySelector('[data-service-section-full-text]');
+
+      if (titleEl) titleEl.textContent = title;
+      if (indexEl) {
+        indexEl.textContent = index !== '' ? String(index).padStart(2, '0') : '';
+        indexEl.hidden = index === '';
+      }
+
+      if (contentEl) {
+        contentEl.innerHTML = fullText ? fullText.innerHTML : '';
+      }
+
+      modal.hidden = false;
+      modal.setAttribute('aria-hidden', 'false');
+      lockBody(true);
+      requestAnimationFrame(() => modal.classList.add('is-active'));
+      modal.querySelector('.service-section-modal__close')?.focus();
+    }
+
+    function closeModal() {
+      modal.classList.remove('is-active');
+      window.setTimeout(() => {
+        modal.hidden = true;
+        modal.setAttribute('aria-hidden', 'true');
+        lockBody(false);
+        if (contentEl) contentEl.innerHTML = '';
+        if (lastFocused && typeof lastFocused.focus === 'function') {
+          lastFocused.focus();
+        }
+      }, 220);
+    }
+
+    document.addEventListener('click', (event) => {
+      const trigger = event.target.closest('[data-service-section-read-more]');
+      if (!trigger) return;
+      event.preventDefault();
+      openModal(trigger);
+    });
+
+    closeEls.forEach((el) => el.addEventListener('click', closeModal));
+
+    document.addEventListener('keydown', (event) => {
+      if (modal.hidden || !modal.classList.contains('is-active')) return;
+      if (event.key === 'Escape') closeModal();
+    });
+  })();
+</script>
+@endpush
