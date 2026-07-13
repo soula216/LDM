@@ -468,6 +468,43 @@ class VitrineBlock extends Model
     }
 
     /**
+     * @param  array<string, mixed>  $item
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function serviceSections(array $item): \Illuminate\Support\Collection
+    {
+        return collect($item['sections'] ?? [])
+            ->filter(function (array $section): bool {
+                $hasPhotos = collect($section['photos'] ?? [])
+                    ->contains(fn (array $photo) => filled($photo['image_url'] ?? null));
+
+                return filled($section['title'] ?? null)
+                    || filled($section['description'] ?? null)
+                    || $hasPhotos;
+            })
+            ->values();
+    }
+
+    /**
+     * @param  array<string, mixed>  $section
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function serviceSectionPhotos(array $section): \Illuminate\Support\Collection
+    {
+        return collect($section['photos'] ?? [])
+            ->filter(fn (array $photo) => filled($photo['image_url'] ?? null))
+            ->map(function (array $photo): array {
+                $imageUrl = static::resolveImageAbsoluteUrl((string) ($photo['image_url'] ?? ''));
+
+                return [
+                    'image_url' => $imageUrl,
+                    'title' => trim((string) ($photo['title'] ?? '')),
+                ];
+            })
+            ->values();
+    }
+
+    /**
      * @param  array<int, array<string, mixed>>  $steps
      * @return \Illuminate\Support\Collection<int, array<string, mixed>>
      */

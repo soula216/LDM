@@ -186,7 +186,6 @@
   // Galerie — lightbox
   (function initGalleryLightbox() {
     const lightbox = document.getElementById('galleryLightbox');
-    const gallerySection = document.getElementById('travaux');
     const siteHeader = document.getElementById('siteHeader');
     if (!lightbox) return;
 
@@ -206,18 +205,31 @@
     const prevBtn = lightbox.querySelector('[data-gallery-lightbox-prev]');
     const nextBtn = lightbox.querySelector('[data-gallery-lightbox-next]');
     const closeEls = lightbox.querySelectorAll('[data-gallery-lightbox-close]');
-    let items = collectItems();
+    let activeGroup = 'default';
+    let items = collectItems(activeGroup);
     let currentIndex = 0;
     let lastFocused = null;
     let imageSwapTimer = null;
 
-    function collectItems() {
-      const scope = gallerySection || document;
-      return Array.from(scope.querySelectorAll('[data-gallery-item]')).filter((item) => !item.hidden);
+    function getGalleryScope(element) {
+      if (element) {
+        return element.closest('[data-gallery-scope], #travaux') || document;
+      }
+
+      return document.querySelector('[data-gallery-scope]') || document.getElementById('travaux') || document;
+    }
+
+    function collectItems(group, scope) {
+      const root = scope || document;
+      return Array.from(root.querySelectorAll('[data-gallery-item]')).filter((item) => {
+        if (item.hidden) return false;
+
+        return (item.dataset.galleryGroup || 'default') === group;
+      });
     }
 
     function refreshItems() {
-      items = collectItems();
+      items = collectItems(activeGroup, getGalleryScope());
       buildThumbs();
     }
 
@@ -355,22 +367,25 @@
 
     buildThumbs();
 
-    if (items.length === 0) return;
+    if (!document.querySelector('[data-gallery-item]')) return;
 
-    const galleryRoot = gallerySection || document;
-
-    galleryRoot.addEventListener('click', (event) => {
+    document.addEventListener('click', (event) => {
       const item = event.target.closest('[data-gallery-item]');
       if (!item || item.hidden) return;
+
+      activeGroup = item.dataset.galleryGroup || 'default';
+      items = collectItems(activeGroup, getGalleryScope(item));
       const index = items.indexOf(item);
       if (index >= 0) open(index);
     });
 
-    galleryRoot.addEventListener('keydown', (event) => {
+    document.addEventListener('keydown', (event) => {
       const item = event.target.closest('[data-gallery-item]');
       if (!item || item.hidden) return;
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
+        activeGroup = item.dataset.galleryGroup || 'default';
+        items = collectItems(activeGroup, getGalleryScope(item));
         const index = items.indexOf(item);
         if (index >= 0) open(index);
       }

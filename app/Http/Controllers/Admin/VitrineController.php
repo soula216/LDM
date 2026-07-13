@@ -26,6 +26,8 @@ class VitrineController extends Controller
 
     private const SERVICE_STORAGE_PREFIX = 'vitrine/services/';
 
+    private const SERVICE_SECTION_PHOTO_STORAGE_PREFIX = 'vitrine/services/sections/';
+
     private const ACADEMY_STORAGE_PREFIX = 'vitrine/academy/';
 
     private const ACADEMY_COVER_STORAGE_PREFIX = 'vitrine/academy/covers/';
@@ -297,7 +299,10 @@ class VitrineController extends Controller
         foreach ($incomingItems as $index => $item) {
             $title = trim((string) ($item['title'] ?? ''));
             $description = trim((string) ($item['description'] ?? ''));
-            $contentHtml = (string) ($item['content_html'] ?? '');
+            $contentHtml = trim((string) ($item['content_html'] ?? ''));
+            if ($contentHtml === '') {
+                $contentHtml = trim((string) ($existingItems[$index]['content_html'] ?? ''));
+            }
             $imageSourceType = ($item['image_source_type'] ?? $item['icon_source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
             $imageUrl = trim((string) ($item['image_url'] ?? $item['icon_url'] ?? ''));
             $existingUrl = trim((string) ($existingItems[$index]['image_url'] ?? $existingItems[$index]['icon_url'] ?? ''));
@@ -330,7 +335,14 @@ class VitrineController extends Controller
                 $this->deleteVitrineImageIfStored($existingUrl);
             }
 
-            if ($title === '' && $description === '' && $contentHtml === '' && $imageUrl === '') {
+            $sections = $this->processServiceSections(
+                $request,
+                $item['sections'] ?? [],
+                $existingItems[$index]['sections'] ?? [],
+                $index
+            );
+
+            if ($title === '' && $description === '' && $contentHtml === '' && $imageUrl === '' && $sections === []) {
                 continue;
             }
 
@@ -352,29 +364,190 @@ class VitrineController extends Controller
                 'title' => $title,
                 'slug' => $slug,
                 'description' => $description,
-                'content_html' => $contentHtml,
                 'image_source_type' => $imageSourceType,
                 'is_active' => $isActive,
             ];
+
+            if ($contentHtml !== '') {
+                $processedItem['content_html'] = $contentHtml;
+            }
 
             if ($imageUrl !== '') {
                 $processedItem['image_url'] = VitrineBlock::resolveImageUrl($imageUrl);
             }
 
+            if ($sections !== []) {
+                $processedItem['sections'] = $sections;
+            }
+
             $processed[] = $processedItem;
         }
 
-        $newUrls = collect($processed)->pluck('image_url')->filter()->all();
+        $newUrls = collect($processed)
+            ->flatMap(fn (array $item) => $this->serviceItemImageUrls($item))
+            ->unique()
+            ->values()
+            ->all();
+
         foreach ($existingItems as $oldItem) {
-            $oldUrl = trim((string) ($oldItem['image_url'] ?? $oldItem['icon_url'] ?? ''));
-            if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
-                $this->deleteVitrineImageIfStored($oldUrl);
+            foreach ($this->serviceItemImageUrls($oldItem) as $oldUrl) {
+                if (! in_array($oldUrl, $newUrls, true)) {
+                    $this->deleteVitrineImageIfStored($oldUrl);
+                }
             }
         }
 
         $content['items'] = array_values($processed);
 
         return $content;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function serviceItemImageUrls(array $item): array
+    {
+        $urls = [];
+        $mainUrl = trim((string) ($item['image_url'] ?? $item['icon_url'] ?? ''));
+
+        if ($mainUrl !== '') {
+            $urls[] = VitrineBlock::resolveImageUrl($mainUrl);
+        }
+
+        foreach ($item['sections'] ?? [] as $section) {
+            foreach ($section['photos'] ?? [] as $photo) {
+                $photoUrl = trim((string) ($photo['image_url'] ?? ''));
+
+                if ($photoUrl !== '') {
+                    $urls[] = VitrineBlock::resolveImageUrl($photoUrl);
+                }
+            }
+        }
+
+        return $urls;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $incoming
+     * @param  array<int, array<string, mixed>>  $existing
+     * @return array<int, array<string, mixed>>
+     */
+    private function processServiceSections(Request $request, array $incoming, array $existing, int $serviceIndex): array
+    {
+        $processed = [];
+
+        foreach ($incoming as $sectionIndex => $section) {
+            if (! is_array($section)) {
+                continue;
+            }
+
+            $title = trim((string) ($section['title'] ?? ''));
+            $description = trim((string) ($section['description'] ?? ''));
+            $photos = $this->processServiceSectionPhotos(
+                $request,
+                $section['photos'] ?? [],
+                $existing[$sectionIndex]['photos'] ?? [],
+                $serviceIndex,
+                $sectionIndex
+            );
+
+            if ($title === '' && $description === '' && $photos === []) {
+                continue;
+            }
+
+            $processed[] = [
+                'title' => $title,
+                'description' => $description,
+                'photos' => $photos,
+            ];
+        }
+
+        $newUrls = collect($processed)
+            ->flatMap(fn (array $section) => collect($section['photos'] ?? [])->pluck('image_url'))
+            ->filter()
+            ->map(fn (string $url) => VitrineBlock::resolveImageUrl($url))
+            ->all();
+
+        foreach ($existing as $oldSection) {
+            foreach ($oldSection['photos'] ?? [] as $oldPhoto) {
+                $oldUrl = trim((string) ($oldPhoto['image_url'] ?? ''));
+
+                if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
+                    $this->deleteVitrineImageIfStored($oldUrl);
+                }
+            }
+        }
+
+        return array_values($processed);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $incoming
+     * @param  array<int, array<string, mixed>>  $existing
+     * @return array<int, array<string, mixed>>
+     */
+    private function processServiceSectionPhotos(
+        Request $request,
+        array $incoming,
+        array $existing,
+        int $serviceIndex,
+        int $sectionIndex
+    ): array {
+        $processed = [];
+
+        foreach ($incoming as $photoIndex => $photo) {
+            if (! is_array($photo)) {
+                continue;
+            }
+
+            $title = trim((string) ($photo['title'] ?? ''));
+            $sourceType = ($photo['source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
+            $imageUrl = trim((string) ($photo['image_url'] ?? ''));
+            $existingUrl = trim((string) ($existing[$photoIndex]['image_url'] ?? ''));
+
+            if ($sourceType === 'upload' && $imageUrl === '' && $existingUrl !== '') {
+                $imageUrl = $existingUrl;
+            } elseif ($sourceType === 'url' && $existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $imageUrl) {
+                $this->deleteVitrineImageIfStored($existingUrl);
+            }
+
+            if ($imageUrl === '') {
+                continue;
+            }
+
+            $processedPhoto = [
+                'image_url' => VitrineBlock::resolveImageUrl($imageUrl),
+                'source_type' => $sourceType,
+            ];
+
+            if ($title !== '') {
+                $processedPhoto['title'] = $title;
+            }
+
+            $processed[] = $processedPhoto;
+        }
+
+        $batchKey = "service_section_photo_uploads.$serviceIndex.$sectionIndex";
+
+        if ($request->hasFile($batchKey)) {
+            $files = $request->file($batchKey);
+            $files = is_array($files) ? $files : [$files];
+
+            foreach ($files as $fileIndex => $file) {
+                if (! $file instanceof UploadedFile) {
+                    continue;
+                }
+
+                $this->validateServiceSectionPhotoBatchUpload($file, $serviceIndex, $sectionIndex, $fileIndex);
+
+                $processed[] = [
+                    'image_url' => VitrineBlock::resolveImageUrl($this->storeServiceSectionPhoto($file)),
+                    'source_type' => 'upload',
+                ];
+            }
+        }
+
+        return array_values($processed);
     }
 
     private function processAcademyCategories(array $content): array
@@ -1256,6 +1429,31 @@ class VitrineController extends Controller
         return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
     }
 
+    private function validateServiceSectionPhotoBatchUpload(
+        UploadedFile $file,
+        int $serviceIndex,
+        int $sectionIndex,
+        int $fileIndex
+    ): void {
+        $field = "service_section_photo_uploads.$serviceIndex.$sectionIndex.$fileIndex";
+
+        request()->validate([
+            $field => 'required|file|mimes:jpeg,jpg,png,webp,gif|max:10240',
+        ], [
+            "$field.mimes" => 'Formats acceptés : JPEG, PNG, WebP, GIF.',
+            "$field.max" => 'Chaque image ne doit pas dépasser 10 Mo.',
+        ]);
+    }
+
+    private function storeServiceSectionPhoto(UploadedFile $file): string
+    {
+        $extension = $file->getClientOriginalExtension() ?: 'jpg';
+        $filename = 'service_section_' . time() . '_' . uniqid() . '.' . strtolower($extension);
+        $path = $file->storeAs('vitrine/services/sections', $filename, 'public');
+
+        return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
     private function isStoredVitrineImage(string $imageUrl): bool
     {
         return $this->storagePathFromImageUrl($imageUrl) !== null;
@@ -1275,6 +1473,7 @@ class VitrineController extends Controller
             || str_starts_with($path, self::LOGO_STORAGE_PREFIX)
             || str_starts_with($path, self::SOCIAL_STORAGE_PREFIX)
             || str_starts_with($path, self::SERVICE_STORAGE_PREFIX)
+            || str_starts_with($path, self::SERVICE_SECTION_PHOTO_STORAGE_PREFIX)
             || str_starts_with($path, self::ACADEMY_STORAGE_PREFIX)
             || str_starts_with($path, self::ACADEMY_COVER_STORAGE_PREFIX)
             || str_starts_with($path, self::ABOUT_PHOTO_STORAGE_PREFIX)
@@ -1300,6 +1499,7 @@ class VitrineController extends Controller
             || str_starts_with($imageUrl, self::LOGO_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::SOCIAL_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::SERVICE_STORAGE_PREFIX)
+            || str_starts_with($imageUrl, self::SERVICE_SECTION_PHOTO_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::ACADEMY_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::ACADEMY_COVER_STORAGE_PREFIX)
             || str_starts_with($imageUrl, self::ABOUT_PHOTO_STORAGE_PREFIX)

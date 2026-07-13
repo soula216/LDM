@@ -10,6 +10,25 @@
                 : 'url';
         }
 
+        $sections = collect($item['sections'] ?? [])->map(function ($section) {
+            return [
+                'title' => $section['title'] ?? '',
+                'description' => $section['description'] ?? '',
+                'open' => true,
+                'photos' => collect($section['photos'] ?? [])->map(function ($photo) {
+                    $photoUrl = trim((string) ($photo['image_url'] ?? ''));
+
+                    return [
+                        'title' => $photo['title'] ?? '',
+                        'image_url' => $photoUrl !== '' ? \App\Models\VitrineBlock::resolveImageAbsoluteUrl($photoUrl) : '',
+                        'source_type' => ($photo['source_type'] ?? null) === 'upload' ? 'upload' : 'url',
+                    ];
+                })->values()->all(),
+                'pendingPreviews' => [],
+                'photoDropActive' => false,
+            ];
+        })->values()->all();
+
         return [
             'title' => $item['title'] ?? '',
             'slug' => $item['slug'] ?? '',
@@ -18,6 +37,7 @@
             'image_url' => $imageUrl !== '' ? \App\Models\VitrineBlock::resolveImageAbsoluteUrl($imageUrl) : '',
             'image_source_type' => $sourceType,
             'is_active' => filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'sections' => $sections,
             'open' => true,
             'preview_url' => null,
         ];
@@ -39,6 +59,94 @@
             }
             item.preview_url = URL.createObjectURL(file);
         },
+        sectionPhotoPreview(photo) {
+            return photo.preview_url || photo.image_url || '';
+        },
+        sectionPhotosCount(section) {
+            return (section.photos?.length || 0) + (section.pendingPreviews?.length || 0);
+        },
+        isSectionPhotoFile(file) {
+            return !!file && String(file.type || '').startsWith('image/');
+        },
+        addSectionPhotosFromFiles(section, inputId, files) {
+            const imageFiles = Array.from(files || []).filter((file) => this.isSectionPhotoFile(file));
+            if (!imageFiles.length) return;
+
+            if (!section.pendingPreviews) {
+                section.pendingPreviews = [];
+            }
+
+            const isSameFile = (left, right) => (
+                left.name === right.name
+                && left.size === right.size
+                && left.lastModified === right.lastModified
+            );
+
+            imageFiles.forEach((file) => {
+                const alreadyPending = section.pendingPreviews.some((pending) => isSameFile(pending.file, file));
+
+                if (!alreadyPending) {
+                    section.pendingPreviews.push({
+                        file,
+                        name: file.name,
+                        preview_url: URL.createObjectURL(file),
+                    });
+                }
+            });
+
+            const input = document.getElementById(inputId);
+            if (!input) return;
+
+            const dataTransfer = new DataTransfer();
+            section.pendingPreviews.forEach((pending) => {
+                if (pending.file) {
+                    dataTransfer.items.add(pending.file);
+                }
+            });
+            input.files = dataTransfer.files;
+        },
+        onSectionPhotosMultipleChange(event, section) {
+            this.addSectionPhotosFromFiles(section, event.target.id, Array.from(event.target.files || []));
+        },
+        onSectionPhotosDragOver(event, section) {
+            event.preventDefault();
+            section.photoDropActive = true;
+        },
+        onSectionPhotosDragLeave(event, section) {
+            event.preventDefault();
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+                section.photoDropActive = false;
+            }
+        },
+        onSectionPhotosDrop(event, section, inputId) {
+            event.preventDefault();
+            section.photoDropActive = false;
+            this.addSectionPhotosFromFiles(section, inputId, Array.from(event.dataTransfer?.files || []));
+        },
+        removeSavedSectionPhoto(section, photoIndex) {
+            section.photos.splice(photoIndex, 1);
+        },
+        removePendingSectionPhoto(section, pendingIndex, inputId) {
+            if (!section.pendingPreviews) return;
+
+            const pending = section.pendingPreviews[pendingIndex];
+            if (pending?.preview_url?.startsWith('blob:')) {
+                URL.revokeObjectURL(pending.preview_url);
+            }
+
+            section.pendingPreviews.splice(pendingIndex, 1);
+
+            const input = document.getElementById(inputId);
+            if (!input) return;
+
+            const dataTransfer = new DataTransfer();
+            section.pendingPreviews.forEach((item) => {
+                if (item.file) {
+                    dataTransfer.items.add(item.file);
+                }
+            });
+            input.files = dataTransfer.files;
+        },
         newServiceItem() {
             this.items.push({
                 title: '',
@@ -48,6 +156,7 @@
                 image_url: '',
                 image_source_type: 'url',
                 is_active: true,
+                sections: [],
                 open: true,
                 preview_url: null,
             });
@@ -116,6 +225,28 @@
                 delete textarea.dataset.tinymceInit;
             });
             this.htmlEditors = {};
+        },
+        addServiceSection(item) {
+            if (!item.sections) item.sections = [];
+            item.sections.push({
+                title: '',
+                description: '',
+                open: true,
+                photos: [],
+                pendingPreviews: [],
+                photoDropActive: false,
+            });
+        },
+        removeServiceSection(item, sectionIndex) {
+            const section = item.sections[sectionIndex];
+            if (section?.pendingPreviews) {
+                section.pendingPreviews.forEach((pending) => {
+                    if (pending.preview_url?.startsWith('blob:')) {
+                        URL.revokeObjectURL(pending.preview_url);
+                    }
+                });
+            }
+            item.sections.splice(sectionIndex, 1);
         },
         removeServiceItem(index) {
             this.destroyAllServiceHtmlEditors();
@@ -236,10 +367,12 @@
 
                                 <div>
                                     <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Résumé court (optionnel)</label>
-                                    <textarea :name="'content[items][' + index + '][description]'" x-model="item.description" rows="2" placeholder="Texte d'introduction affiché sur la page détail…" class="input-field w-full text-sm resize-y min-h-[64px]"></textarea>
+                                    <textarea :name="'content[items][' + index + '][description]'" x-model="item.description" rows="2" placeholder="Texte d'introduction affiché dans le bandeau de la page détail…" class="input-field w-full text-sm resize-y min-h-[64px]"></textarea>
                                 </div>
 
                                 @include('admin.vitrine.partials.service-content-html-editor')
+
+                                @include('admin.vitrine.partials.service-sections-fields')
                             </div>
                         </div>
                     </template>
