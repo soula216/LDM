@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\VitrineBlock;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -106,12 +107,28 @@ class VitrineController extends Controller
         ]);
     }
 
-    public function about(): View
+    public function about(): RedirectResponse
+    {
+        return redirect()->route('vitrine.about.show', ['page' => 'qui-sommes-nous']);
+    }
+
+    public function aboutShow(string $page): View
+    {
+        $allowed = array_keys(VitrineBlock::aboutSubPages());
+        if (! in_array($page, $allowed, true)) {
+            throw new NotFoundHttpException();
+        }
+
+        return $this->aboutPage($page);
+    }
+
+    private function aboutPage(string $page): View
     {
         $blocks = $this->loadBlocks();
 
         return view('accueil.about', [
             'blocks' => $blocks,
+            'aboutPage' => $page,
             'about' => $blocks['about'] ?? [
                 'section_label' => 'Le Laboratoire',
                 'title' => 'Notre laboratoire',
@@ -120,6 +137,7 @@ class VitrineController extends Controller
                 'sections_heading' => 'Nos engagements & expertises',
                 'sections_lead' => 'Découvrez les piliers qui structurent notre laboratoire et notre relation avec les praticiens.',
                 'sections' => [],
+                'info_pages' => [],
                 'photos' => [],
                 'videos' => [],
             ],

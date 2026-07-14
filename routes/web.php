@@ -40,6 +40,9 @@ Route::get('/services/{slug}', [VitrineController::class, 'serviceShow'])->name(
 Route::get('/process', [VitrineController::class, 'process'])->name('vitrine.process');
 Route::get('/gallery', [VitrineController::class, 'gallery'])->name('vitrine.gallery');
 Route::get('/le-laboratoire', [VitrineController::class, 'about'])->name('vitrine.about');
+Route::get('/le-laboratoire/{page}', [VitrineController::class, 'aboutShow'])
+    ->where('page', 'qui-sommes-nous|notre-mission|nos-principe|conditions-de-service|conditions-de-paiement|garantie|delais-de-fabrication|processus-de-qualite')
+    ->name('vitrine.about.show');
 Route::permanentRedirect('/about', '/le-laboratoire');
 Route::get('/laboratoire', [VitrineController::class, 'laboratory'])->name('vitrine.laboratory');
 Route::get('/academy', [VitrineController::class, 'academy'])->name('vitrine.academy');

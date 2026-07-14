@@ -11,6 +11,7 @@
     $footerLogoAlt = $footer['logo_alt'] ?? $headerLogoAlt;
     $footerLogoSrc = VitrineBlock::resolveLogoDisplayUrl($footer['logo_url'] ?? null);
     $homeUrl = route('vitrine');
+    $aboutSubPages = VitrineBlock::aboutSubPages();
 @endphp
 {{-- Header / Navigation --}}
 <header class="site-header" id="siteHeader">
@@ -34,8 +35,11 @@
       @foreach($navLinks as $link)
         @php
           $navHref = VitrineBlock::resolvePublicHref($link['href'] ?? '#');
+          $navPath = parse_url($navHref, PHP_URL_PATH) ?: $navHref;
+          $isAboutNav = str_contains($navHref, '/le-laboratoire')
+              || preg_match('#/(about)/?$#', $navPath) === 1;
           $isActive = (
-              (VitrineBlock::isPublicPageActive('about') && (str_contains($navHref, '/le-laboratoire') || str_contains($navHref, '/about')))
+              ($isAboutNav && VitrineBlock::isPublicPageActive('about'))
               || (VitrineBlock::isPublicPageActive('laboratory') && str_contains($navHref, '/laboratoire') && ! str_contains($navHref, '/le-laboratoire'))
               || (VitrineBlock::isPublicPageActive('academy') && str_contains($navHref, '/academy'))
               || (VitrineBlock::isPublicPageActive('services') && str_contains($navHref, '/services'))
@@ -44,11 +48,35 @@
               || (VitrineBlock::isPublicPageActive('faq') && str_contains($navHref, '/faq'))
           );
         @endphp
-        <li>
-          <a href="{{ $navHref }}" @class(['is-active' => $isActive])>
-            {{ $link['label'] ?? '' }}
-          </a>
-        </li>
+        @if($isAboutNav)
+          <li class="nav-item nav-item--dropdown" data-nav-dropdown>
+            <button type="button"
+                    class="nav-dropdown-toggle @if($isActive) is-active @endif"
+                    data-nav-dropdown-toggle
+                    aria-expanded="false"
+                    aria-haspopup="true">
+              <span>{{ $link['label'] ?? 'Le Laboratoire' }}</span>
+              <i class="fas fa-chevron-down" aria-hidden="true"></i>
+            </button>
+            <ul class="nav-dropdown" role="menu">
+              @foreach($aboutSubPages as $key => $subPage)
+                <li role="none">
+                  <a href="{{ route($subPage['route'], ['page' => $key]) }}"
+                     role="menuitem"
+                     @class(['is-active' => request()->routeIs('vitrine.about.show') && request()->route('page') === $key])>
+                    {{ $subPage['label'] }}
+                  </a>
+                </li>
+              @endforeach
+            </ul>
+          </li>
+        @else
+          <li>
+            <a href="{{ $navHref }}" @class(['is-active' => $isActive])>
+              {{ $link['label'] ?? '' }}
+            </a>
+          </li>
+        @endif
       @endforeach
       <li class="nav-espace-client-desktop"><a href="{{ route('login') }}">{{ $clientLabel }}</a></li>
     </ul>

@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             //DepenseSeeder::class,
             //ElementSeeder::class,
             VitrineBlockSeeder::class,
+            AboutInfoPagesSeeder::class,
         ]);
 
         // 3. Ensuite créer les utilisateurs de test

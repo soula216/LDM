@@ -52,9 +52,11 @@
             $watch('activeTab', (tab) => {
                 if (tab === 'services') $dispatch('vitrine-services-tab-open');
                 if (tab === 'process') $dispatch('vitrine-process-tab-open');
+                if (tab === 'about') $dispatch('vitrine-about-tab-open');
             });
             if (activeTab === 'services') { $nextTick(() => $dispatch('vitrine-services-tab-open')); }
             if (activeTab === 'process') { $nextTick(() => $dispatch('vitrine-process-tab-open')); }
+            if (activeTab === 'about') { $nextTick(() => $dispatch('vitrine-about-tab-open')); }
          "
          class="py-6 sm:py-10 bg-app min-h-screen">
         <div class="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">

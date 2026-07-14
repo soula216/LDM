@@ -831,10 +831,47 @@ class VitrineController extends Controller
         $content['sections_heading'] = trim((string) ($content['sections_heading'] ?? ''));
         $content['sections_lead'] = trim((string) ($content['sections_lead'] ?? ''));
         $content['sections'] = $this->processAboutSections($content['sections'] ?? []);
+        $content['info_pages'] = $this->processAboutInfoPages(
+            $content['info_pages'] ?? [],
+            $existingContent['info_pages'] ?? []
+        );
         $content['photos'] = $this->processAboutPhotos($request, $content['photos'] ?? [], $existingContent['photos'] ?? []);
         $content['videos'] = $this->processAboutVideos($request, $content['videos'] ?? [], $existingContent['videos'] ?? []);
 
         return $content;
+    }
+
+    /**
+     * @param  array<string, mixed>  $incoming
+     * @param  array<string, mixed>  $existing
+     * @return array<string, array{title: string, content_html?: string}>
+     */
+    private function processAboutInfoPages(array $incoming, array $existing): array
+    {
+        $processed = [];
+
+        foreach (VitrineBlock::aboutInfoPageDefinitions() as $slug => $defaultTitle) {
+            $page = is_array($incoming[$slug] ?? null) ? $incoming[$slug] : [];
+            $title = trim((string) ($page['title'] ?? $defaultTitle));
+            $contentHtml = trim((string) ($page['content_html'] ?? ''));
+
+            if ($contentHtml === '') {
+                $contentHtml = trim((string) (($existing[$slug]['content_html'] ?? '') ?: ''));
+            }
+
+            if ($title === '') {
+                $title = $defaultTitle;
+            }
+
+            $processedPage = ['title' => $title];
+            if ($contentHtml !== '') {
+                $processedPage['content_html'] = $contentHtml;
+            }
+
+            $processed[$slug] = $processedPage;
+        }
+
+        return $processed;
     }
 
     private function processAboutSections(array $incoming): array

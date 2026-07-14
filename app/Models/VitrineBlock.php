@@ -952,6 +952,106 @@ class VitrineBlock extends Model
 
     /**
      * @param  array<string, mixed>  $about
+     * @return array{title: string, description: string}|null
+     */
+    public static function aboutMissionSection(array $about): ?array
+    {
+        $sections = static::aboutSections($about);
+        $mission = $sections->first(function (array $section): bool {
+            return str_contains(mb_strtolower($section['title']), 'mission');
+        }) ?? $sections->get(0);
+
+        return is_array($mission) ? $mission : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $about
+     * @return array{title: string, description: string}|null
+     */
+    public static function aboutPrinciplesSection(array $about): ?array
+    {
+        $sections = static::aboutSections($about);
+        $principles = $sections->first(function (array $section): bool {
+            $title = mb_strtolower($section['title']);
+
+            return str_contains($title, 'principe') || str_contains($title, 'valeur');
+        }) ?? $sections->get(1);
+
+        return is_array($principles) ? $principles : null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function aboutInfoPageDefinitions(): array
+    {
+        return [
+            'conditions-de-service' => 'Conditions de service',
+            'conditions-de-paiement' => 'Conditions de paiement',
+            'garantie' => 'Garantie',
+            'delais-de-fabrication' => 'Délais de fabrication',
+            'processus-de-qualite' => 'Processus de qualité',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $about
+     * @return array{title: string, content_html: string}|null
+     */
+    public static function aboutInfoPage(array $about, string $slug): ?array
+    {
+        $definitions = static::aboutInfoPageDefinitions();
+        if (! array_key_exists($slug, $definitions)) {
+            return null;
+        }
+
+        $page = $about['info_pages'][$slug] ?? [];
+        $title = trim((string) ($page['title'] ?? $definitions[$slug]));
+        $contentHtml = trim((string) ($page['content_html'] ?? ''));
+
+        return [
+            'title' => $title !== '' ? $title : $definitions[$slug],
+            'content_html' => $contentHtml,
+        ];
+    }
+
+    public static function isAboutInfoPage(string $slug): bool
+    {
+        return array_key_exists($slug, static::aboutInfoPageDefinitions());
+    }
+
+    /**
+     * @return array<string, array{label: string, route: string}>
+     */
+    public static function aboutSubPages(): array
+    {
+        $pages = [
+            'qui-sommes-nous' => [
+                'label' => 'Qui sommes-nous',
+                'route' => 'vitrine.about.show',
+            ],
+            'notre-mission' => [
+                'label' => 'Notre mission',
+                'route' => 'vitrine.about.show',
+            ],
+            'nos-principe' => [
+                'label' => 'Nos principe',
+                'route' => 'vitrine.about.show',
+            ],
+        ];
+
+        foreach (static::aboutInfoPageDefinitions() as $slug => $label) {
+            $pages[$slug] = [
+                'label' => $label,
+                'route' => 'vitrine.about.show',
+            ];
+        }
+
+        return $pages;
+    }
+
+    /**
+     * @param  array<string, mixed>  $about
      * @return \Illuminate\Support\Collection<int, array<string, mixed>>
      */
     public static function aboutPhotos(array $about): \Illuminate\Support\Collection

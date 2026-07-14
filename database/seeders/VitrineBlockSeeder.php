@@ -173,6 +173,7 @@ class VitrineBlockSeeder extends Seeder
                     'description' => 'Depuis plus de 15 ans, LDM accompagne les chirurgiens-dentistes avec des prothèses de précision, une expertise technique reconnue et un service client réactif. Découvrez notre univers, notre équipe et notre savoir-faire à travers images et vidéos.',
                     'photos' => [],
                     'videos' => [],
+                    'info_pages' => AboutInfoPagesSeeder::infoPages(),
                 ],
             ],
             [
