@@ -20,7 +20,7 @@ class VitrineBlockSeeder extends Seeder
                     'logo_alt' => 'LDM',
                     'nav_links' => [
                         ['label' => 'Accueil', 'href' => '/'],
-                        ['label' => 'À propos', 'href' => '/about'],
+                        ['label' => 'Le Laboratoire', 'href' => '/le-laboratoire'],
                         ['label' => 'Laboratoire / Équipe', 'href' => '/laboratoire'],
                         ['label' => 'Services', 'href' => '/services'],
                         ['label' => 'Process', 'href' => '/process'],
@@ -165,10 +165,10 @@ class VitrineBlockSeeder extends Seeder
             ],
             [
                 'key' => 'about',
-                'label' => 'Page À propos',
+                'label' => 'Le Laboratoire',
                 'sort_order' => 7,
                 'content' => [
-                    'section_label' => 'À propos',
+                    'section_label' => 'Le Laboratoire',
                     'title' => 'Notre laboratoire, notre engagement',
                     'description' => 'Depuis plus de 15 ans, LDM accompagne les chirurgiens-dentistes avec des prothèses de précision, une expertise technique reconnue et un service client réactif. Découvrez notre univers, notre équipe et notre savoir-faire à travers images et vidéos.',
                     'photos' => [],
@@ -314,7 +314,7 @@ class VitrineBlockSeeder extends Seeder
                         [
                             'title' => 'Entreprise',
                             'links' => [
-                                ['label' => 'À propos', 'href' => '/about'],
+                                ['label' => 'Le Laboratoire', 'href' => '/le-laboratoire'],
                                 ['label' => 'Équipe', 'href' => '#'],
                                 ['label' => 'Carrières', 'href' => '#'],
                                 ['label' => 'Actualités', 'href' => '#'],

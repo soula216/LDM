@@ -91,7 +91,7 @@ class VitrineController extends Controller
         }
 
         if ($vitrineBlock->key === 'process') {
-            $content = $this->processProcessSteps($content);
+            $content = $this->processProcessSteps($content, $existingContent);
         }
 
         if ($vitrineBlock->key === 'faq') {
@@ -1011,17 +1011,22 @@ class VitrineController extends Controller
         return array_values($processed);
     }
 
-    private function processProcessSteps(array $content): array
+    private function processProcessSteps(array $content, array $existingContent = []): array
     {
         $steps = $content['steps'] ?? [];
+        $existingSteps = $existingContent['steps'] ?? [];
         $processed = [];
 
-        foreach ($steps as $step) {
+        foreach ($steps as $index => $step) {
             $title = trim((string) ($step['title'] ?? ''));
             $description = trim((string) ($step['description'] ?? ''));
+            $detailHtml = trim((string) ($step['detail_html'] ?? ''));
+            if ($detailHtml === '') {
+                $detailHtml = trim((string) ($existingSteps[$index]['detail_html'] ?? ''));
+            }
             $icon = trim((string) ($step['icon'] ?? ''));
 
-            if ($title === '' && $description === '') {
+            if ($title === '' && $description === '' && $detailHtml === '') {
                 continue;
             }
 
@@ -1030,6 +1035,10 @@ class VitrineController extends Controller
                 'description' => $description,
                 'is_active' => filter_var($step['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ];
+
+            if ($detailHtml !== '') {
+                $processedStep['detail_html'] = $detailHtml;
+            }
 
             if ($icon !== '') {
                 $processedStep['icon'] = $icon;

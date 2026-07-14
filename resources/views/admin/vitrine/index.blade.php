@@ -47,14 +47,17 @@
         </div>
     </x-slot>
 
-    <div x-data="{ activeTab: '{{ $activeTab }}' }"
+    <div x-data="{ activeTab: @js($activeTab) }"
          x-init="
-            $watch('activeTab', (tab) => { if (tab === 'services') $dispatch('vitrine-services-tab-open'); });
+            $watch('activeTab', (tab) => {
+                if (tab === 'services') $dispatch('vitrine-services-tab-open');
+                if (tab === 'process') $dispatch('vitrine-process-tab-open');
+            });
             if (activeTab === 'services') { $nextTick(() => $dispatch('vitrine-services-tab-open')); }
+            if (activeTab === 'process') { $nextTick(() => $dispatch('vitrine-process-tab-open')); }
          "
-         x-cloak
          class="py-6 sm:py-10 bg-app min-h-screen">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
 
             @if(session('success'))
                 <div class="mb-6 p-4 bg-emerald-50 border border-emerald-200/80 rounded-2xl flex items-center gap-3 shadow-sm">
@@ -78,84 +81,122 @@
                 </div>
             @endif
 
-            {{-- Tabs navigation --}}
-            <div class="mb-6 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
-                <div class="inline-flex gap-2 p-1.5 bg-card/60 backdrop-blur-md border border-border rounded-2xl shadow-sm min-w-max">
+            {{-- Menu gauche + contenu droite (côte à côte) --}}
+            <div class="vitrine-admin-layout flex flex-row gap-6 lg:gap-8 items-start">
+                <aside class="vitrine-admin-nav w-56 xl:w-64 shrink-0 sticky top-24 self-start">
+                    <nav class="bg-card/60 backdrop-blur-md border border-border rounded-2xl shadow-sm overflow-hidden"
+                         aria-label="Sections du site vitrine">
+                        <div class="px-4 py-3 border-b border-border/70">
+                            <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">Sections</p>
+                        </div>
+                        <div class="p-1.5 space-y-1">
+                            @foreach($blocks as $block)
+                                <button
+                                    type="button"
+                                    @click="activeTab = '{{ $block->key }}'"
+                                    :class="activeTab === '{{ $block->key }}'
+                                        ? 'bg-gradient-to-r from-primary to-primary/90 text-white shadow-md shadow-primary/25'
+                                        : 'text-secondary hover:text-primary hover:bg-neutral-100/80'"
+                                    class="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 text-left"
+                                >
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $tabIcons[$block->key] ?? 'M4 6h16M4 12h16M4 18h16' }}"></path>
+                                    </svg>
+                                    <span class="truncate">{{ $block->label }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+                    </nav>
+                </aside>
+
+                <div class="vitrine-admin-content min-w-0 flex-1">
                     @foreach($blocks as $block)
-                        <button
-                            type="button"
-                            @click="activeTab = '{{ $block->key }}'"
-                            :class="activeTab === '{{ $block->key }}'
-                                ? 'bg-gradient-to-r from-primary to-primary/90 text-white shadow-md shadow-primary/25'
-                                : 'text-secondary hover:text-primary hover:bg-neutral-100/80'"
-                            class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap"
-                        >
-                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $tabIcons[$block->key] ?? 'M4 6h16M4 12h16M4 18h16' }}"></path>
-                            </svg>
-                            {{ $block->label }}
-                        </button>
+                        <div class="{{ $activeTab === $block->key ? '' : 'hidden' }}"
+                             :class="{ 'hidden': activeTab !== '{{ $block->key }}' }">
+                            <div class="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+                                <div class="px-6 py-5 border-b border-border bg-gradient-to-r from-neutral-50/80 to-card">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <h3 class="text-lg font-bold text-primary">{{ $block->label }}</h3>
+                                            <p class="text-sm text-secondary mt-0.5">Modifiez le contenu affiché sur le site vitrine</p>
+                                        </div>
+                                        <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                            Bloc actif
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <form action="{{ route('admin.vitrine.update', $block) }}" method="POST" class="p-4 sm:p-6" @if(in_array($block->key, ['hero', 'gallery', 'partners', 'services', 'academy', 'about', 'laboratory', 'header', 'footer'])) enctype="multipart/form-data" @endif @if($block->key === 'academy') x-data="{ submitting: false }" @submit="submitting = true" @endif>
+                                    @csrf
+                                    @method('PATCH')
+
+                                    @include('admin.vitrine.partials.forms.' . $block->key, ['content' => $block->content])
+
+                                    <div class="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                                        <label class="inline-flex items-center gap-3 cursor-pointer group">
+                                            <input type="hidden" name="is_active" value="0">
+                                            <input type="checkbox" name="is_active" value="1" {{ $block->is_active ? 'checked' : '' }}
+                                                   class="w-5 h-5 rounded-md border-border text-primary focus:ring-primary/30 transition">
+                                            <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Afficher ce bloc sur le site</span>
+                                        </label>
+                                        @if($block->key === 'academy')
+                                            <button type="submit"
+                                                    :class="submitting ? 'opacity-85 cursor-progress pointer-events-none' : ''"
+                                                    :aria-busy="submitting ? 'true' : 'false'"
+                                                    class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
+                                                <svg x-show="submitting" x-cloak class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                <svg x-show="!submitting" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                                <span x-text="submitting ? 'Enregistrer en cours' : 'Enregistrer {{ $block->label }}'"></span>
+                                            </button>
+                                        @else
+                                            <button type="submit" class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                                Enregistrer {{ $block->label }}
+                                            </button>
+                                        @endif
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     @endforeach
                 </div>
             </div>
 
-            {{-- Tab panels --}}
-            @foreach($blocks as $block)
-                <div x-show="activeTab === '{{ $block->key }}'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
-                    <div class="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-                        <div class="px-6 py-5 border-b border-border bg-gradient-to-r from-neutral-50/80 to-card">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <h3 class="text-lg font-bold text-primary">{{ $block->label }}</h3>
-                                    <p class="text-sm text-secondary mt-0.5">Modifiez le contenu affiché sur le site vitrine</p>
-                                </div>
-                                <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                                    Bloc actif
-                                </span>
-                            </div>
-                        </div>
-
-                        <form action="{{ route('admin.vitrine.update', $block) }}" method="POST" class="p-4 sm:p-6" @if(in_array($block->key, ['hero', 'gallery', 'partners', 'services', 'academy', 'about', 'laboratory', 'header', 'footer'])) enctype="multipart/form-data" @endif @if($block->key === 'academy') x-data="{ submitting: false }" @submit="submitting = true" @endif>
-                            @csrf
-                            @method('PATCH')
-
-                            @include('admin.vitrine.partials.forms.' . $block->key, ['content' => $block->content])
-
-                            <div class="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                                <label class="inline-flex items-center gap-3 cursor-pointer group">
-                                    <input type="hidden" name="is_active" value="0">
-                                    <input type="checkbox" name="is_active" value="1" {{ $block->is_active ? 'checked' : '' }}
-                                           class="w-5 h-5 rounded-md border-border text-primary focus:ring-primary/30 transition">
-                                    <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Afficher ce bloc sur le site</span>
-                                </label>
-                                @if($block->key === 'academy')
-                                    <button type="submit"
-                                            :class="submitting ? 'opacity-85 cursor-progress pointer-events-none' : ''"
-                                            :aria-busy="submitting ? 'true' : 'false'"
-                                            class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
-                                        <svg x-show="submitting" x-cloak class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        <svg x-show="!submitting" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                        <span x-text="submitting ? 'Enregistrer en cours' : 'Enregistrer {{ $block->label }}'"></span>
-                                    </button>
-                                @else
-                                    <button type="submit" class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                        Enregistrer {{ $block->label }}
-                                    </button>
-                                @endif
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            @endforeach
+            <style>
+                .vitrine-admin-layout {
+                    display: flex !important;
+                    flex-direction: row !important;
+                    align-items: flex-start;
+                    gap: 1.5rem;
+                }
+                .vitrine-admin-nav {
+                    width: 14rem;
+                    flex-shrink: 0;
+                    position: sticky;
+                    top: 6rem;
+                }
+                .vitrine-admin-content {
+                    flex: 1 1 0%;
+                    min-width: 0;
+                }
+                @media (max-width: 640px) {
+                    .vitrine-admin-layout {
+                        flex-direction: column !important;
+                    }
+                    .vitrine-admin-nav {
+                        width: 100%;
+                        position: static;
+                    }
+                }
+            </style>
         </div>
     </div>
 </x-app-layout>

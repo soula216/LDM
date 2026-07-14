@@ -4026,6 +4026,76 @@
       line-height: 1.25;
     }
 
+    .process--page .process-timeline-card p.process-timeline-summary {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .process--page .process-timeline-read-more {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-top: 1rem;
+      padding: 0.65rem 1rem;
+      width: fit-content;
+      border: 1px solid rgba(14, 165, 233, 0.22);
+      border-radius: 999px;
+      background: rgba(14, 165, 233, 0.08);
+      color: #0369a1;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition:
+        transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        background 0.28s ease,
+        border-color 0.28s ease,
+        color 0.28s ease,
+        box-shadow 0.28s ease;
+    }
+
+    .process--page .process-timeline-read-more i {
+      font-size: 0.72rem;
+      transition: transform 0.28s ease;
+    }
+
+    .process--page .process-timeline-read-more:hover,
+    .process--page .process-timeline-read-more:focus-visible {
+      background: rgba(14, 165, 233, 0.16);
+      border-color: rgba(14, 165, 233, 0.4);
+      color: #0c4a6e;
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(14, 165, 233, 0.14);
+      outline: none;
+    }
+
+    .process--page .process-timeline-read-more:hover i,
+    .process--page .process-timeline-read-more:focus-visible i {
+      transform: translateX(3px);
+    }
+
+    .process-step-detail-modal-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 0.85rem;
+      margin: 0.85rem 0;
+    }
+
+    .process-step-detail-modal-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0;
+      font-size: 0.9rem;
+    }
+
+    .process-step-detail-modal-content th,
+    .process-step-detail-modal-content td {
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+    }
+
     .process--page .process-timeline-card p {
       color: var(--text-muted);
       font-size: 0.95rem;

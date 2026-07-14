@@ -88,7 +88,7 @@
         @component('admin.vitrine.partials.collapsible-header', [
             'section' => 'content',
             'title' => 'Contenu principal',
-            'subtitle' => 'Titre et description de la page À propos',
+            'subtitle' => 'Titre et description de la page Le Laboratoire',
             'headerClass' => 'border-b border-border/60 bg-gradient-to-r from-violet-500/5 to-transparent',
         ])
             @slot('icon')
@@ -105,7 +105,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Badge (hero)</label>
-                        <input type="text" name="content[section_label]" value="{{ $c['section_label'] ?? 'À propos' }}" class="input-field w-full text-sm" placeholder="À propos">
+                        <input type="text" name="content[section_label]" value="{{ $c['section_label'] ?? 'Le Laboratoire' }}" class="input-field w-full text-sm" placeholder="Le Laboratoire">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>
@@ -222,7 +222,7 @@
         @component('admin.vitrine.partials.collapsible-header', [
             'section' => 'photos',
             'title' => 'Photos',
-            'subtitle' => 'Galerie visuelle de la page À propos',
+            'subtitle' => 'Galerie visuelle de la page Le Laboratoire',
             'headerClass' => 'border-b border-border/60 bg-card/80',
         ])
             @slot('icon')

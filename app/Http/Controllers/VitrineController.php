@@ -113,7 +113,7 @@ class VitrineController extends Controller
         return view('accueil.about', [
             'blocks' => $blocks,
             'about' => $blocks['about'] ?? [
-                'section_label' => 'À propos',
+                'section_label' => 'Le Laboratoire',
                 'title' => 'Notre laboratoire',
                 'description' => '',
                 'sections_kicker' => 'En détail',
@@ -263,7 +263,7 @@ class VitrineController extends Controller
                 'services' => ['section_title' => 'Services', 'items' => []],
                 'process' => ['section_title' => 'Process', 'steps' => []],
                 'gallery' => ['section_title' => 'Galerie', 'items' => []],
-                'about' => ['title' => 'À propos', 'description' => '', 'photos' => [], 'videos' => []],
+                'about' => ['title' => 'Le Laboratoire', 'description' => '', 'photos' => [], 'videos' => []],
                 'laboratory' => ['title' => 'Laboratoire / Équipe', 'description' => '', 'photos' => []],
                 'features' => ['title_before' => 'Pourquoi', 'title_highlight' => 'LDM', 'list' => [], 'card' => []],
                 'partners' => ['section_title' => 'Nos Partenaires', 'items' => []],

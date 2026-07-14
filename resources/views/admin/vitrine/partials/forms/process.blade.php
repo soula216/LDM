@@ -4,6 +4,7 @@
         return [
             'title' => $step['title'] ?? '',
             'description' => $step['description'] ?? '',
+            'detail_html' => $step['detail_html'] ?? '',
             'icon' => $step['icon'] ?? '',
             'is_active' => filter_var($step['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
         ];
@@ -13,8 +14,75 @@
 <div class="vitrine-tab-form space-y-6 sm:space-y-8"
      x-data="{
         open: { header: true, steps: true },
-        steps: @js($processSteps)
-     }">
+        steps: @js($processSteps),
+        htmlEditors: {},
+        addStep() {
+            this.steps.push({ title: '', description: '', detail_html: '', icon: '', is_active: true });
+            const newIndex = this.steps.length - 1;
+            this.$nextTick(() => this.initProcessStepHtmlEditor(newIndex));
+        },
+        removeStep(index) {
+            this.destroyAllProcessStepHtmlEditors();
+            this.steps.splice(index, 1);
+            this.$nextTick(() => this.initAllProcessStepHtmlEditors());
+        },
+        initAllProcessStepHtmlEditors() {
+            this.steps.forEach((_, index) => this.initProcessStepHtmlEditor(index));
+        },
+        initProcessStepHtmlEditor(index) {
+            if (!this.open.steps || !this.steps[index]) return;
+            const editorId = 'process-detail-html-' + index;
+            if (this.htmlEditors[editorId]) return;
+
+            const start = async () => {
+                const tinymce = await (window.__vitrineServiceHtmlEditorReady || Promise.resolve(window.tinymce));
+                if (!tinymce) return;
+
+                const existing = tinymce.get(editorId);
+                if (existing) {
+                    this.htmlEditors[editorId] = existing;
+                    return;
+                }
+
+                const textarea = document.getElementById(editorId);
+                if (!textarea || textarea.dataset.tinymceInit === '1') return;
+
+                textarea.value = this.steps[index].detail_html || '';
+                textarea.dataset.tinymceInit = '1';
+
+                tinymce.init({
+                    ...window.__vitrineServiceHtmlEditorConfig,
+                    selector: '#' + editorId,
+                    setup: (editor) => {
+                        editor.on('change input undo redo SetContent', () => {
+                            if (this.steps[index]) {
+                                this.steps[index].detail_html = editor.getContent();
+                            }
+                        });
+                    },
+                    init_instance_callback: (editor) => {
+                        this.htmlEditors[editorId] = editor;
+                    },
+                });
+            };
+
+            this.$nextTick(() => start());
+        },
+        destroyAllProcessStepHtmlEditors() {
+            if (!window.tinymce) return;
+            Object.keys(this.htmlEditors).forEach((editorId) => {
+                const editor = window.tinymce.get(editorId);
+                if (editor) {
+                    editor.remove();
+                }
+            });
+            document.querySelectorAll('.process-detail-html-textarea').forEach((textarea) => {
+                delete textarea.dataset.tinymceInit;
+            });
+            this.htmlEditors = {};
+        }
+     }"
+     @vitrine-process-tab-open.window="$nextTick(() => { if (open.steps) initAllProcessStepHtmlEditors(); })">
 
     <section class="rounded-2xl border border-border bg-card overflow-hidden">
         @component('admin.vitrine.partials.collapsible-header', [
@@ -75,7 +143,7 @@
                                         <p class="text-xs text-secondary mt-0.5" x-text="step.is_active ? 'Visible sur le site' : 'Masquée sur le site'"></p>
                                     </div>
                                 </div>
-                                <button type="button" @click="steps.splice(index, 1)"
+                                <button type="button" @click="removeStep(index)"
                                         class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 transition-colors shrink-0"
                                         title="Supprimer">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,13 +169,15 @@
                                     <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Description</label>
                                     <textarea :name="'content[steps][' + index + '][description]'" x-model="step.description" rows="2" placeholder="Décrivez cette étape…" class="input-field w-full text-sm resize-y"></textarea>
                                 </div>
+
+                                @include('admin.vitrine.partials.process-step-detail-html-editor')
                             </div>
                         </div>
                     </template>
                 </div>
 
                 <div class="mt-4 pt-4 border-t border-border/60">
-                    @include('admin.vitrine.partials.btn-add', ['label' => 'Ajouter une étape', 'click' => "steps.push({title: '', description: '', icon: '', is_active: true})"])
+                    @include('admin.vitrine.partials.btn-add', ['label' => 'Ajouter une étape', 'click' => 'addStep()'])
                 </div>
             </div>
         </div>

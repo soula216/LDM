@@ -1,6 +1,6 @@
 @extends('layouts.accueil')
 
-@section('title', ($about['title'] ?? 'À propos') . ' | LDM - Digital Max')
+@section('title', ($about['title'] ?? 'Le Laboratoire') . ' | LDM - Digital Max')
 
 @section('header')
   @include('accueil.header')

@@ -124,6 +124,7 @@ class VitrineBlock extends Model
 
         $pageRoutes = [
             'about' => 'vitrine.about',
+            'le-laboratoire' => 'vitrine.about',
             'laboratory' => 'vitrine.laboratory',
             'academy' => 'vitrine.academy',
             'services' => 'vitrine.services',
