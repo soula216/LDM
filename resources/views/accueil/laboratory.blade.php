@@ -1,6 +1,6 @@
 @extends('layouts.accueil')
 
-@section('title', ($laboratory['title'] ?? 'Laboratoire / Équipe') . ' | LDM - Digital Max')
+@section('title', ($laboratory['title'] ?? 'Galerie') . ' | LDM - Digital Max')
 
 @section('header')
   @include('accueil.header')
@@ -10,9 +10,12 @@
 @php
     use App\Models\VitrineBlock;
 
-    $photos = VitrineBlock::laboratoryPhotos($laboratory);
+    $mediaItems = VitrineBlock::laboratoryMediaItems($laboratory);
+    $photos = $mediaItems->where('type', 'image')->values();
+    $videos = $mediaItems->where('type', 'video')->values();
     $categories = VitrineBlock::laboratoryCategories();
-    $counts = $photos->countBy('category');
+    $counts = $mediaItems->countBy('category');
+    $hasMedia = $mediaItems->isNotEmpty();
 @endphp
 
 <main class="laboratory-page">
@@ -21,19 +24,27 @@
     <div class="laboratory-hero__mesh" aria-hidden="true"></div>
     <div class="laboratory-hero__content">
       <div class="laboratory-hero__badge">
-        <i class="fas fa-users" aria-hidden="true"></i>
-        <span>{{ $laboratory['section_label'] ?? 'Laboratoire / Équipe' }}</span>
+        <i class="fas fa-images" aria-hidden="true"></i>
+        <span>{{ $laboratory['section_label'] ?? 'Galerie' }}</span>
       </div>
       <h1>{{ $laboratory['title'] ?? 'Notre équipe & nos installations' }}</h1>
       @if(filled($laboratory['description'] ?? null))
         <p class="laboratory-hero__lead">{{ $laboratory['description'] }}</p>
       @endif
-      @if($photos->isNotEmpty())
+      @if($hasMedia)
         <div class="laboratory-hero__stats">
-          <div class="laboratory-hero__stat">
-            <strong>{{ $photos->count() }}</strong>
-            <span>photo{{ $photos->count() > 1 ? 's' : '' }}</span>
-          </div>
+          @if($photos->isNotEmpty())
+            <div class="laboratory-hero__stat">
+              <strong>{{ $photos->count() }}</strong>
+              <span>photo{{ $photos->count() > 1 ? 's' : '' }}</span>
+            </div>
+          @endif
+          @if($videos->isNotEmpty())
+            <div class="laboratory-hero__stat">
+              <strong>{{ $videos->count() }}</strong>
+              <span>vidéo{{ $videos->count() > 1 ? 's' : '' }}</span>
+            </div>
+          @endif
           @foreach($categories as $key => $meta)
             @if(($counts[$key] ?? 0) > 0)
               <div class="laboratory-hero__stat">
@@ -48,11 +59,11 @@
   </section>
 
   <section class="laboratory-body">
-    @if($photos->isEmpty())
+    @if(! $hasMedia)
       <div class="laboratory-empty reveal">
         <div class="laboratory-empty__icon"><i class="fas fa-camera" aria-hidden="true"></i></div>
         <h2>Galerie à venir</h2>
-        <p>Les photos de l'équipe, du laboratoire et des équipements seront bientôt disponibles.</p>
+        <p>Les photos et vidéos de l'équipe, du laboratoire et des équipements seront bientôt disponibles.</p>
       </div>
     @else
       <div class="laboratory-toolbar reveal">
@@ -63,7 +74,7 @@
                   role="tab"
                   aria-selected="true">
             Tous
-            <span>{{ $photos->count() }}</span>
+            <span>{{ $mediaItems->count() }}</span>
           </button>
           @foreach($categories as $key => $meta)
             @if(($counts[$key] ?? 0) > 0)
@@ -82,39 +93,84 @@
       </div>
 
       <div class="laboratory-grid">
-        @foreach($photos as $index => $photo)
-          @php $categoryMeta = $categories[$photo['category']] ?? $categories['equipe']; @endphp
-          <article class="laboratory-card reveal"
-                   data-lab-category="{{ $photo['category'] }}"
-                   style="--lab-delay: {{ min($index * 0.05, 0.4) }}s">
-            <button type="button"
-                    class="laboratory-card__btn"
-                    data-about-image
-                    data-src="{{ e($photo['image_url']) }}"
-                    data-title="{{ e($photo['title'] ?? '') }}"
-                    data-caption="{{ e($photo['description'] ?? '') }}"
-                    aria-label="Agrandir {{ $photo['title'] ?? 'photo' }}">
-              <div class="laboratory-card__visual">
-                <img src="{{ $photo['image_url'] }}"
-                     alt="{{ $photo['title'] ?? 'Photo' }}"
-                     loading="lazy"
-                     decoding="async">
-                <span class="laboratory-card__overlay" aria-hidden="true">
-                  <i class="fas fa-expand"></i>
+        @foreach($mediaItems as $index => $item)
+          @php
+            $categoryMeta = $categories[$item['category']] ?? $categories['equipe'];
+            $delay = min($index * 0.05, 0.4);
+            $isVideo = ($item['type'] ?? '') === 'video';
+            $videoConfig = $isVideo ? VitrineBlock::academyVideoPlayerConfig($item['video_url'] ?? '') : null;
+            $posterUrl = $isVideo ? VitrineBlock::aboutVideoPosterUrl($item) : '';
+          @endphp
+
+          @if($isVideo && $videoConfig)
+            <article class="laboratory-card laboratory-card--video reveal"
+                     data-lab-category="{{ $item['category'] }}"
+                     style="--lab-delay: {{ $delay }}s">
+              <button type="button"
+                      class="laboratory-card__btn"
+                      data-about-video
+                      data-video-mode="{{ $videoConfig['mode'] }}"
+                      data-src="{{ e($videoConfig['src']) }}"
+                      data-title="{{ e($item['title'] ?? '') }}"
+                      aria-label="Lire {{ $item['title'] ?? 'vidéo' }}">
+                <div class="laboratory-card__visual">
+                  @if(filled($posterUrl))
+                    <img src="{{ $posterUrl }}"
+                         alt="{{ $item['title'] ?? 'Vidéo' }}"
+                         loading="lazy"
+                         decoding="async">
+                  @else
+                    <span class="laboratory-card__visual-fallback" aria-hidden="true"></span>
+                  @endif
+                  <span class="laboratory-card__overlay laboratory-card__overlay--video" aria-hidden="true">
+                    <i class="fas fa-play"></i>
+                  </span>
+                </div>
+              </button>
+              <div class="laboratory-card__body">
+                <span class="laboratory-card__category">
+                  <i class="fas fa-play-circle" aria-hidden="true"></i>
+                  Vidéo · {{ $categoryMeta['label'] }}
                 </span>
+                <h2>{{ $item['title'] ?? 'Vidéo' }}</h2>
+                @if(filled($item['description'] ?? null))
+                  <p>{{ $item['description'] }}</p>
+                @endif
               </div>
-            </button>
-            <div class="laboratory-card__body">
-              <span class="laboratory-card__category">
-                <i class="{{ $categoryMeta['icon'] }}" aria-hidden="true"></i>
-                {{ $categoryMeta['label'] }}
-              </span>
-              <h2>{{ $photo['title'] ?? 'Photo' }}</h2>
-              @if(filled($photo['description'] ?? null))
-                <p>{{ $photo['description'] }}</p>
-              @endif
-            </div>
-          </article>
+            </article>
+          @elseif(! $isVideo)
+            <article class="laboratory-card reveal"
+                     data-lab-category="{{ $item['category'] }}"
+                     style="--lab-delay: {{ $delay }}s">
+              <button type="button"
+                      class="laboratory-card__btn"
+                      data-about-image
+                      data-src="{{ e($item['image_url']) }}"
+                      data-title="{{ e($item['title'] ?? '') }}"
+                      data-caption="{{ e($item['description'] ?? '') }}"
+                      aria-label="Agrandir {{ $item['title'] ?? 'photo' }}">
+                <div class="laboratory-card__visual">
+                  <img src="{{ $item['image_url'] }}"
+                       alt="{{ $item['title'] ?? 'Photo' }}"
+                       loading="lazy"
+                       decoding="async">
+                  <span class="laboratory-card__overlay" aria-hidden="true">
+                    <i class="fas fa-expand"></i>
+                  </span>
+                </div>
+              </button>
+              <div class="laboratory-card__body">
+                <span class="laboratory-card__category">
+                  <i class="{{ $categoryMeta['icon'] }}" aria-hidden="true"></i>
+                  {{ $categoryMeta['label'] }}
+                </span>
+                <h2>{{ $item['title'] ?? 'Photo' }}</h2>
+                @if(filled($item['description'] ?? null))
+                  <p>{{ $item['description'] }}</p>
+                @endif
+              </div>
+            </article>
+          @endif
         @endforeach
       </div>
     @endif
@@ -129,11 +185,16 @@
     const imageEl = document.getElementById('aboutImageModalImg');
     const imageTitle = document.getElementById('aboutImageModalTitle');
     const imageCaption = document.getElementById('aboutImageModalCaption');
+    const videoModal = document.getElementById('aboutVideoModal');
+    const videoPlayer = document.getElementById('aboutVideoModalPlayer');
+    const videoTitle = document.getElementById('aboutVideoModalTitle');
     let lastFocused = null;
 
-    if (imageModal && imageModal.parentElement !== document.body) {
-      document.body.appendChild(imageModal);
-    }
+    [imageModal, videoModal].forEach((modal) => {
+      if (modal && modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+    });
 
     function lockBody(lock) {
       document.body.classList.toggle('about-modal-open', lock);
@@ -146,12 +207,23 @@
       if (imageEl) { imageEl.removeAttribute('src'); imageEl.alt = ''; }
       if (imageTitle) imageTitle.textContent = '';
       if (imageCaption) imageCaption.textContent = '';
-      lockBody(false);
+      if (videoModal?.hidden) lockBody(false);
+      lastFocused?.focus?.();
+    }
+
+    function closeVideo() {
+      if (!videoModal || videoModal.hidden) return;
+      videoModal.hidden = true;
+      videoModal.setAttribute('aria-hidden', 'true');
+      if (videoPlayer) videoPlayer.innerHTML = '';
+      if (videoTitle) videoTitle.textContent = '';
+      if (imageModal?.hidden) lockBody(false);
       lastFocused?.focus?.();
     }
 
     function openImage(src, title, caption) {
       if (!imageModal || !imageEl) return;
+      closeVideo();
       lastFocused = document.activeElement;
       imageEl.src = src;
       imageEl.alt = title || 'Photo';
@@ -161,6 +233,35 @@
       imageModal.setAttribute('aria-hidden', 'false');
       lockBody(true);
       imageModal.querySelector('.about-modal__close')?.focus();
+    }
+
+    function openVideo(mode, src, title) {
+      if (!videoModal || !videoPlayer || !src) return;
+      closeImage();
+      lastFocused = document.activeElement;
+      videoPlayer.innerHTML = '';
+
+      if (mode === 'iframe') {
+        const iframe = document.createElement('iframe');
+        iframe.src = src;
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.title = title || 'Vidéo';
+        videoPlayer.appendChild(iframe);
+      } else {
+        const video = document.createElement('video');
+        video.src = src;
+        video.controls = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        videoPlayer.appendChild(video);
+      }
+
+      if (videoTitle) videoTitle.textContent = title || '';
+      videoModal.hidden = false;
+      videoModal.setAttribute('aria-hidden', 'false');
+      lockBody(true);
+      videoModal.querySelector('.about-modal__close')?.focus();
     }
 
     function filterLabPhotos(category) {
@@ -192,15 +293,23 @@
         return;
       }
 
+      const videoBtn = event.target.closest('[data-about-video]');
+      if (videoBtn) {
+        event.preventDefault();
+        openVideo(videoBtn.dataset.videoMode || 'video', videoBtn.dataset.src || '', videoBtn.dataset.title || '');
+        return;
+      }
+
       if (event.target.closest('[data-about-modal-close]')) {
-        closeImage();
+        if (videoModal && !videoModal.hidden) closeVideo();
+        else closeImage();
       }
     });
 
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && imageModal && !imageModal.hidden) {
-        closeImage();
-      }
+      if (event.key !== 'Escape') return;
+      if (videoModal && !videoModal.hidden) closeVideo();
+      else if (imageModal && !imageModal.hidden) closeImage();
     });
   })();
 </script>

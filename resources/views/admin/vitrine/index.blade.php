@@ -10,6 +10,7 @@
         'laboratory' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
         'partners' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
         'faq' => 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+        'recrutement' => 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
         'academy' => 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
         'contact' => 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
         'footer' => 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
@@ -53,10 +54,12 @@
                 if (tab === 'services') $dispatch('vitrine-services-tab-open');
                 if (tab === 'process') $dispatch('vitrine-process-tab-open');
                 if (tab === 'about') $dispatch('vitrine-about-tab-open');
+                if (tab === 'recrutement') $dispatch('vitrine-recrutement-tab-open');
             });
             if (activeTab === 'services') { $nextTick(() => $dispatch('vitrine-services-tab-open')); }
             if (activeTab === 'process') { $nextTick(() => $dispatch('vitrine-process-tab-open')); }
             if (activeTab === 'about') { $nextTick(() => $dispatch('vitrine-about-tab-open')); }
+            if (activeTab === 'recrutement') { $nextTick(() => $dispatch('vitrine-recrutement-tab-open')); }
          "
          class="py-6 sm:py-10 bg-app min-h-screen">
         <div class="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
@@ -93,6 +96,7 @@
                         </div>
                         <div class="p-1.5 space-y-1">
                             @foreach($blocks as $block)
+                                @continue($block->key === 'laboratory')
                                 <button
                                     type="button"
                                     @click="activeTab = '{{ $block->key }}'"
@@ -113,6 +117,7 @@
 
                 <div class="vitrine-admin-content min-w-0 flex-1">
                     @foreach($blocks as $block)
+                        @continue($block->key === 'laboratory')
                         <div class="{{ $activeTab === $block->key ? '' : 'hidden' }}"
                              :class="{ 'hidden': activeTab !== '{{ $block->key }}' }">
                             <div class="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
@@ -129,43 +134,54 @@
                                     </div>
                                 </div>
 
-                                <form action="{{ route('admin.vitrine.update', $block) }}" method="POST" class="p-4 sm:p-6" @if(in_array($block->key, ['hero', 'gallery', 'partners', 'services', 'academy', 'about', 'laboratory', 'header', 'footer'])) enctype="multipart/form-data" @endif @if($block->key === 'academy') x-data="{ submitting: false }" @submit="submitting = true" @endif>
-                                    @csrf
-                                    @method('PATCH')
-
-                                    @include('admin.vitrine.partials.forms.' . $block->key, ['content' => $block->content])
-
-                                    <div class="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                                        <label class="inline-flex items-center gap-3 cursor-pointer group">
-                                            <input type="hidden" name="is_active" value="0">
-                                            <input type="checkbox" name="is_active" value="1" {{ $block->is_active ? 'checked' : '' }}
-                                                   class="w-5 h-5 rounded-md border-border text-primary focus:ring-primary/30 transition">
-                                            <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Afficher ce bloc sur le site</span>
-                                        </label>
-                                        @if($block->key === 'academy')
-                                            <button type="submit"
-                                                    :class="submitting ? 'opacity-85 cursor-progress pointer-events-none' : ''"
-                                                    :aria-busy="submitting ? 'true' : 'false'"
-                                                    class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
-                                                <svg x-show="submitting" x-cloak class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                <svg x-show="!submitting" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                </svg>
-                                                <span x-text="submitting ? 'Enregistrer en cours' : 'Enregistrer {{ $block->label }}'"></span>
-                                            </button>
-                                        @else
-                                            <button type="submit" class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                </svg>
-                                                Enregistrer {{ $block->label }}
-                                            </button>
-                                        @endif
+                                @if($block->key === 'about')
+                                    <div class="p-4 sm:p-6">
+                                        @include('admin.vitrine.partials.forms.about', [
+                                            'content' => $block->content,
+                                            'aboutBlock' => $block,
+                                            'laboratoryBlock' => $blocks->firstWhere('key', 'laboratory'),
+                                            'activeAboutSub' => $activeAboutSub ?? 'qui-sommes-nous',
+                                        ])
                                     </div>
-                                </form>
+                                @else
+                                    <form action="{{ route('admin.vitrine.update', $block) }}" method="POST" class="p-4 sm:p-6" @if(in_array($block->key, ['hero', 'gallery', 'partners', 'services', 'academy', 'header', 'footer'])) enctype="multipart/form-data" @endif @if($block->key === 'academy') x-data="{ submitting: false }" @submit="submitting = true" @endif>
+                                        @csrf
+                                        @method('PATCH')
+
+                                        @include('admin.vitrine.partials.forms.' . $block->key, ['content' => $block->content])
+
+                                        <div class="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                                            <label class="inline-flex items-center gap-3 cursor-pointer group">
+                                                <input type="hidden" name="is_active" value="0">
+                                                <input type="checkbox" name="is_active" value="1" {{ $block->is_active ? 'checked' : '' }}
+                                                       class="w-5 h-5 rounded-md border-border text-primary focus:ring-primary/30 transition">
+                                                <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Afficher ce bloc sur le site</span>
+                                            </label>
+                                            @if($block->key === 'academy')
+                                                <button type="submit"
+                                                        :class="submitting ? 'opacity-85 cursor-progress pointer-events-none' : ''"
+                                                        :aria-busy="submitting ? 'true' : 'false'"
+                                                        class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
+                                                    <svg x-show="submitting" x-cloak class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    <svg x-show="!submitting" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                    </svg>
+                                                    <span x-text="submitting ? 'Enregistrer en cours' : 'Enregistrer {{ $block->label }}'"></span>
+                                                </button>
+                                            @else
+                                                <button type="submit" class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                    </svg>
+                                                    Enregistrer {{ $block->label }}
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </form>
+                                @endif
                             </div>
                         </div>
                     @endforeach

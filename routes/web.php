@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\Admin\{
     DashboardController,
     UserController,
@@ -18,7 +19,8 @@ use App\Http\Controllers\Admin\{
     DepenseController,
     StockController,
     VitrineController as AdminVitrineController,
-    ContactMessageController as AdminContactMessageController
+    ContactMessageController as AdminContactMessageController,
+    JobApplicationController as AdminJobApplicationController
 };
 use App\Http\Controllers\App\{
     CommandeCalendarController,
@@ -31,6 +33,9 @@ use App\Http\Controllers\Auth\DentistRegistrationController;
 
 Route::get('/', [VitrineController::class, 'show'])->name('vitrine');
 Route::post('/contact', [ContactMessageController::class, 'store'])->name('contact.store');
+Route::post('/recrutement/candidature', [JobApplicationController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('job-applications.store');
 Route::middleware(['guest', 'throttle:6,1'])->group(function () {
     Route::get('/register', [DentistRegistrationController::class, 'create'])->name('register');
     Route::post('/register', [DentistRegistrationController::class, 'store'])->name('register.store');
@@ -41,14 +46,14 @@ Route::get('/process', [VitrineController::class, 'process'])->name('vitrine.pro
 Route::get('/gallery', [VitrineController::class, 'gallery'])->name('vitrine.gallery');
 Route::get('/le-laboratoire', [VitrineController::class, 'about'])->name('vitrine.about');
 Route::get('/le-laboratoire/{page}', [VitrineController::class, 'aboutShow'])
-    ->where('page', 'qui-sommes-nous|notre-mission|nos-principe|conditions-de-service|conditions-de-paiement|garantie|delais-de-fabrication|processus-de-qualite')
+    ->where('page', implode('|', array_keys(\App\Models\VitrineBlock::aboutSubPages())))
     ->name('vitrine.about.show');
 Route::permanentRedirect('/about', '/le-laboratoire');
-Route::get('/laboratoire', [VitrineController::class, 'laboratory'])->name('vitrine.laboratory');
+Route::redirect('/laboratoire', '/le-laboratoire/gallery', 301)->name('vitrine.laboratory');
 Route::get('/academy', [VitrineController::class, 'academy'])->name('vitrine.academy');
 Route::get('/academy/documents', [VitrineController::class, 'academyDocuments'])->name('vitrine.academy.documents');
 Route::get('/faq', [VitrineController::class, 'faq'])->name('vitrine.faq');
-
+Route::get('/recrutement', [VitrineController::class, 'recrutement'])->name('vitrine.recrutement');
 Route::get('/dashboard', [DashboardController::class, 'userDashboard'])
     ->middleware('auth')
     ->name('dashboard');
@@ -173,6 +178,18 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
 
         Route::delete('{contactMessage}', [AdminContactMessageController::class, 'destroy'])
             ->name('admin.contact-messages.destroy');
+    });
+
+    // Candidatures offres d'emploi
+    Route::prefix('job-applications')->group(function () {
+        Route::get('/', [AdminJobApplicationController::class, 'index'])
+            ->name('admin.job-applications.index');
+
+        Route::get('{jobApplication}/cv', [AdminJobApplicationController::class, 'downloadCv'])
+            ->name('admin.job-applications.cv');
+
+        Route::delete('{jobApplication}', [AdminJobApplicationController::class, 'destroy'])
+            ->name('admin.job-applications.destroy');
     });
 
     // Site vitrine

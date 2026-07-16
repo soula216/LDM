@@ -84,6 +84,11 @@ class CheckAdminAccess
                 abort(404, 'Page not found');
             }
 
+            // Routes candidatures offres d'emploi : admin uniquement
+            if (str_starts_with($routeName, 'admin.job-applications.')) {
+                abort(404, 'Page not found');
+            }
+
             // Routes stock : accessible avec view_stock ou manage_stock
             if (str_starts_with($routeName, 'admin.stock.')) {
                 if ($user->can('view_stock') || $user->can('manage_stock')) {

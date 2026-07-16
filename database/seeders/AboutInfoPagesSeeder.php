@@ -20,9 +20,28 @@ class AboutInfoPagesSeeder extends Seeder
         $content = $about->content ?? [];
         $content['info_pages'] = static::infoPages();
 
+        $existingMediaPage = is_array($content['media_page'] ?? null) ? $content['media_page'] : [];
+        $seededMediaPage = static::mediaPage();
+        $content['media_page'] = array_merge($seededMediaPage, [
+            'photos' => is_array($existingMediaPage['photos'] ?? null) ? $existingMediaPage['photos'] : [],
+        ]);
+
         $about->update(['content' => $content]);
 
-        $this->command?->info('Pages détaillées du Laboratoire renseignées (conditions, garantie, délais, qualité).');
+        $this->command?->info('Pages détaillées du Laboratoire renseignées (conditions, garantie, délais, qualité, certifications).');
+    }
+
+    /**
+     * @return array{section_label: string, title: string, description: string, photos: array<int, mixed>}
+     */
+    public static function mediaPage(): array
+    {
+        return [
+            'section_label' => 'Certifications',
+            'title' => 'Nos certifications',
+            'description' => "Chez LDM – Digital Max, la qualité n’est pas une promesse : elle est prouvée, documentée et contrôlée.\n\nNos certifications et accréditations attestent de notre engagement envers des process maîtrisés, des matériaux conformes et une traçabilité rigoureuse à chaque étape de fabrication. Elles garantissent aux praticiens partenaires un laboratoire fiable, exigeant et aligné sur les standards du secteur dentaire.\n\nDécouvrez ci-dessous les preuves de notre démarche qualité, au service de restaurations précises, sûres et durables.",
+            'photos' => [],
+        ];
     }
 
     /**

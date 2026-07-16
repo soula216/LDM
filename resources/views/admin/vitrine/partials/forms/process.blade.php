@@ -80,9 +80,22 @@
                 delete textarea.dataset.tinymceInit;
             });
             this.htmlEditors = {};
+        },
+        syncProcessStepHtmlEditors() {
+            Object.keys(this.htmlEditors).forEach((editorId) => {
+                const editor = this.htmlEditors[editorId];
+                if (!editor) return;
+                const match = editorId.match(/^process-detail-html-(\d+)$/);
+                if (!match) return;
+                const index = Number(match[1]);
+                if (this.steps[index]) {
+                    this.steps[index].detail_html = editor.getContent();
+                }
+            });
         }
      }"
-     @vitrine-process-tab-open.window="$nextTick(() => { if (open.steps) initAllProcessStepHtmlEditors(); })">
+     @vitrine-process-tab-open.window="$nextTick(() => { if (open.steps) initAllProcessStepHtmlEditors(); })"
+     @submit.document="if ($event.target.closest('form')?.contains($el)) syncProcessStepHtmlEditors()">
 
     <section class="rounded-2xl border border-border bg-card overflow-hidden">
         @component('admin.vitrine.partials.collapsible-header', [

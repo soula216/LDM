@@ -122,28 +122,32 @@ class VitrineBlock extends Model
 
         $normalized = rtrim(strtolower($href), '/');
 
+        if (preg_match('#^/(?:le-laboratoire|about)(?:/([^/?]+))?$#', $normalized, $matches) === 1) {
+            $subPage = $matches[1] ?? null;
+            if (is_string($subPage) && array_key_exists($subPage, static::aboutSubPages())) {
+                return route('vitrine.about.show', ['page' => $subPage]);
+            }
+
+            return route('vitrine.about');
+        }
+
+        if (in_array($normalized, ['#laboratoire', '/laboratoire', 'laboratoire'], true)) {
+            return route('vitrine.about.show', ['page' => static::aboutLaboratoryPageSlug()]);
+        }
+
         $pageRoutes = [
-            'about' => 'vitrine.about',
-            'le-laboratoire' => 'vitrine.about',
-            'laboratory' => 'vitrine.laboratory',
             'academy' => 'vitrine.academy',
             'services' => 'vitrine.services',
             'process' => 'vitrine.process',
             'gallery' => 'vitrine.gallery',
             'faq' => 'vitrine.faq',
+            'recrutement' => 'vitrine.recrutement',
         ];
 
         foreach ($pageRoutes as $slug => $routeName) {
-            if (
-                in_array($normalized, ["#{$slug}", "/{$slug}", $slug], true)
-                || str_ends_with($normalized, "/{$slug}")
-            ) {
+            if (in_array($normalized, ["#{$slug}", "/{$slug}", $slug], true)) {
                 return route($routeName);
             }
-        }
-
-        if (in_array($normalized, ['#laboratoire', '/laboratoire', 'laboratoire'], true)) {
-            return route('vitrine.laboratory');
         }
 
         if ($normalized === '#accueil') {
@@ -394,6 +398,28 @@ class VitrineBlock extends Model
         }
 
         if ($blockKey === 'laboratory') {
+            if (isset($content['media']) && is_array($content['media'])) {
+                $content['media'] = array_map(function (array $item) {
+                    $type = ($item['type'] ?? '') === 'video' ? 'video' : 'image';
+                    $item['type'] = $type;
+                    $item['category'] = static::normalizeLaboratoryCategory($item['category'] ?? null);
+
+                    if (! empty($item['image_url'])) {
+                        $item['image_url'] = static::resolveImageAbsoluteUrl($item['image_url']);
+                    }
+
+                    if (! empty($item['video_url'])) {
+                        $item['video_url'] = static::resolveImageAbsoluteUrl($item['video_url']);
+                    }
+
+                    if (! empty($item['poster_url'])) {
+                        $item['poster_url'] = static::resolveImageAbsoluteUrl($item['poster_url']);
+                    }
+
+                    return $item;
+                }, $content['media']);
+            }
+
             if (isset($content['photos']) && is_array($content['photos'])) {
                 $content['photos'] = array_map(function (array $photo) {
                     if (! empty($photo['image_url'])) {
@@ -404,6 +430,22 @@ class VitrineBlock extends Model
 
                     return $photo;
                 }, $content['photos']);
+            }
+
+            if (isset($content['videos']) && is_array($content['videos'])) {
+                $content['videos'] = array_map(function (array $video) {
+                    if (! empty($video['video_url'])) {
+                        $video['video_url'] = static::resolveImageAbsoluteUrl($video['video_url']);
+                    }
+
+                    if (! empty($video['poster_url'])) {
+                        $video['poster_url'] = static::resolveImageAbsoluteUrl($video['poster_url']);
+                    }
+
+                    $video['category'] = static::normalizeLaboratoryCategory($video['category'] ?? null);
+
+                    return $video;
+                }, $content['videos']);
             }
         }
 
@@ -535,6 +577,50 @@ class VitrineBlock extends Model
     public static function isFaqItemActive(array $item): bool
     {
         return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function recruitmentEmploymentTypes(): array
+    {
+        return ['CDI', 'CDD', 'SIVP', 'Karama'];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function recruitmentGenderOptions(): array
+    {
+        return ['Indifférent', 'Homme', 'Femme'];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function activeRecruitmentItems(array $items): \Illuminate\Support\Collection
+    {
+        return collect($items)
+            ->filter(function (array $item): bool {
+                return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN)
+                    && filled($item['title'] ?? null);
+            })
+            ->map(function (array $item): array {
+                $item['vacancies'] = max(0, (int) ($item['vacancies'] ?? 0));
+                $item['employment_types'] = collect($item['employment_types'] ?? [])
+                    ->map(fn ($type) => trim((string) $type))
+                    ->filter(fn ($type) => in_array($type, static::recruitmentEmploymentTypes(), true))
+                    ->values()
+                    ->all();
+                $gender = trim((string) ($item['gender'] ?? 'Indifférent'));
+                $item['gender'] = in_array($gender, static::recruitmentGenderOptions(), true)
+                    ? $gender
+                    : 'Indifférent';
+
+                return $item;
+            })
+            ->values();
     }
 
     /**
@@ -1020,6 +1106,70 @@ class VitrineBlock extends Model
         return array_key_exists($slug, static::aboutInfoPageDefinitions());
     }
 
+    public static function aboutMediaPageSlug(): string
+    {
+        return 'certifications';
+    }
+
+    public static function aboutMediaPageLabel(): string
+    {
+        return 'Certifications';
+    }
+
+    public static function isAboutMediaPage(string $slug): bool
+    {
+        return $slug === static::aboutMediaPageSlug();
+    }
+
+    public static function aboutLaboratoryPageSlug(): string
+    {
+        return 'gallery';
+    }
+
+    public static function aboutLaboratoryPageLabel(): string
+    {
+        return 'Galerie';
+    }
+
+    public static function isAboutLaboratoryPage(string $slug): bool
+    {
+        return $slug === static::aboutLaboratoryPageSlug();
+    }
+
+    /**
+     * @param  array<string, mixed>  $about
+     * @return array{section_label: string, title: string, description: string, photos: array<int, array<string, mixed>>}
+     */
+    public static function aboutMediaPage(array $about): array
+    {
+        $page = is_array($about['media_page'] ?? null) ? $about['media_page'] : [];
+
+        return [
+            'section_label' => trim((string) ($page['section_label'] ?? static::aboutMediaPageLabel())),
+            'title' => trim((string) ($page['title'] ?? static::aboutMediaPageLabel())),
+            'description' => trim((string) ($page['description'] ?? '')),
+            'photos' => is_array($page['photos'] ?? null) ? $page['photos'] : [],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $about
+     * @return \Illuminate\Support\Collection<int, array{title: string, description: string, image_url: string}>
+     */
+    public static function aboutMediaPagePhotos(array $about): \Illuminate\Support\Collection
+    {
+        $page = static::aboutMediaPage($about);
+
+        return collect($page['photos'])
+            ->map(fn (array $photo): array => [
+                'title' => trim((string) ($photo['title'] ?? '')),
+                'description' => trim((string) ($photo['description'] ?? '')),
+                'image_url' => trim((string) ($photo['image_url'] ?? '')),
+            ])
+            ->filter(fn (array $photo): bool => filled($photo['image_url']))
+            ->values();
+    }
+
     /**
      * @return array<string, array{label: string, route: string}>
      */
@@ -1038,6 +1188,10 @@ class VitrineBlock extends Model
                 'label' => 'Nos principe',
                 'route' => 'vitrine.about.show',
             ],
+            static::aboutLaboratoryPageSlug() => [
+                'label' => static::aboutLaboratoryPageLabel(),
+                'route' => 'vitrine.about.show',
+            ],
         ];
 
         foreach (static::aboutInfoPageDefinitions() as $slug => $label) {
@@ -1046,6 +1200,11 @@ class VitrineBlock extends Model
                 'route' => 'vitrine.about.show',
             ];
         }
+
+        $pages[static::aboutMediaPageSlug()] = [
+            'label' => static::aboutMediaPageLabel(),
+            'route' => 'vitrine.about.show',
+        ];
 
         return $pages;
     }
@@ -1095,15 +1254,69 @@ class VitrineBlock extends Model
      * @param  array<string, mixed>  $laboratory
      * @return \Illuminate\Support\Collection<int, array<string, mixed>>
      */
+    public static function laboratoryMediaItems(array $laboratory): \Illuminate\Support\Collection
+    {
+        $media = $laboratory['media'] ?? null;
+
+        if (! is_array($media) || $media === []) {
+            $media = [];
+
+            foreach ($laboratory['photos'] ?? [] as $photo) {
+                if (! filled($photo['image_url'] ?? null)) {
+                    continue;
+                }
+
+                $media[] = array_merge($photo, ['type' => 'image']);
+            }
+
+            foreach ($laboratory['videos'] ?? [] as $video) {
+                if (! filled($video['video_url'] ?? null)) {
+                    continue;
+                }
+
+                $media[] = array_merge($video, ['type' => 'video']);
+            }
+        }
+
+        return collect($media)
+            ->map(function (array $item): ?array {
+                $type = ($item['type'] ?? '') === 'video' ? 'video' : 'image';
+                $item['type'] = $type;
+                $item['category'] = static::normalizeLaboratoryCategory($item['category'] ?? null);
+
+                if ($type === 'image' && ! filled($item['image_url'] ?? null)) {
+                    return null;
+                }
+
+                if ($type === 'video' && ! filled($item['video_url'] ?? null)) {
+                    return null;
+                }
+
+                return $item;
+            })
+            ->filter()
+            ->values();
+    }
+
+    /**
+     * @param  array<string, mixed>  $laboratory
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
     public static function laboratoryPhotos(array $laboratory): \Illuminate\Support\Collection
     {
-        return collect($laboratory['photos'] ?? [])
-            ->filter(fn (array $photo): bool => filled($photo['image_url'] ?? null))
-            ->map(function (array $photo) {
-                $photo['category'] = static::normalizeLaboratoryCategory($photo['category'] ?? null);
+        return static::laboratoryMediaItems($laboratory)
+            ->filter(fn (array $item): bool => ($item['type'] ?? '') === 'image')
+            ->values();
+    }
 
-                return $photo;
-            })
+    /**
+     * @param  array<string, mixed>  $laboratory
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public static function laboratoryVideos(array $laboratory): \Illuminate\Support\Collection
+    {
+        return static::laboratoryMediaItems($laboratory)
+            ->filter(fn (array $item): bool => ($item['type'] ?? '') === 'video')
             ->values();
     }
 

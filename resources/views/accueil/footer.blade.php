@@ -13,7 +13,7 @@
 <footer>
   <div class="footer-content">
     <div class="footer-brand">
-      <a href="{{ route('vitrine') }}#accueil" class="logo">
+      <a href="{{ route('vitrine') }}" class="logo">
         <img src="{{ $logoSrc }}" alt="{{ $logoAlt }}">
       </a>
       <p>{{ $footer['brand_description'] ?? '' }}</p>

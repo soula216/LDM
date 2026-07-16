@@ -15,7 +15,12 @@
             source_type: @js($logoSourceType),
             preview_url: null,
         },
-        links: @js($c['nav_links'] ?? []),
+        links: @js(collect($c['nav_links'] ?? [])->map(fn ($link) => [
+            'label' => $link['label'] ?? '',
+            'href' => $link['href'] ?? '',
+            'is_active' => filter_var($link['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+        ])->values()->all()),
+        clientSpaceIsActive: @js(filter_var($c['client_space_is_active'] ?? true, FILTER_VALIDATE_BOOLEAN)),
         logoPreview() {
             return this.logo.preview_url || this.logo.image_url || '';
         },
@@ -27,7 +32,7 @@
             }
             this.logo.preview_url = URL.createObjectURL(file);
         }
-     }">
+    }">
 
     <section class="rounded-2xl border border-border bg-card overflow-hidden">
         @component('admin.vitrine.partials.collapsible-header', [
@@ -58,7 +63,7 @@
         @component('admin.vitrine.partials.collapsible-header', [
             'section' => 'nav',
             'title' => 'Navigation & espace client',
-            'subtitle' => 'Liens du menu et bouton de connexion',
+            'subtitle' => 'Liens du menu et bouton de connexion — activez ou désactivez chaque entrée',
             'headerClass' => 'border-b border-border/60',
         ])
             @slot('icon')
@@ -72,26 +77,44 @@
 
         <div x-show="open.nav" x-cloak x-transition.opacity.duration.200ms>
             <div class="p-4 sm:p-6 space-y-6">
-                @include('admin.vitrine.partials.field', [
-                    'label' => 'Libellé Espace client',
-                    'name' => 'content[client_space_label]',
-                    'value' => $c['client_space_label'] ?? '',
-                ])
+                <div class="space-y-3">
+                    @include('admin.vitrine.partials.field', [
+                        'label' => 'Libellé Espace client',
+                        'name' => 'content[client_space_label]',
+                        'value' => $c['client_space_label'] ?? '',
+                    ])
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="hidden" name="content[client_space_is_active]" value="0">
+                        <input type="checkbox" name="content[client_space_is_active]" value="1" x-model="clientSpaceIsActive"
+                               class="rounded border-border text-primary focus:ring-primary/30">
+                        <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Afficher « Espace client » dans le menu</span>
+                    </label>
+                </div>
 
                 <div>
                     <div class="flex items-center justify-between mb-4">
                         <h4 class="text-xs font-bold text-primary uppercase tracking-wider">Liens de navigation</h4>
-                        <button type="button" @click="links.push({label: '', href: ''})"
+                        <button type="button" @click="links.push({label: '', href: '', is_active: true})"
                                 class="text-sm font-medium text-primary hover:text-primary/80 flex items-center gap-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                             Ajouter un lien
                         </button>
                     </div>
                     <template x-for="(link, index) in links" :key="index">
-                        <div class="flex flex-col sm:flex-row gap-3 mb-3 p-4 rounded-xl bg-neutral-50/80 border border-border/60">
-                            <input type="text" :name="'content[nav_links][' + index + '][label]'" x-model="link.label" placeholder="Libellé" class="input-field flex-1">
-                            <input type="text" :name="'content[nav_links][' + index + '][href]'" x-model="link.href" placeholder="#section" class="input-field flex-1">
-                            <button type="button" @click="links.splice(index, 1)" class="px-3 py-2 text-danger hover:bg-danger/10 rounded-lg transition text-sm font-medium">Supprimer</button>
+                        <div class="mb-3 p-4 rounded-xl border transition-colors"
+                             :class="link.is_active ? 'bg-neutral-50/80 border-border/60' : 'bg-amber-50/20 border-amber-200/80'">
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <input type="text" :name="'content[nav_links][' + index + '][label]'" x-model="link.label" placeholder="Libellé" class="input-field flex-1">
+                                <input type="text" :name="'content[nav_links][' + index + '][href]'" x-model="link.href" placeholder="#section ou /page" class="input-field flex-1">
+                                <button type="button" @click="links.splice(index, 1)" class="px-3 py-2 text-danger hover:bg-danger/10 rounded-lg transition text-sm font-medium whitespace-nowrap">Supprimer</button>
+                            </div>
+                            <label class="mt-3 flex items-center gap-3 cursor-pointer group">
+                                <input type="hidden" :name="'content[nav_links][' + index + '][is_active]'" value="0">
+                                <input type="checkbox" :name="'content[nav_links][' + index + '][is_active]'" value="1" x-model="link.is_active"
+                                       class="rounded border-border text-primary focus:ring-primary/30">
+                                <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors"
+                                      x-text="link.is_active ? 'Visible dans le menu' : 'Masqué dans le menu'"></span>
+                            </label>
                         </div>
                     </template>
                 </div>

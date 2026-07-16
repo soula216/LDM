@@ -19,17 +19,18 @@ class VitrineBlockSeeder extends Seeder
                     'logo_source_type' => 'url',
                     'logo_alt' => 'LDM',
                     'nav_links' => [
-                        ['label' => 'Accueil', 'href' => '/'],
-                        ['label' => 'Le Laboratoire', 'href' => '/le-laboratoire'],
-                        ['label' => 'Laboratoire / Équipe', 'href' => '/laboratoire'],
-                        ['label' => 'Services', 'href' => '/services'],
-                        ['label' => 'Process', 'href' => '/process'],
-                        ['label' => 'Galerie', 'href' => '/gallery'],
-                        ['label' => 'LDM Academy', 'href' => '/academy'],
-                        ['label' => 'FAQ', 'href' => '/faq'],
-                        ['label' => 'Contact', 'href' => '#contact'],
+                        ['label' => 'Accueil', 'href' => '/', 'is_active' => true],
+                        ['label' => 'Le Laboratoire', 'href' => '/le-laboratoire', 'is_active' => true],
+                        ['label' => 'Services', 'href' => '/services', 'is_active' => true],
+                        ['label' => 'Process', 'href' => '/process', 'is_active' => true],
+                        ['label' => 'Galerie', 'href' => '/gallery', 'is_active' => true],
+                        ['label' => 'LDM Academy', 'href' => '/academy', 'is_active' => true],
+                        ['label' => 'FAQ', 'href' => '/faq', 'is_active' => true],
+                        ['label' => 'Recrutement', 'href' => '/recrutement', 'is_active' => true],
+                        ['label' => 'Contact', 'href' => '#contact', 'is_active' => true],
                     ],
                     'client_space_label' => 'Espace client',
+                    'client_space_is_active' => true,
                 ],
             ],
             [
@@ -174,17 +175,20 @@ class VitrineBlockSeeder extends Seeder
                     'photos' => [],
                     'videos' => [],
                     'info_pages' => AboutInfoPagesSeeder::infoPages(),
+                    'media_page' => AboutInfoPagesSeeder::mediaPage(),
                 ],
             ],
             [
                 'key' => 'laboratory',
-                'label' => 'Laboratoire / Équipe',
+                'label' => 'Galerie',
                 'sort_order' => 8,
                 'content' => [
-                    'section_label' => 'Laboratoire / Équipe',
+                    'section_label' => 'Galerie',
                     'title' => 'Notre équipe & nos installations',
                     'description' => 'Découvrez les professionnels qui composent LDM, nos espaces de travail et les équipements de pointe qui garantissent la précision de nos prothèses.',
                     'photos' => [],
+                    'videos' => [],
+                    'media' => [],
                 ],
             ],
             [
@@ -246,9 +250,20 @@ class VitrineBlockSeeder extends Seeder
                 ],
             ],
             [
+                'key' => 'recrutement',
+                'label' => 'Recrutement',
+                'sort_order' => 11,
+                'content' => [
+                    'section_label' => 'Recrutement',
+                    'section_title' => 'Rejoindre LDM',
+                    'section_subtitle' => 'Découvrez nos offres d’emploi et rejoignez une équipe passionnée par l’excellence prothétique.',
+                    'items' => RecrutementOffersSeeder::offers(),
+                ],
+            ],
+            [
                 'key' => 'academy',
                 'label' => 'LDM Academy',
-                'sort_order' => 11,
+                'sort_order' => 12,
                 'content' => [
                     'section_label' => 'LDM Academy',
                     'section_title' => 'Ressources pour les praticiens',
@@ -265,7 +280,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'contact',
                 'label' => 'Contact',
-                'sort_order' => 12,
+                'sort_order' => 13,
                 'content' => [
                     'info_is_active' => true,
                     'form_is_active' => true,
@@ -291,7 +306,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'footer',
                 'label' => 'Pied de page',
-                'sort_order' => 13,
+                'sort_order' => 14,
                 'content' => [
                     'logo_url' => 'logo_ldm.png',
                     'logo_source_type' => 'url',
@@ -316,7 +331,7 @@ class VitrineBlockSeeder extends Seeder
                             'title' => 'Entreprise',
                             'links' => [
                                 ['label' => 'Le Laboratoire', 'href' => '/le-laboratoire'],
-                                ['label' => 'Équipe', 'href' => '#'],
+                                ['label' => 'Équipe', 'href' => '/le-laboratoire/gallery'],
                                 ['label' => 'Carrières', 'href' => '#'],
                                 ['label' => 'Actualités', 'href' => '#'],
                             ],

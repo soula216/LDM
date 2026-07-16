@@ -7,7 +7,10 @@
     $subPages = VitrineBlock::aboutSubPages();
     $pageLabel = $subPages[$aboutPage]['label'] ?? 'Le Laboratoire';
     $isInfoPage = VitrineBlock::isAboutInfoPage($aboutPage);
+    $isMediaPage = VitrineBlock::isAboutMediaPage($aboutPage);
     $infoPage = $isInfoPage ? VitrineBlock::aboutInfoPage($about, $aboutPage) : null;
+    $mediaPage = $isMediaPage ? VitrineBlock::aboutMediaPage($about) : null;
+    $mediaPhotos = $isMediaPage ? VitrineBlock::aboutMediaPagePhotos($about) : collect();
 
     $photos = VitrineBlock::aboutPhotos($about);
     $videos = VitrineBlock::aboutVideos($about);
@@ -18,15 +21,27 @@
     $hasBothMediaTypes = $photos->isNotEmpty() && $videos->isNotEmpty();
     $mediaIndex = 0;
 
+    $heroBadge = match (true) {
+        $isMediaPage => $mediaPage['section_label'] ?? 'Certifications',
+        default => $about['section_label'] ?? 'Le Laboratoire',
+    };
+
     $heroTitle = match (true) {
         $aboutPage === 'notre-mission' => $mission['title'] ?? 'Notre mission',
         $aboutPage === 'nos-principe' => $principles['title'] ?? 'Nos principe',
         $isInfoPage => $infoPage['title'] ?? $pageLabel,
+        $isMediaPage => $mediaPage['title'] ?? $pageLabel,
         default => $about['title'] ?? 'Notre laboratoire',
+    };
+
+    $documentTitle = match (true) {
+        $isInfoPage => $infoPage['title'] ?? $pageLabel,
+        $isMediaPage => $mediaPage['title'] ?? $pageLabel,
+        default => $pageLabel,
     };
 @endphp
 
-@section('title', ($infoPage['title'] ?? $pageLabel) . ' | LDM - Digital Max')
+@section('title', $documentTitle . ' | LDM - Digital Max')
 
 @section('header')
   @include('accueil.header')
@@ -39,8 +54,8 @@
     <div class="about-hero__mesh" aria-hidden="true"></div>
     <div class="about-hero__content">
       <div class="about-hero__badge">
-        <i class="fas fa-building" aria-hidden="true"></i>
-        <span>{{ $about['section_label'] ?? 'Le Laboratoire' }}</span>
+        <i class="fas {{ $isMediaPage ? 'fa-images' : 'fa-building' }}" aria-hidden="true"></i>
+        <span>{{ $heroBadge }}</span>
       </div>
       <h1>{{ $heroTitle }}</h1>
       <div class="about-hero__line" aria-hidden="true"></div>
@@ -206,11 +221,18 @@
           'emptyTitle' => 'Contenu à venir',
           'emptyText' => 'Cette page sera bientôt disponible.',
       ])
+
+    @elseif($isMediaPage)
+      @include('accueil.partials.about-media-page', [
+          'about' => $about,
+          'mediaPage' => $mediaPage,
+          'mediaPhotos' => $mediaPhotos,
+      ])
     @endif
   </section>
 </main>
 
-@if($aboutPage === 'qui-sommes-nous')
+@if($aboutPage === 'qui-sommes-nous' || $isMediaPage)
   @include('accueil.partials.about-media-modals')
 
   <script>

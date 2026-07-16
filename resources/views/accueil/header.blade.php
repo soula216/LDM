@@ -3,9 +3,13 @@
 
     $header = $blocks['header'] ?? [];
     $footer = $blocks['footer'] ?? [];
-    $navLinks = $header['nav_links'] ?? [];
+    $navLinks = collect($header['nav_links'] ?? [])
+        ->filter(fn ($link) => filter_var($link['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN))
+        ->values()
+        ->all();
     $socialLinks = $footer['social_links'] ?? [];
     $clientLabel = $header['client_space_label'] ?? 'Espace client';
+    $clientSpaceIsActive = filter_var($header['client_space_is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
     $headerLogoAlt = $header['logo_alt'] ?? 'LDM - Digital Max';
     $headerLogoSrc = VitrineBlock::resolveLogoDisplayUrl($header['logo_url'] ?? null);
     $footerLogoAlt = $footer['logo_alt'] ?? $headerLogoAlt;
@@ -27,7 +31,7 @@
     </div>
   </div>
   <nav id="navbar">
-    <a href="{{ $homeUrl }}#accueil" class="logo">
+    <a href="{{ $homeUrl }}" class="logo">
       <img src="{{ $headerLogoSrc }}" alt="{{ $headerLogoAlt }}" class="logo-img logo-img-header">
       <img src="{{ $footerLogoSrc }}" alt="{{ $footerLogoAlt }}" class="logo-img logo-img-scrolled">
     </a>
@@ -40,12 +44,12 @@
               || preg_match('#/(about)/?$#', $navPath) === 1;
           $isActive = (
               ($isAboutNav && VitrineBlock::isPublicPageActive('about'))
-              || (VitrineBlock::isPublicPageActive('laboratory') && str_contains($navHref, '/laboratoire') && ! str_contains($navHref, '/le-laboratoire'))
               || (VitrineBlock::isPublicPageActive('academy') && str_contains($navHref, '/academy'))
               || (VitrineBlock::isPublicPageActive('services') && str_contains($navHref, '/services'))
               || (VitrineBlock::isPublicPageActive('process') && str_contains($navHref, '/process'))
-              || (VitrineBlock::isPublicPageActive('gallery') && str_contains($navHref, '/gallery'))
+              || (VitrineBlock::isPublicPageActive('gallery') && ($navPath === '/gallery' || $navPath === 'gallery'))
               || (VitrineBlock::isPublicPageActive('faq') && str_contains($navHref, '/faq'))
+              || (VitrineBlock::isPublicPageActive('recrutement') && str_contains($navHref, '/recrutement'))
           );
         @endphp
         @if($isAboutNav)
@@ -78,10 +82,14 @@
           </li>
         @endif
       @endforeach
-      <li class="nav-espace-client-desktop"><a href="{{ route('login') }}">{{ $clientLabel }}</a></li>
+      @if($clientSpaceIsActive)
+        <li class="nav-espace-client-desktop"><a href="{{ route('login') }}">{{ $clientLabel }}</a></li>
+      @endif
     </ul>
     <div class="nav-mobile-right">
-      <a href="{{ route('login') }}" class="nav-espace-client-mobile">{{ $clientLabel }}</a>
+      @if($clientSpaceIsActive)
+        <a href="{{ route('login') }}" class="nav-espace-client-mobile">{{ $clientLabel }}</a>
+      @endif
       <button type="button" class="menu-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Ouvrir le menu" aria-expanded="false">
         <span></span>
         <span></span>

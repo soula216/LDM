@@ -53,24 +53,52 @@
         ];
     }
 
+    $mediaPageData = $c['media_page'] ?? [];
+    $mediaPagePhotos = collect($mediaPageData['photos'] ?? [])->map(function ($photo) {
+        return [
+            'image_url' => filled($photo['image_url'] ?? null) ? VitrineBlock::resolveImageAbsoluteUrl($photo['image_url']) : '',
+            'title' => $photo['title'] ?? '',
+            'description' => $photo['description'] ?? '',
+            'preview_url' => null,
+        ];
+    })->values()->all();
+
+    $mediaPageSlug = VitrineBlock::aboutMediaPageSlug();
+    $mediaPageLabel = VitrineBlock::aboutMediaPageLabel();
+    $laboratoryPageSlug = VitrineBlock::aboutLaboratoryPageSlug();
+    $laboratoryPageLabel = VitrineBlock::aboutLaboratoryPageLabel();
+
     $subMenus = [
         'qui-sommes-nous' => 'Qui sommes-nous',
         'notre-mission' => 'Notre mission',
         'nos-principe' => 'Nos principe',
+        $laboratoryPageSlug => $laboratoryPageLabel,
         ...collect($infoPageDefinitions)->all(),
+        $mediaPageSlug => $mediaPageLabel,
     ];
+
+    $aboutBlock = $aboutBlock ?? null;
+    $laboratoryBlock = $laboratoryBlock ?? null;
+    $activeAboutSub = $activeAboutSub ?? 'qui-sommes-nous';
+    if (! array_key_exists($activeAboutSub, $subMenus)) {
+        $activeAboutSub = 'qui-sommes-nous';
+    }
 @endphp
 
 <div class="vitrine-tab-form about-admin-layout"
      x-data="{
-        activeSub: 'qui-sommes-nous',
-        open: { content: true, photos: true, videos: true },
+        activeSub: @js($activeAboutSub),
+        open: { content: true, photos: true, videos: true, mediaPhotos: true },
         photos: @js($photos),
         videos: @js($videos),
         infoPages: @js($infoPages),
+        mediaPagePhotos: @js($mediaPagePhotos),
         htmlEditors: {},
         addPhoto() {
             this.photos.push({ image_url: '', source_type: 'url', title: '', caption: '', preview_url: null });
+        },
+        addMediaPagePhoto() {
+            this.mediaPagePhotos.push({ image_url: '', title: '', description: '', preview_url: null });
         },
         addVideo() {
             this.videos.push({
@@ -186,6 +214,17 @@
     </aside>
 
     <div class="about-admin-panels min-w-0 space-y-6 sm:space-y-8">
+        <form action="{{ route('admin.vitrine.update', $aboutBlock) }}"
+              method="POST"
+              enctype="multipart/form-data"
+              class="space-y-6 sm:space-y-8"
+              x-show="activeSub !== '{{ $laboratoryPageSlug }}'"
+              x-cloak>
+            @csrf
+            @method('PATCH')
+            <input type="hidden" name="return_tab" value="about">
+            <input type="hidden" name="return_sub" :value="activeSub">
+
         {{-- Qui sommes-nous --}}
         <div x-show="activeSub === 'qui-sommes-nous'" x-cloak class="space-y-6 sm:space-y-8">
             <section class="rounded-2xl border border-border bg-card overflow-hidden">
@@ -500,6 +539,156 @@
                 </section>
             </div>
         @endforeach
+
+        {{-- Certifications --}}
+        <div x-show="activeSub === '{{ $mediaPageSlug }}'" x-cloak class="space-y-6 sm:space-y-8">
+            <section class="rounded-2xl border border-border bg-card overflow-hidden">
+                <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-border/60 bg-gradient-to-r from-violet-500/5 to-transparent">
+                    <h4 class="text-sm sm:text-base font-bold text-primary">Contenu principal</h4>
+                    <p class="text-xs text-secondary mt-0.5">Badge, titre et description de la page {{ $mediaPageLabel }}</p>
+                </div>
+                <div class="p-4 sm:p-6 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Badge (hero)</label>
+                            <input type="text"
+                                   name="content[media_page][section_label]"
+                                   value="{{ $mediaPageData['section_label'] ?? $mediaPageLabel }}"
+                                   class="input-field w-full text-sm"
+                                   placeholder="{{ $mediaPageLabel }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>
+                            <input type="text"
+                                   name="content[media_page][title]"
+                                   value="{{ $mediaPageData['title'] ?? $mediaPageLabel }}"
+                                   class="input-field w-full text-sm"
+                                   placeholder="{{ $mediaPageLabel }}">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Description</label>
+                        <textarea name="content[media_page][description]"
+                                  rows="5"
+                                  class="input-field w-full text-sm resize-y min-h-[120px]"
+                                  placeholder="Présentez vos certifications et accréditations…">{{ $mediaPageData['description'] ?? '' }}</textarea>
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-2xl border border-border bg-gradient-to-b from-neutral-50/50 to-card overflow-hidden">
+                @component('admin.vitrine.partials.collapsible-header', [
+                    'section' => 'mediaPhotos',
+                    'title' => 'Photos',
+                    'subtitle' => 'Galerie photos de la page (upload uniquement)',
+                    'headerClass' => 'border-b border-border/60 bg-card/80',
+                ])
+                    @slot('icon')
+                        <div class="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-sky-500/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                    @endslot
+                @endcomponent
+
+                <div x-show="open.mediaPhotos" x-cloak x-transition.opacity.duration.200ms>
+                    <div class="p-4 sm:p-6">
+                        <template x-if="mediaPagePhotos.length === 0">
+                            <div class="text-center py-8 px-4 rounded-xl border-2 border-dashed border-border bg-neutral-50/50 mb-4">
+                                <p class="text-sm text-secondary font-medium">Aucune photo — ajoutez des images pour illustrer la page</p>
+                            </div>
+                        </template>
+
+                        <div class="space-y-4" x-show="mediaPagePhotos.length > 0">
+                            <template x-for="(photo, index) in mediaPagePhotos" :key="'about-media-photo-' + index">
+                                <div class="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+                                    <div class="flex items-center justify-between px-4 py-3 bg-neutral-50/80 border-b border-border/60">
+                                        <span class="text-xs font-bold text-primary uppercase tracking-wide" x-text="photo.title || ('Photo ' + (index + 1))"></span>
+                                        <button type="button" @click="mediaPagePhotos.splice(index, 1)" class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger hover:bg-danger/10" title="Supprimer">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </div>
+                                    <div class="p-4 sm:p-5 space-y-4">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre de la photo</label>
+                                            <input type="text" :name="'content[media_page][photos][' + index + '][title]'" x-model="photo.title" class="input-field w-full text-sm" placeholder="Ex. Atelier CFAO">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Description</label>
+                                            <textarea :name="'content[media_page][photos][' + index + '][description]'" x-model="photo.description" rows="3" class="input-field w-full text-sm resize-y min-h-[80px]" placeholder="Décrivez cette photo…"></textarea>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Image (upload)</label>
+                                            <input type="hidden" :name="'content[media_page][photos][' + index + '][image_url]'" :value="photo.image_url">
+                                            <label class="flex flex-col items-center justify-center w-full min-h-[88px] px-4 py-4 border-2 border-dashed border-border rounded-xl bg-neutral-50/50 hover:border-primary/40 cursor-pointer">
+                                                <input type="file" :name="'about_media_photo_uploads[' + index + ']'" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif" class="sr-only" @change="onPhotoFileChange($event, photo)">
+                                                <span class="text-sm font-medium text-primary">Choisir une image</span>
+                                                <span class="text-xs text-secondary mt-1">JPEG, PNG, WebP, GIF — max 10 Mo</span>
+                                            </label>
+                                        </div>
+                                        <div x-show="photoPreview(photo)" class="max-w-xs">
+                                            <img :src="photoPreview(photo)" alt="" class="w-full rounded-xl border border-border object-cover aspect-[4/3]">
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-border/60">
+                            @include('admin.vitrine.partials.btn-add', ['label' => 'Ajouter une photo', 'click' => 'addMediaPagePhoto()'])
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+            <div class="pt-6 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                <label class="inline-flex items-center gap-3 cursor-pointer group">
+                    <input type="hidden" name="is_active" value="0">
+                    <input type="checkbox" name="is_active" value="1" {{ ($aboutBlock->is_active ?? true) ? 'checked' : '' }}
+                           class="w-5 h-5 rounded-md border-border text-primary focus:ring-primary/30 transition">
+                    <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Afficher ce bloc sur le site</span>
+                </label>
+                <button type="submit" class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Enregistrer {{ $aboutBlock->label ?? 'Le Laboratoire' }}
+                </button>
+            </div>
+        </form>
+
+        @if($laboratoryBlock)
+            <form action="{{ route('admin.vitrine.update', $laboratoryBlock) }}"
+                  method="POST"
+                  enctype="multipart/form-data"
+                  class="space-y-6 sm:space-y-8"
+                  x-show="activeSub === '{{ $laboratoryPageSlug }}'"
+                  x-cloak>
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="return_tab" value="about">
+                <input type="hidden" name="return_sub" value="{{ $laboratoryPageSlug }}">
+
+                @include('admin.vitrine.partials.forms.laboratory', ['content' => $laboratoryBlock->content ?? []])
+
+                <div class="pt-6 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                    <label class="inline-flex items-center gap-3 cursor-pointer group">
+                        <input type="hidden" name="is_active" value="0">
+                        <input type="checkbox" name="is_active" value="1" {{ $laboratoryBlock->is_active ? 'checked' : '' }}
+                               class="w-5 h-5 rounded-md border-border text-primary focus:ring-primary/30 transition">
+                        <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Afficher cette page sur le site</span>
+                    </label>
+                    <button type="submit" class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Enregistrer {{ $laboratoryPageLabel }}
+                    </button>
+                </div>
+            </form>
+        @endif
     </div>
 </div>
 

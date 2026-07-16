@@ -119,6 +119,10 @@ class VitrineController extends Controller
             throw new NotFoundHttpException();
         }
 
+        if (VitrineBlock::isAboutLaboratoryPage($page)) {
+            return $this->laboratoryPage();
+        }
+
         return $this->aboutPage($page);
     }
 
@@ -138,23 +142,30 @@ class VitrineController extends Controller
                 'sections_lead' => 'Découvrez les piliers qui structurent notre laboratoire et notre relation avec les praticiens.',
                 'sections' => [],
                 'info_pages' => [],
+                'media_page' => [
+                    'section_label' => 'Certifications',
+                    'title' => 'Certifications',
+                    'description' => '',
+                    'photos' => [],
+                ],
                 'photos' => [],
                 'videos' => [],
             ],
         ]);
     }
 
-    public function laboratory(): View
+    private function laboratoryPage(): View
     {
         $blocks = $this->loadBlocks();
 
         return view('accueil.laboratory', [
             'blocks' => $blocks,
             'laboratory' => $blocks['laboratory'] ?? [
-                'section_label' => 'Laboratoire / Équipe',
+                'section_label' => 'Galerie',
                 'title' => 'Notre équipe & nos installations',
                 'description' => '',
                 'photos' => [],
+                'videos' => [],
             ],
         ]);
     }
@@ -168,6 +179,21 @@ class VitrineController extends Controller
             'faq' => $blocks['faq'] ?? [
                 'section_label' => 'FAQ',
                 'section_title' => 'Foire Aux Questions',
+                'section_subtitle' => '',
+                'items' => [],
+            ],
+        ]);
+    }
+
+    public function recrutement(): View
+    {
+        $blocks = $this->loadBlocks();
+
+        return view('accueil.recrutement', [
+            'blocks' => $blocks,
+            'recrutement' => $blocks['recrutement'] ?? [
+                'section_label' => 'Recrutement',
+                'section_title' => 'Rejoindre LDM',
                 'section_subtitle' => '',
                 'items' => [],
             ],
@@ -282,11 +308,12 @@ class VitrineController extends Controller
                 'process' => ['section_title' => 'Process', 'steps' => []],
                 'gallery' => ['section_title' => 'Galerie', 'items' => []],
                 'about' => ['title' => 'Le Laboratoire', 'description' => '', 'photos' => [], 'videos' => []],
-                'laboratory' => ['title' => 'Laboratoire / Équipe', 'description' => '', 'photos' => []],
+                'laboratory' => ['title' => 'Galerie', 'section_label' => 'Galerie', 'description' => '', 'photos' => [], 'videos' => []],
                 'features' => ['title_before' => 'Pourquoi', 'title_highlight' => 'LDM', 'list' => [], 'card' => []],
                 'partners' => ['section_title' => 'Nos Partenaires', 'items' => []],
                 'academy' => ['section_title' => 'LDM Academy', 'documents' => []],
                 'faq' => ['section_title' => 'Foire Aux Questions', 'items' => []],
+                'recrutement' => ['section_title' => 'Rejoindre LDM', 'items' => []],
                 'contact' => ['title' => 'Contact', 'items' => []],
                 'footer' => ['brand_description' => '', 'social_links' => [], 'columns' => [], 'copyright' => 'LDM', 'legal_link' => ['label' => 'Mentions légales', 'href' => '#']],
             ];
