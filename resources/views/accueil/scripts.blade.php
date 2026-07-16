@@ -63,6 +63,102 @@
     });
   });
 
+  // Sur mobile / écran réduit : #contact → formulaire (#contact-form)
+  // Couvre navbar "Contact", bouton hero "Envoyer vos STL", etc.
+  const CONTACT_MOBILE_BREAKPOINT = 1100;
+
+  function isReducedViewport() {
+    return window.innerWidth <= CONTACT_MOBILE_BREAKPOINT;
+  }
+
+  function contactHashForViewport() {
+    return isReducedViewport() ? '#contact-form' : '#contact';
+  }
+
+  function isContactHash(hash) {
+    return hash === '#contact' || hash === '#contact-form';
+  }
+
+  function resolveContactHref(href) {
+    try {
+      const url = new URL(href, window.location.origin);
+      if (!isContactHash(url.hash)) {
+        return null;
+      }
+
+      url.hash = contactHashForViewport();
+      return url.pathname + url.search + url.hash;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function syncContactLinks() {
+    document.querySelectorAll('a[href*="#contact"]').forEach((link) => {
+      const href = link.getAttribute('href');
+      if (!href) return;
+
+      const nextHref = resolveContactHref(href);
+      if (nextHref) {
+        link.setAttribute('href', nextHref);
+      }
+    });
+  }
+
+  function scrollToContactTargetFromHash() {
+    if (!isContactHash(window.location.hash)) return;
+
+    const preferredId = isReducedViewport() ? 'contact-form' : 'contact';
+    const target = document.getElementById(preferredId)
+      || document.getElementById('contact-form')
+      || document.getElementById('contact');
+
+    if (!target) return;
+
+    const desiredHash = '#' + (target.id || preferredId);
+    if (window.location.hash !== desiredHash) {
+      history.replaceState(null, '', desiredHash);
+    }
+
+    requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  syncContactLinks();
+  window.addEventListener('resize', syncContactLinks);
+  window.addEventListener('load', scrollToContactTargetFromHash);
+  window.addEventListener('hashchange', scrollToContactTargetFromHash);
+
+  document.querySelectorAll('a[href*="#contact"]').forEach((link) => {
+    link.addEventListener('click', (event) => {
+      const href = link.getAttribute('href') || '';
+      const resolved = resolveContactHref(href);
+      if (!resolved) return;
+
+      const url = new URL(resolved, window.location.origin);
+      const samePath = url.pathname === window.location.pathname;
+
+      if (!samePath) {
+        link.setAttribute('href', resolved);
+        return;
+      }
+
+      const target = document.querySelector(url.hash);
+      if (!target) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      if (isReducedViewport()) {
+        closeMenu();
+      }
+
+      history.pushState(null, '', url.hash);
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
   document.querySelectorAll('[data-nav-dropdown]').forEach((item) => {
     const toggle = item.querySelector('[data-nav-dropdown-toggle]');
     if (!toggle) return;
@@ -121,11 +217,19 @@
   // Smooth scroll for anchor links
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
-      e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      let hash = this.getAttribute('href');
+      if (!hash || hash === '#') return;
+
+      if (isContactHash(hash)) {
+        hash = contactHashForViewport();
       }
+
+      const target = document.querySelector(hash);
+      if (!target) return;
+
+      e.preventDefault();
+      history.pushState(null, '', hash);
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
 

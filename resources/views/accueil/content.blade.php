@@ -172,9 +172,6 @@
       @if(filled($partners['section_subtitle'] ?? null))
         <p class="partners-showcase__subtitle">{{ $partners['section_subtitle'] }}</p>
       @endif
-      <div class="partners-showcase__meta">
-        <span class="partners-showcase__pill">{{ $partnerItems->count() }} partenaire{{ $partnerItems->count() > 1 ? 's' : '' }} de référence</span>
-      </div>
     </div>
 
     <div class="partners-showcase reveal" data-partners-carousel>
@@ -281,7 +278,7 @@
     @endif
 
     @if($showContactForm)
-    <div class="contact-form-wrapper contact-glass">
+    <div id="contact-form" class="contact-form-wrapper contact-glass">
       <div class="contact-form-header">
         <div class="contact-form-title">{{ $contact['form_title'] ?? '' }}</div>
         <p class="contact-form-subtitle">{{ $contact['form_subtitle'] ?? 'Réponse sous 24 h ouvrées' }}</p>

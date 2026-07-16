@@ -1259,22 +1259,6 @@
       margin: 0 auto;
     }
 
-    .partners-showcase__meta {
-      margin-top: 1.35rem;
-    }
-
-    .partners-showcase__pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.45rem 0.95rem;
-      border-radius: 999px;
-      background: linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(37, 99, 235, 0.08) 100%);
-      border: 1px solid rgba(14, 165, 233, 0.18);
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: #0369a1;
-    }
-
     .partners-showcase {
       position: relative;
       padding: 2rem 1.5rem 1.35rem;
@@ -6247,6 +6231,7 @@
 
     .contact-form-wrapper {
       padding: 2.25rem 2.35rem;
+      scroll-margin-top: calc(var(--site-header-offset) + 1rem);
     }
 
     .contact-form-header {

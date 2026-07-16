@@ -5,6 +5,17 @@
     'flagAlt' => 'Drapeau de la Tunisie',
 ])
 
+@php
+    $links = collect($links)
+        ->filter(function ($social) {
+            $url = trim((string) ($social['url'] ?? ''));
+
+            return $url !== '' && $url !== '#';
+        })
+        ->values()
+        ->all();
+@endphp
+
 @if(count($links) > 0 || filled($flagSrc))
 <div @class(['social-links', $modifier])>
   @if(filled($flagSrc))
@@ -16,6 +27,7 @@
     @php
       $socialLabel = $social['label'] ?? 'Réseau social';
       $iconClass = trim((string) ($social['icon'] ?? ''));
+      $socialUrl = trim((string) ($social['url'] ?? ''));
 
       if ($iconClass === '') {
           $labelKey = strtolower($socialLabel);
@@ -30,7 +42,7 @@
           };
       }
     @endphp
-    <a href="{{ $social['url'] ?? '#' }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $socialLabel }}">
+    <a href="{{ $socialUrl }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $socialLabel }}">
       <i class="{{ $iconClass }}" aria-hidden="true"></i>
     </a>
   @endforeach
