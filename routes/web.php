@@ -54,6 +54,7 @@ Route::get('/academy', [VitrineController::class, 'academy'])->name('vitrine.aca
 Route::get('/academy/documents', [VitrineController::class, 'academyDocuments'])->name('vitrine.academy.documents');
 Route::get('/faq', [VitrineController::class, 'faq'])->name('vitrine.faq');
 Route::get('/recrutement', [VitrineController::class, 'recrutement'])->name('vitrine.recrutement');
+Route::get('/mentions-legales', [VitrineController::class, 'mentionsLegales'])->name('vitrine.mentions-legales');
 Route::get('/dashboard', [DashboardController::class, 'userDashboard'])
     ->middleware('auth')
     ->name('dashboard');

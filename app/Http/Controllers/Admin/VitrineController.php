@@ -111,6 +111,10 @@ class VitrineController extends Controller
             $content = $this->processRecruitmentItems($content, $existingContent);
         }
 
+        if ($vitrineBlock->key === 'mentions-legales') {
+            $content = $this->processMentionsLegalesContent($content);
+        }
+
         if ($vitrineBlock->key === 'contact') {
             $content = $this->processContactItems($content);
         }
@@ -1386,6 +1390,15 @@ class VitrineController extends Controller
         $content['items'] = array_values($processed);
 
         return $content;
+    }
+
+    private function processMentionsLegalesContent(array $content): array
+    {
+        return [
+            'section_label' => trim((string) ($content['section_label'] ?? 'Mentions légales')),
+            'section_title' => trim((string) ($content['section_title'] ?? 'Mentions légales')),
+            'content_html' => $this->normalizeOptionalHtml($content['content_html'] ?? ''),
+        ];
     }
 
     private function processHeaderNavLinks(array $content): array

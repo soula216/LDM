@@ -142,6 +142,7 @@ class VitrineBlock extends Model
             'gallery' => 'vitrine.gallery',
             'faq' => 'vitrine.faq',
             'recrutement' => 'vitrine.recrutement',
+            'mentions-legales' => 'vitrine.mentions-legales',
         ];
 
         foreach ($pageRoutes as $slug => $routeName) {

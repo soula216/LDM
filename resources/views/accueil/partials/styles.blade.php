@@ -1492,7 +1492,8 @@
     .about-hero,
     .laboratory-hero,
     .academy-hero,
-    .faq-hero {
+    .faq-hero,
+    .legal-hero {
       position: relative;
       min-height: 48vh;
       display: flex;
@@ -5613,6 +5614,111 @@
       .job-apply-modal__shell {
         padding: 1.5rem 1.15rem 1.25rem;
       }
+    }
+
+    /* Mentions légales */
+    .legal-page {
+      min-height: 100vh;
+    }
+
+    .legal-hero__bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 14% 20%, rgba(100, 116, 139, 0.28) 0%, transparent 42%),
+        radial-gradient(circle at 86% 24%, rgba(14, 165, 233, 0.22) 0%, transparent 40%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.97) 0%, rgba(30, 41, 59, 0.92) 55%, rgba(15, 23, 42, 0.98) 100%);
+      z-index: 0;
+    }
+
+    .legal-hero__content {
+      position: relative;
+      z-index: 1;
+      max-width: 780px;
+      color: #fff;
+    }
+
+    .legal-hero__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+
+    .legal-hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin: 0;
+      color: #f8fafc;
+    }
+
+    .legal-body {
+      position: relative;
+      z-index: 1;
+      padding: 0 5% 5rem;
+      margin-top: -1.5rem;
+    }
+
+    .legal-article {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .legal-article__card {
+      background: #fff;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 1.5rem;
+      padding: clamp(1.5rem, 4vw, 2.5rem);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .legal-article__content.prose-vitrine > :first-child {
+      margin-top: 0;
+    }
+
+    .legal-empty {
+      max-width: 520px;
+      margin: 0 auto;
+      text-align: center;
+      padding: 3rem 1.75rem;
+      border-radius: 24px;
+      background: #fff;
+      border: 1px solid var(--border);
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+      color: var(--text-muted);
+    }
+
+    .legal-empty__icon {
+      width: 3.5rem;
+      height: 3.5rem;
+      margin: 0 auto 1rem;
+      display: grid;
+      place-items: center;
+      border-radius: 1rem;
+      background: rgba(14, 165, 233, 0.1);
+      color: #0284c7;
+      font-size: 1.35rem;
+    }
+
+    .legal-empty h2 {
+      margin: 0 0 0.5rem;
+      color: var(--text);
+      font-size: 1.35rem;
+    }
+
+    .legal-empty p {
+      margin: 0;
+      line-height: 1.6;
     }
 
     /* FAQ Page */

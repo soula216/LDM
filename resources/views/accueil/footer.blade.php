@@ -5,9 +5,13 @@
     $socialLinks = $footer['social_links'] ?? [];
     $columns = $footer['columns'] ?? [];
     $copyright = $footer['copyright'] ?? 'LDM. Tous droits réservés.';
-    $legalLink = $footer['legal_link'] ?? ['label' => 'Mentions légales', 'href' => '#'];
+    $legalLink = $footer['legal_link'] ?? ['label' => 'Mentions légales', 'href' => '/mentions-legales'];
     $logoAlt = $footer['logo_alt'] ?? 'LDM - Digital Max';
     $logoSrc = VitrineBlock::resolveLogoDisplayUrl($footer['logo_url'] ?? null);
+    $legalHref = trim((string) ($legalLink['href'] ?? ''));
+    if ($legalHref === '' || $legalHref === '#') {
+        $legalHref = '/mentions-legales';
+    }
 @endphp
 {{-- Footer --}}
 <footer>
@@ -43,6 +47,6 @@
     </div>
   </div>
   <div class="footer-bottom">
-    <p>© {{ date('Y') }} {{ $copyright }} | <a href="{{ VitrineBlock::resolvePublicHref($legalLink['href'] ?? '#') }}" style="color: var(--primary);">{{ $legalLink['label'] ?? 'Mentions légales' }}</a></p>
+    <p>© {{ date('Y') }} {{ $copyright }} | <a href="{{ VitrineBlock::resolvePublicHref($legalHref) }}" style="color: var(--primary);">{{ $legalLink['label'] ?? 'Mentions légales' }}</a></p>
   </div>
 </footer>

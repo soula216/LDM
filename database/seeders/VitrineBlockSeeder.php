@@ -346,7 +346,17 @@ class VitrineBlockSeeder extends Seeder
                         ],
                     ],
                     'copyright' => 'LDM. Tous droits réservés.',
-                    'legal_link' => ['label' => 'Mentions légales', 'href' => '#'],
+                    'legal_link' => ['label' => 'Mentions légales', 'href' => '/mentions-legales'],
+                ],
+            ],
+            [
+                'key' => 'mentions-legales',
+                'label' => 'Mentions légales',
+                'sort_order' => 15,
+                'content' => [
+                    'section_label' => 'Mentions légales',
+                    'section_title' => 'Mentions légales',
+                    'content_html' => '<p>Les présentes mentions légales régissent l’utilisation du site LDM.</p><h2>Éditeur du site</h2><p>LDM – Laboratoire de prothèse dentaire.</p><h2>Hébergement</h2><p>Les informations d’hébergement seront précisées ici.</p><h2>Propriété intellectuelle</h2><p>L’ensemble des contenus présents sur ce site est protégé par le droit de la propriété intellectuelle.</p>',
                 ],
             ],
         ];

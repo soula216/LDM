@@ -200,6 +200,20 @@ class VitrineController extends Controller
         ]);
     }
 
+    public function mentionsLegales(): View
+    {
+        $blocks = $this->loadBlocks();
+
+        return view('accueil.mentions-legales', [
+            'blocks' => $blocks,
+            'mentionsLegales' => $blocks['mentions-legales'] ?? [
+                'section_label' => 'Mentions légales',
+                'section_title' => 'Mentions légales',
+                'content_html' => '',
+            ],
+        ]);
+    }
+
     public function academy(): View
     {
         $blocks = $this->loadBlocks();
@@ -315,7 +329,8 @@ class VitrineController extends Controller
                 'faq' => ['section_title' => 'Foire Aux Questions', 'items' => []],
                 'recrutement' => ['section_title' => 'Rejoindre LDM', 'items' => []],
                 'contact' => ['title' => 'Contact', 'items' => []],
-                'footer' => ['brand_description' => '', 'social_links' => [], 'columns' => [], 'copyright' => 'LDM', 'legal_link' => ['label' => 'Mentions légales', 'href' => '#']],
+                'footer' => ['brand_description' => '', 'social_links' => [], 'columns' => [], 'copyright' => 'LDM', 'legal_link' => ['label' => 'Mentions légales', 'href' => '/mentions-legales']],
+                'mentions-legales' => ['section_label' => 'Mentions légales', 'section_title' => 'Mentions légales', 'content_html' => ''],
             ];
         }
 
