@@ -124,6 +124,12 @@ class VitrineBlock extends Model
 
         if (preg_match('#^/(?:le-laboratoire|about)(?:/([^/?]+))?$#', $normalized, $matches) === 1) {
             $subPage = $matches[1] ?? null;
+
+            // Ancien slug Galerie sous Le Laboratoire
+            if ($subPage === 'gallery') {
+                $subPage = static::aboutLaboratoryPageSlug();
+            }
+
             if (is_string($subPage) && array_key_exists($subPage, static::aboutSubPages())) {
                 return route('vitrine.about.show', ['page' => $subPage]);
             }
@@ -135,10 +141,13 @@ class VitrineBlock extends Model
             return route('vitrine.about.show', ['page' => static::aboutLaboratoryPageSlug()]);
         }
 
+        if (in_array($normalized, ['#process', '/process', 'process'], true)) {
+            return route('vitrine.about.show', ['page' => static::aboutProcessPageSlug()]);
+        }
+
         $pageRoutes = [
             'academy' => 'vitrine.academy',
             'services' => 'vitrine.services',
-            'process' => 'vitrine.process',
             'gallery' => 'vitrine.gallery',
             'faq' => 'vitrine.faq',
             'recrutement' => 'vitrine.recrutement',
@@ -1124,17 +1133,33 @@ class VitrineBlock extends Model
 
     public static function aboutLaboratoryPageSlug(): string
     {
-        return 'gallery';
+        return 'galerie-equipe-equipement';
     }
 
     public static function aboutLaboratoryPageLabel(): string
     {
-        return 'Galerie';
+        return 'Galerie équipe / équipement';
     }
 
     public static function isAboutLaboratoryPage(string $slug): bool
     {
-        return $slug === static::aboutLaboratoryPageSlug();
+        return $slug === static::aboutLaboratoryPageSlug()
+            || $slug === 'gallery'; // ancien slug (redirections)
+    }
+
+    public static function aboutProcessPageSlug(): string
+    {
+        return 'process-de-travail';
+    }
+
+    public static function aboutProcessPageLabel(): string
+    {
+        return 'Process de travail';
+    }
+
+    public static function isAboutProcessPage(string $slug): bool
+    {
+        return $slug === static::aboutProcessPageSlug();
     }
 
     /**
@@ -1202,12 +1227,48 @@ class VitrineBlock extends Model
             ];
         }
 
+        $pages[static::aboutProcessPageSlug()] = [
+            'label' => static::aboutProcessPageLabel(),
+            'route' => 'vitrine.about.show',
+        ];
+
         $pages[static::aboutMediaPageSlug()] = [
             'label' => static::aboutMediaPageLabel(),
             'route' => 'vitrine.about.show',
         ];
 
         return $pages;
+    }
+
+    /**
+     * Retourne les sous-pages du Laboratoire selon l'ordre configuré dans l'admin.
+     *
+     * @param  array<string, mixed>  $about
+     * @return array<string, array{label: string, route: string}>
+     */
+    public static function orderedAboutSubPages(array $about = []): array
+    {
+        $pages = static::aboutSubPages();
+        $configuredOrder = is_array($about['subpage_order'] ?? null)
+            ? $about['subpage_order']
+            : [];
+        $ordered = [];
+
+        foreach ($configuredOrder as $slug) {
+            $slug = trim((string) $slug);
+
+            if (array_key_exists($slug, $pages) && ! array_key_exists($slug, $ordered)) {
+                $ordered[$slug] = $pages[$slug];
+            }
+        }
+
+        foreach ($pages as $slug => $page) {
+            if (! array_key_exists($slug, $ordered)) {
+                $ordered[$slug] = $page;
+            }
+        }
+
+        return $ordered;
     }
 
     /**

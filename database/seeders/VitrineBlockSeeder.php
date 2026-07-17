@@ -22,7 +22,6 @@ class VitrineBlockSeeder extends Seeder
                         ['label' => 'Accueil', 'href' => '/', 'is_active' => true],
                         ['label' => 'Le Laboratoire', 'href' => '/le-laboratoire', 'is_active' => true],
                         ['label' => 'Services', 'href' => '/services', 'is_active' => true],
-                        ['label' => 'Process', 'href' => '/process', 'is_active' => true],
                         ['label' => 'Galerie', 'href' => '/gallery', 'is_active' => true],
                         ['label' => 'LDM Academy', 'href' => '/academy', 'is_active' => true],
                         ['label' => 'FAQ', 'href' => '/faq', 'is_active' => true],
@@ -110,7 +109,7 @@ class VitrineBlockSeeder extends Seeder
             ],
             [
                 'key' => 'process',
-                'label' => 'Processus',
+                'label' => 'Process de travail',
                 'sort_order' => 4,
                 'content' => [
                     'section_label' => 'Notre Process',
@@ -172,6 +171,19 @@ class VitrineBlockSeeder extends Seeder
                     'section_label' => 'Le Laboratoire',
                     'title' => 'Notre laboratoire, notre engagement',
                     'description' => 'Depuis plus de 15 ans, LDM accompagne les chirurgiens-dentistes avec des prothèses de précision, une expertise technique reconnue et un service client réactif. Découvrez notre univers, notre équipe et notre savoir-faire à travers images et vidéos.',
+                    'subpage_order' => [
+                        'qui-sommes-nous',
+                        'notre-mission',
+                        'nos-principe',
+                        'galerie-equipe-equipement',
+                        'conditions-de-service',
+                        'conditions-de-paiement',
+                        'garantie',
+                        'delais-de-fabrication',
+                        'processus-de-qualite',
+                        'process-de-travail',
+                        'certifications',
+                    ],
                     'photos' => [],
                     'videos' => [],
                     'info_pages' => AboutInfoPagesSeeder::infoPages(),
@@ -180,10 +192,10 @@ class VitrineBlockSeeder extends Seeder
             ],
             [
                 'key' => 'laboratory',
-                'label' => 'Galerie',
+                'label' => 'Galerie équipe / équipement',
                 'sort_order' => 8,
                 'content' => [
-                    'section_label' => 'Galerie',
+                    'section_label' => 'Galerie équipe / équipement',
                     'title' => 'Notre équipe & nos installations',
                     'description' => 'Découvrez les professionnels qui composent LDM, nos espaces de travail et les équipements de pointe qui garantissent la précision de nos prothèses.',
                     'photos' => [],
@@ -331,7 +343,7 @@ class VitrineBlockSeeder extends Seeder
                             'title' => 'Entreprise',
                             'links' => [
                                 ['label' => 'Le Laboratoire', 'href' => '/le-laboratoire'],
-                                ['label' => 'Équipe', 'href' => '/le-laboratoire/gallery'],
+                                ['label' => 'Équipe', 'href' => '/le-laboratoire/galerie-equipe-equipement'],
                                 ['label' => 'Carrières', 'href' => '#'],
                                 ['label' => 'Actualités', 'href' => '#'],
                             ],

@@ -115,7 +115,7 @@
         @component('admin.vitrine.partials.collapsible-header', [
             'section' => 'content',
             'title' => 'Contenu principal',
-            'subtitle' => 'Titre et description de la page Galerie',
+            'subtitle' => 'Titre et description de la page Galerie équipe / équipement',
             'headerClass' => 'border-b border-border/60 bg-gradient-to-r from-emerald-500/5 to-transparent',
         ])
             @slot('icon')
@@ -132,7 +132,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Badge (hero)</label>
-                        <input type="text" name="content[section_label]" value="{{ $c['section_label'] ?? 'Galerie' }}" class="input-field w-full text-sm" placeholder="Galerie">
+                        <input type="text" name="content[section_label]" value="{{ $c['section_label'] ?? 'Galerie équipe / équipement' }}" class="input-field w-full text-sm" placeholder="Galerie équipe / équipement">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>

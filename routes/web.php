@@ -42,14 +42,15 @@ Route::middleware(['guest', 'throttle:6,1'])->group(function () {
 });
 Route::get('/services', [VitrineController::class, 'services'])->name('vitrine.services');
 Route::get('/services/{slug}', [VitrineController::class, 'serviceShow'])->name('vitrine.services.show');
-Route::get('/process', [VitrineController::class, 'process'])->name('vitrine.process');
+Route::redirect('/process', '/le-laboratoire/process-de-travail', 301)->name('vitrine.process');
 Route::get('/gallery', [VitrineController::class, 'gallery'])->name('vitrine.gallery');
 Route::get('/le-laboratoire', [VitrineController::class, 'about'])->name('vitrine.about');
 Route::get('/le-laboratoire/{page}', [VitrineController::class, 'aboutShow'])
     ->where('page', implode('|', array_keys(\App\Models\VitrineBlock::aboutSubPages())))
     ->name('vitrine.about.show');
 Route::permanentRedirect('/about', '/le-laboratoire');
-Route::redirect('/laboratoire', '/le-laboratoire/gallery', 301)->name('vitrine.laboratory');
+Route::redirect('/laboratoire', '/le-laboratoire/galerie-equipe-equipement', 301)->name('vitrine.laboratory');
+Route::redirect('/le-laboratoire/gallery', '/le-laboratoire/galerie-equipe-equipement', 301);
 Route::get('/academy', [VitrineController::class, 'academy'])->name('vitrine.academy');
 Route::get('/academy/documents', [VitrineController::class, 'academyDocuments'])->name('vitrine.academy.documents');
 Route::get('/faq', [VitrineController::class, 'faq'])->name('vitrine.faq');
@@ -197,6 +198,10 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
     Route::prefix('vitrine')->group(function () {
         Route::get('/', [AdminVitrineController::class, 'index'])
             ->name('admin.vitrine.index')
+            ->middleware('can:manage_vitrine');
+
+        Route::patch('about-subpage-order', [AdminVitrineController::class, 'updateAboutSubpageOrder'])
+            ->name('admin.vitrine.about-subpage-order')
             ->middleware('can:manage_vitrine');
 
         Route::patch('{vitrineBlock}', [AdminVitrineController::class, 'update'])

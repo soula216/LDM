@@ -99,7 +99,7 @@
                         </div>
                         <div class="p-1.5 space-y-1">
                             @foreach($blocks as $block)
-                                @continue($block->key === 'laboratory')
+                                @continue(in_array($block->key, ['laboratory', 'process'], true))
                                 <button
                                     type="button"
                                     @click="activeTab = '{{ $block->key }}'"
@@ -120,7 +120,7 @@
 
                 <div class="vitrine-admin-content min-w-0 flex-1">
                     @foreach($blocks as $block)
-                        @continue($block->key === 'laboratory')
+                        @continue(in_array($block->key, ['laboratory', 'process'], true))
                         <div class="{{ $activeTab === $block->key ? '' : 'hidden' }}"
                              :class="{ 'hidden': activeTab !== '{{ $block->key }}' }">
                             <div class="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
@@ -143,6 +143,7 @@
                                             'content' => $block->content,
                                             'aboutBlock' => $block,
                                             'laboratoryBlock' => $blocks->firstWhere('key', 'laboratory'),
+                                            'processBlock' => $blocks->firstWhere('key', 'process'),
                                             'activeAboutSub' => $activeAboutSub ?? 'qui-sommes-nous',
                                         ])
                                     </div>

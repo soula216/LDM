@@ -7,6 +7,7 @@
             'detail_html' => $step['detail_html'] ?? '',
             'icon' => $step['icon'] ?? '',
             'is_active' => filter_var($step['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'open' => false,
         ];
     })->values()->all();
 @endphp
@@ -17,7 +18,7 @@
         steps: @js($processSteps),
         htmlEditors: {},
         addStep() {
-            this.steps.push({ title: '', description: '', detail_html: '', icon: '', is_active: true });
+            this.steps.push({ title: '', description: '', detail_html: '', icon: '', is_active: true, open: true });
             const newIndex = this.steps.length - 1;
             this.$nextTick(() => this.initProcessStepHtmlEditor(newIndex));
         },
@@ -26,11 +27,20 @@
             this.steps.splice(index, 1);
             this.$nextTick(() => this.initAllProcessStepHtmlEditors());
         },
+        toggleStepOpen(index) {
+            if (!this.steps[index]) return;
+            this.steps[index].open = !this.steps[index].open;
+            if (this.steps[index].open) {
+                this.$nextTick(() => this.initProcessStepHtmlEditor(index));
+            }
+        },
         initAllProcessStepHtmlEditors() {
-            this.steps.forEach((_, index) => this.initProcessStepHtmlEditor(index));
+            this.steps.forEach((step, index) => {
+                if (step.open) this.initProcessStepHtmlEditor(index);
+            });
         },
         initProcessStepHtmlEditor(index) {
-            if (!this.open.steps || !this.steps[index]) return;
+            if (!this.open.steps || !this.steps[index]?.open) return;
             const editorId = 'process-detail-html-' + index;
             if (this.htmlEditors[editorId]) return;
 
@@ -95,6 +105,7 @@
         }
      }"
      @vitrine-process-tab-open.window="$nextTick(() => { if (open.steps) initAllProcessStepHtmlEditors(); })"
+     @vitrine-about-tab-open.window="$nextTick(() => { if (open.steps) initAllProcessStepHtmlEditors(); })"
      @submit.document="if ($event.target.closest('form')?.contains($el)) syncProcessStepHtmlEditors()">
 
     <section class="rounded-2xl border border-border bg-card overflow-hidden">
@@ -148,14 +159,22 @@
                     <template x-for="(step, index) in steps" :key="'step-' + index">
                         <div class="rounded-xl border bg-card shadow-sm overflow-hidden transition-colors"
                              :class="step.is_active ? 'border-border' : 'border-amber-200/80 bg-amber-50/20'">
-                            <div class="flex items-center justify-between gap-3 px-4 py-3 bg-neutral-50/80 border-b border-border/60">
-                                <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <div class="flex items-center justify-between gap-2 px-4 py-3 bg-neutral-50/80 border-b border-border/60">
+                                <button type="button"
+                                        @click="toggleStepOpen(index)"
+                                        class="flex items-center gap-3 min-w-0 flex-1 text-left group">
                                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 text-xs font-bold shrink-0" x-text="index + 1"></span>
-                                    <div class="min-w-0">
+                                    <div class="min-w-0 flex-1">
                                         <p class="text-sm font-semibold text-primary truncate" x-text="(step.title || '').trim() !== '' ? step.title : ('Étape ' + (index + 1))"></p>
                                         <p class="text-xs text-secondary mt-0.5" x-text="step.is_active ? 'Visible sur le site' : 'Masquée sur le site'"></p>
                                     </div>
-                                </div>
+                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border/70 bg-card text-secondary shrink-0 transition-all duration-200 group-hover:border-primary/30 group-hover:text-primary"
+                                          :class="step.open ? 'rotate-180 bg-primary/5 border-primary/20 text-primary' : ''">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </span>
+                                </button>
                                 <button type="button" @click="removeStep(index)"
                                         class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 transition-colors shrink-0"
                                         title="Supprimer">
@@ -164,7 +183,7 @@
                                     </svg>
                                 </button>
                             </div>
-                            <div class="p-4 sm:p-5 space-y-4">
+                            <div x-show="step.open" x-cloak x-transition.opacity.duration.200ms class="p-4 sm:p-5 space-y-4">
                                 <label class="inline-flex items-center gap-3 cursor-pointer group pb-4 mb-4 border-b border-border/50 w-full">
                                     <input type="hidden" :name="'content[steps][' + index + '][is_active]'" value="0">
                                     <input type="checkbox"

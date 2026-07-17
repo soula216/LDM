@@ -1,6 +1,6 @@
 @extends('layouts.accueil')
 
-@section('title', ($laboratory['title'] ?? 'Galerie') . ' | LDM - Digital Max')
+@section('title', ($laboratory['title'] ?? 'Galerie équipe / équipement') . ' | LDM - Digital Max')
 
 @section('header')
   @include('accueil.header')
@@ -25,7 +25,7 @@
     <div class="laboratory-hero__content">
       <div class="laboratory-hero__badge">
         <i class="fas fa-images" aria-hidden="true"></i>
-        <span>{{ $laboratory['section_label'] ?? 'Galerie' }}</span>
+        <span>{{ $laboratory['section_label'] ?? 'Galerie équipe / équipement' }}</span>
       </div>
       <h1>{{ $laboratory['title'] ?? 'Notre équipe & nos installations' }}</h1>
       @if(filled($laboratory['description'] ?? null))

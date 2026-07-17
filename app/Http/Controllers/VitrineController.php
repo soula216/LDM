@@ -77,7 +77,7 @@ class VitrineController extends Controller
         });
     }
 
-    public function process(): View
+    private function processPage(): View
     {
         $blocks = $this->loadBlocks();
 
@@ -123,6 +123,10 @@ class VitrineController extends Controller
             return $this->laboratoryPage();
         }
 
+        if (VitrineBlock::isAboutProcessPage($page)) {
+            return $this->processPage();
+        }
+
         return $this->aboutPage($page);
     }
 
@@ -161,7 +165,7 @@ class VitrineController extends Controller
         return view('accueil.laboratory', [
             'blocks' => $blocks,
             'laboratory' => $blocks['laboratory'] ?? [
-                'section_label' => 'Galerie',
+                'section_label' => 'Galerie équipe / équipement',
                 'title' => 'Notre équipe & nos installations',
                 'description' => '',
                 'photos' => [],
@@ -322,7 +326,7 @@ class VitrineController extends Controller
                 'process' => ['section_title' => 'Process', 'steps' => []],
                 'gallery' => ['section_title' => 'Galerie', 'items' => []],
                 'about' => ['title' => 'Le Laboratoire', 'description' => '', 'photos' => [], 'videos' => []],
-                'laboratory' => ['title' => 'Galerie', 'section_label' => 'Galerie', 'description' => '', 'photos' => [], 'videos' => []],
+                'laboratory' => ['title' => 'Galerie équipe / équipement', 'section_label' => 'Galerie équipe / équipement', 'description' => '', 'photos' => [], 'videos' => []],
                 'features' => ['title_before' => 'Pourquoi', 'title_highlight' => 'LDM', 'list' => [], 'card' => []],
                 'partners' => ['section_title' => 'Nos Partenaires', 'items' => []],
                 'academy' => ['section_title' => 'LDM Academy', 'documents' => []],

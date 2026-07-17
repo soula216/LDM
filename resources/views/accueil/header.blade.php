@@ -15,7 +15,7 @@
     $footerLogoAlt = $footer['logo_alt'] ?? $headerLogoAlt;
     $footerLogoSrc = VitrineBlock::resolveLogoDisplayUrl($footer['logo_url'] ?? null);
     $homeUrl = route('vitrine');
-    $aboutSubPages = VitrineBlock::aboutSubPages();
+    $aboutSubPages = VitrineBlock::orderedAboutSubPages($blocks['about'] ?? []);
 @endphp
 {{-- Header / Navigation --}}
 <header class="site-header" id="siteHeader">

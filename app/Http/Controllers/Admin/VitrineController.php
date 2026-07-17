@@ -54,6 +54,13 @@ class VitrineController extends Controller
             ]);
         }
 
+        if ($activeTab === 'process') {
+            return redirect()->route('admin.vitrine.index', [
+                'tab' => 'about',
+                'sub' => VitrineBlock::aboutProcessPageSlug(),
+            ]);
+        }
+
         if (! $blocks->contains('key', $activeTab)) {
             $activeTab = $blocks->first()?->key ?? 'hero';
         }
@@ -141,13 +148,51 @@ class VitrineController extends Controller
             $redirectParams['sub'] = $request->input('return_sub');
         }
 
-        $successLabel = $vitrineBlock->key === 'laboratory'
-            ? VitrineBlock::aboutLaboratoryPageLabel()
-            : $vitrineBlock->label;
+        $successLabel = match ($vitrineBlock->key) {
+            'laboratory' => VitrineBlock::aboutLaboratoryPageLabel(),
+            'process' => VitrineBlock::aboutProcessPageLabel(),
+            default => $vitrineBlock->label,
+        };
 
         return redirect()
             ->route('admin.vitrine.index', $redirectParams)
             ->with('success', "Le bloc « {$successLabel} » a été mis à jour.");
+    }
+
+    public function updateAboutSubpageOrder(Request $request): RedirectResponse
+    {
+        $this->authorize('manage_vitrine');
+
+        $availableSlugs = array_keys(VitrineBlock::aboutSubPages());
+        $submittedOrder = $request->input('subpage_order', []);
+
+        if (! is_array($submittedOrder)) {
+            $submittedOrder = [];
+        }
+
+        $order = collect($submittedOrder)
+            ->map(fn ($slug) => trim((string) $slug))
+            ->filter(fn (string $slug) => in_array($slug, $availableSlugs, true))
+            ->unique()
+            ->values();
+
+        foreach ($availableSlugs as $slug) {
+            if (! $order->contains($slug)) {
+                $order->push($slug);
+            }
+        }
+
+        $aboutBlock = VitrineBlock::query()->where('key', 'about')->firstOrFail();
+        $content = $aboutBlock->content ?? [];
+        $content['subpage_order'] = $order->all();
+        $aboutBlock->update(['content' => $content]);
+
+        return redirect()
+            ->route('admin.vitrine.index', [
+                'tab' => 'about',
+                'sub' => $request->input('active_sub', $order->first() ?? 'qui-sommes-nous'),
+            ])
+            ->with('success', 'L’ordre des sous-pages a été enregistré.');
     }
 
     private function processHeroSlides(Request $request, array $content, array $existingContent): array
@@ -1013,6 +1058,8 @@ class VitrineController extends Controller
 
     private function processAboutContent(Request $request, array $content, array $existingContent): array
     {
+        $content['subpage_order'] = $existingContent['subpage_order']
+            ?? array_keys(VitrineBlock::aboutSubPages());
         $content['title'] = trim((string) ($content['title'] ?? ''));
         $content['description'] = trim((string) ($content['description'] ?? ''));
         $content['section_label'] = trim((string) ($content['section_label'] ?? 'À propos'));

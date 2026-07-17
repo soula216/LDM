@@ -4,7 +4,7 @@
     use App\Models\VitrineBlock;
 
     $aboutPage = $aboutPage ?? 'qui-sommes-nous';
-    $subPages = VitrineBlock::aboutSubPages();
+    $subPages = VitrineBlock::orderedAboutSubPages($about);
     $pageLabel = $subPages[$aboutPage]['label'] ?? 'Le Laboratoire';
     $isInfoPage = VitrineBlock::isAboutInfoPage($aboutPage);
     $isMediaPage = VitrineBlock::isAboutMediaPage($aboutPage);

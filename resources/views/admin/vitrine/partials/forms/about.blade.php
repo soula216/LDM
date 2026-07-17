@@ -67,18 +67,20 @@
     $mediaPageLabel = VitrineBlock::aboutMediaPageLabel();
     $laboratoryPageSlug = VitrineBlock::aboutLaboratoryPageSlug();
     $laboratoryPageLabel = VitrineBlock::aboutLaboratoryPageLabel();
+    $processPageSlug = VitrineBlock::aboutProcessPageSlug();
+    $processPageLabel = VitrineBlock::aboutProcessPageLabel();
 
-    $subMenus = [
-        'qui-sommes-nous' => 'Qui sommes-nous',
-        'notre-mission' => 'Notre mission',
-        'nos-principe' => 'Nos principe',
-        $laboratoryPageSlug => $laboratoryPageLabel,
-        ...collect($infoPageDefinitions)->all(),
-        $mediaPageSlug => $mediaPageLabel,
-    ];
+    $subMenus = collect(VitrineBlock::orderedAboutSubPages($c))
+        ->mapWithKeys(fn ($page, $slug) => [$slug => $page['label']])
+        ->all();
+    $subMenuItems = collect($subMenus)
+        ->map(fn ($label, $slug) => ['slug' => $slug, 'label' => $label])
+        ->values()
+        ->all();
 
     $aboutBlock = $aboutBlock ?? null;
     $laboratoryBlock = $laboratoryBlock ?? null;
+    $processBlock = $processBlock ?? null;
     $activeAboutSub = $activeAboutSub ?? 'qui-sommes-nous';
     if (! array_key_exists($activeAboutSub, $subMenus)) {
         $activeAboutSub = 'qui-sommes-nous';
@@ -88,12 +90,19 @@
 <div class="vitrine-tab-form about-admin-layout"
      x-data="{
         activeSub: @js($activeAboutSub),
+        subMenuItems: @js($subMenuItems),
         open: { content: true, photos: true, videos: true, mediaPhotos: true },
         photos: @js($photos),
         videos: @js($videos),
         infoPages: @js($infoPages),
         mediaPagePhotos: @js($mediaPagePhotos),
         htmlEditors: {},
+        moveSubMenu(index, direction) {
+            const target = index + direction;
+            if (target < 0 || target >= this.subMenuItems.length) return;
+            const [item] = this.subMenuItems.splice(index, 1);
+            this.subMenuItems.splice(target, 0, item);
+        },
         addPhoto() {
             this.photos.push({ image_url: '', source_type: 'url', title: '', caption: '', preview_url: null });
         },
@@ -183,11 +192,15 @@
             if (infoPages[sub]) {
                 $nextTick(() => initAboutInfoHtmlEditor(sub));
             }
+            if (sub === '{{ $processPageSlug }}') {
+                $nextTick(() => $dispatch('vitrine-process-tab-open'));
+            }
         });
      "
      @vitrine-about-tab-open.window="
         $nextTick(() => {
             if (infoPages[activeSub]) initAboutInfoHtmlEditor(activeSub);
+            if (activeSub === '{{ $processPageSlug }}') $dispatch('vitrine-process-tab-open');
         });
      ">
 
@@ -195,21 +208,63 @@
         <nav class="bg-card/60 backdrop-blur-md border border-border rounded-2xl shadow-sm overflow-hidden" aria-label="Sous-sections Le Laboratoire">
             <div class="px-4 py-3 border-b border-border/70">
                 <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">Sous-menus</p>
+                <p class="text-[11px] text-secondary mt-1">Utilisez les flèches pour modifier l’ordre.</p>
             </div>
-            <div class="p-1.5 space-y-1">
-                @foreach($subMenus as $key => $label)
-                    <button
-                        type="button"
-                        @click="activeSub = '{{ $key }}'"
-                        :class="activeSub === '{{ $key }}'
-                            ? 'bg-gradient-to-r from-primary to-primary/90 text-white shadow-md shadow-primary/25'
-                            : 'text-secondary hover:text-primary hover:bg-neutral-100/80'"
-                        class="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 text-left"
-                    >
-                        <span class="truncate">{{ $label }}</span>
-                    </button>
-                @endforeach
-            </div>
+            <form action="{{ route('admin.vitrine.about-subpage-order') }}" method="POST" class="p-1.5">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="active_sub" :value="activeSub">
+
+                <div class="space-y-1">
+                    <template x-for="(item, index) in subMenuItems" :key="item.slug">
+                        <div
+                            :class="activeSub === item.slug
+                                ? 'bg-gradient-to-r from-primary to-primary/90 text-white shadow-md shadow-primary/25'
+                                : 'text-secondary hover:text-primary hover:bg-neutral-100/80'"
+                            class="flex items-center gap-1 rounded-xl transition-all duration-200"
+                        >
+                            <input type="hidden" name="subpage_order[]" :value="item.slug">
+                            <button
+                                type="button"
+                                @click="activeSub = item.slug"
+                                class="min-w-0 flex-1 px-3 py-2.5 text-sm font-semibold text-left"
+                            >
+                                <span class="block truncate" x-text="item.label"></span>
+                            </button>
+                            <div class="flex items-center gap-0.5 pr-1.5">
+                                <button
+                                    type="button"
+                                    @click.stop="moveSubMenu(index, -1)"
+                                    :disabled="index === 0"
+                                    class="inline-flex items-center justify-center w-7 h-7 rounded-lg disabled:opacity-30 hover:bg-white/15"
+                                    aria-label="Monter"
+                                    title="Monter"
+                                >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                    </svg>
+                                </button>
+                                <button
+                                    type="button"
+                                    @click.stop="moveSubMenu(index, 1)"
+                                    :disabled="index === subMenuItems.length - 1"
+                                    class="inline-flex items-center justify-center w-7 h-7 rounded-lg disabled:opacity-30 hover:bg-white/15"
+                                    aria-label="Descendre"
+                                    title="Descendre"
+                                >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <button type="submit" class="btn-primary w-full mt-3 px-3 py-2 text-xs font-semibold rounded-xl">
+                    Enregistrer l’ordre
+                </button>
+            </form>
         </nav>
     </aside>
 
@@ -218,7 +273,7 @@
               method="POST"
               enctype="multipart/form-data"
               class="space-y-6 sm:space-y-8"
-              x-show="activeSub !== '{{ $laboratoryPageSlug }}'"
+              x-show="activeSub !== '{{ $laboratoryPageSlug }}' && activeSub !== '{{ $processPageSlug }}'"
               x-cloak>
             @csrf
             @method('PATCH')
@@ -685,6 +740,36 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                         Enregistrer {{ $laboratoryPageLabel }}
+                    </button>
+                </div>
+            </form>
+        @endif
+
+        @if($processBlock)
+            <form action="{{ route('admin.vitrine.update', $processBlock) }}"
+                  method="POST"
+                  class="space-y-6 sm:space-y-8"
+                  x-show="activeSub === '{{ $processPageSlug }}'"
+                  x-cloak>
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="return_tab" value="about">
+                <input type="hidden" name="return_sub" value="{{ $processPageSlug }}">
+
+                @include('admin.vitrine.partials.forms.process', ['content' => $processBlock->content ?? []])
+
+                <div class="pt-6 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                    <label class="inline-flex items-center gap-3 cursor-pointer group">
+                        <input type="hidden" name="is_active" value="0">
+                        <input type="checkbox" name="is_active" value="1" {{ $processBlock->is_active ? 'checked' : '' }}
+                               class="w-5 h-5 rounded-md border-border text-primary focus:ring-primary/30 transition">
+                        <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Afficher cette page sur le site</span>
+                    </label>
+                    <button type="submit" class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Enregistrer {{ $processPageLabel }}
                     </button>
                 </div>
             </form>
