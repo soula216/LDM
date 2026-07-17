@@ -222,9 +222,20 @@ class VitrineBlockSeeder extends Seeder
                 ],
             ],
             [
+                'key' => 'temoignages',
+                'label' => 'Témoignages',
+                'sort_order' => 10,
+                'content' => [
+                    'section_label' => 'Témoignages',
+                    'section_title' => 'Ils Nous Recommandent',
+                    'section_subtitle' => 'Découvrez les avis des chirurgiens-dentistes qui nous font confiance au quotidien.',
+                    'items' => [],
+                ],
+            ],
+            [
                 'key' => 'faq',
                 'label' => 'FAQ',
-                'sort_order' => 10,
+                'sort_order' => 11,
                 'content' => [
                     'section_label' => 'FAQ',
                     'section_title' => 'Foire Aux Questions',
@@ -264,7 +275,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'recrutement',
                 'label' => 'Recrutement',
-                'sort_order' => 11,
+                'sort_order' => 12,
                 'content' => [
                     'section_label' => 'Recrutement',
                     'section_title' => 'Rejoindre LDM',
@@ -275,7 +286,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'academy',
                 'label' => 'LDM Academy',
-                'sort_order' => 12,
+                'sort_order' => 13,
                 'content' => [
                     'section_label' => 'LDM Academy',
                     'section_title' => 'Ressources pour les praticiens',
@@ -292,7 +303,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'contact',
                 'label' => 'Contact',
-                'sort_order' => 13,
+                'sort_order' => 14,
                 'content' => [
                     'info_is_active' => true,
                     'form_is_active' => true,
@@ -318,7 +329,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'footer',
                 'label' => 'Pied de page',
-                'sort_order' => 14,
+                'sort_order' => 15,
                 'content' => [
                     'logo_url' => 'logo_ldm.png',
                     'logo_source_type' => 'url',
@@ -364,7 +375,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'mentions-legales',
                 'label' => 'Mentions légales',
-                'sort_order' => 15,
+                'sort_order' => 16,
                 'content' => [
                     'section_label' => 'Mentions légales',
                     'section_title' => 'Mentions légales',

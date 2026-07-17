@@ -20,6 +20,8 @@ class VitrineController extends Controller
 
     private const PARTNERS_STORAGE_PREFIX = 'vitrine/partners/';
 
+    private const TEMOIGNAGES_STORAGE_PREFIX = 'vitrine/temoignages/';
+
     private const LOGO_STORAGE_PREFIX = 'vitrine/logo/';
 
     private const SOCIAL_STORAGE_PREFIX = 'vitrine/social/';
@@ -87,6 +89,10 @@ class VitrineController extends Controller
 
         if ($vitrineBlock->key === 'partners') {
             $content = $this->processPartnerItems($request, $content, $existingContent);
+        }
+
+        if ($vitrineBlock->key === 'temoignages') {
+            $content = $this->processTemoignageItems($request, $content, $existingContent);
         }
 
         if ($vitrineBlock->key === 'services') {
@@ -344,6 +350,65 @@ class VitrineController extends Controller
             $processed[] = [
                 'name' => trim((string) ($item['name'] ?? '')),
                 'url' => trim((string) ($item['url'] ?? '')),
+                'image_url' => $imageUrl !== '' ? VitrineBlock::resolveImageUrl($imageUrl) : '',
+                'source_type' => $sourceType,
+                'is_active' => filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            ];
+        }
+
+        $newUrls = collect($processed)->pluck('image_url')->filter()->all();
+        foreach ($existingItems as $oldItem) {
+            $oldUrl = trim((string) ($oldItem['image_url'] ?? ''));
+            if ($oldUrl !== '' && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldUrl);
+            }
+        }
+
+        $content['items'] = array_values($processed);
+
+        return $content;
+    }
+
+    private function processTemoignageItems(Request $request, array $content, array $existingContent): array
+    {
+        $incomingItems = $content['items'] ?? [];
+        $existingItems = $existingContent['items'] ?? [];
+        $processed = [];
+
+        foreach ($incomingItems as $index => $item) {
+            $sourceType = ($item['source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
+            $imageUrl = trim((string) ($item['image_url'] ?? ''));
+            $existingUrl = trim((string) ($existingItems[$index]['image_url'] ?? ''));
+
+            if ($request->hasFile("temoignage_uploads.$index")) {
+                $file = $request->file("temoignage_uploads.$index");
+                $this->validateTemoignageUpload($file, $index);
+
+                if ($existingUrl !== '') {
+                    $this->deleteVitrineImageIfStored($existingUrl);
+                }
+
+                $imageUrl = $this->storeTemoignageImage($file);
+                $sourceType = 'upload';
+            } elseif ($sourceType === 'upload') {
+                if ($imageUrl === '' && $existingUrl !== '') {
+                    $imageUrl = $existingUrl;
+                }
+            } elseif ($sourceType === 'url' && $existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $imageUrl) {
+                $this->deleteVitrineImageIfStored($existingUrl);
+            }
+
+            $name = trim((string) ($item['name'] ?? ''));
+            $comment = trim((string) ($item['comment'] ?? ''));
+
+            if ($name === '' && $comment === '' && $imageUrl === '') {
+                continue;
+            }
+
+            $processed[] = [
+                'name' => $name,
+                'title' => trim((string) ($item['title'] ?? '')),
+                'comment' => $comment,
                 'image_url' => $imageUrl !== '' ? VitrineBlock::resolveImageUrl($imageUrl) : '',
                 'source_type' => $sourceType,
                 'is_active' => filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
@@ -1711,6 +1776,26 @@ class VitrineController extends Controller
         return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
     }
 
+    private function validateTemoignageUpload(UploadedFile $file, int $index): void
+    {
+        request()->validate([
+            "temoignage_uploads.$index" => 'required|image|mimes:jpeg,jpg,png,webp,gif|max:5120',
+        ], [
+            "temoignage_uploads.$index.image" => 'Le fichier doit être une image valide.',
+            "temoignage_uploads.$index.mimes" => 'Formats acceptés : JPEG, PNG, WebP, GIF.',
+            "temoignage_uploads.$index.max" => 'La photo ne doit pas dépasser 5 Mo.',
+        ]);
+    }
+
+    private function storeTemoignageImage(UploadedFile $file): string
+    {
+        $extension = $file->getClientOriginalExtension() ?: 'jpg';
+        $filename = 'temoignage_' . time() . '_' . uniqid() . '.' . strtolower($extension);
+        $path = $file->storeAs('vitrine/temoignages', $filename, 'public');
+
+        return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
     private function validateSlideUpload(UploadedFile $file, int $index): void
     {
         request()->validate([
@@ -1975,6 +2060,7 @@ class VitrineController extends Controller
             str_starts_with($path, self::SLIDER_STORAGE_PREFIX)
             || str_starts_with($path, self::GALLERY_STORAGE_PREFIX)
             || str_starts_with($path, self::PARTNERS_STORAGE_PREFIX)
+            || str_starts_with($path, self::TEMOIGNAGES_STORAGE_PREFIX)
             || str_starts_with($path, self::LOGO_STORAGE_PREFIX)
             || str_starts_with($path, self::SOCIAL_STORAGE_PREFIX)
             || str_starts_with($path, self::SERVICE_STORAGE_PREFIX)

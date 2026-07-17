@@ -655,4 +655,100 @@
       });
     });
   })();
+
+  // Témoignages : slider avec flèches gauche / droite
+  (function () {
+    const slider = document.querySelector('[data-temoignages-slider]');
+    if (!slider) return;
+
+    const viewport = slider.querySelector('[data-temoignages-viewport]');
+    const slides = Array.from(slider.querySelectorAll('[data-temoignage-slide]'));
+    const prevBtn = slider.querySelector('[data-temoignages-prev]');
+    const nextBtn = slider.querySelector('[data-temoignages-next]');
+    const dotsContainer = document.querySelector('[data-temoignages-dots]');
+
+    if (!viewport || slides.length === 0) return;
+
+    function stepSize() {
+      if (slides.length < 2) return slides[0]?.offsetWidth || viewport.clientWidth;
+      return slides[1].offsetLeft - slides[0].offsetLeft;
+    }
+
+    function maxScroll() {
+      return Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+    }
+
+    function pageCount() {
+      const step = stepSize();
+      if (step <= 0) return 1;
+      return Math.round(maxScroll() / step) + 1;
+    }
+
+    function currentPage() {
+      const step = stepSize();
+      if (step <= 0) return 0;
+      return Math.round(viewport.scrollLeft / step);
+    }
+
+    function buildDots() {
+      if (!dotsContainer) return;
+      dotsContainer.innerHTML = '';
+      const count = pageCount();
+      if (count <= 1) return;
+
+      for (let i = 0; i < count; i++) {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'temoignages-slider__dot';
+        dot.tabIndex = -1;
+        dot.addEventListener('click', () => {
+          viewport.scrollTo({ left: i * stepSize(), behavior: 'smooth' });
+        });
+        dotsContainer.appendChild(dot);
+      }
+    }
+
+    function updateUi() {
+      const atStart = viewport.scrollLeft <= 4;
+      const atEnd = viewport.scrollLeft >= maxScroll() - 4;
+
+      if (prevBtn) prevBtn.disabled = atStart;
+      if (nextBtn) nextBtn.disabled = atEnd;
+
+      if (dotsContainer) {
+        const page = currentPage();
+        dotsContainer.querySelectorAll('.temoignages-slider__dot').forEach((dot, index) => {
+          dot.classList.toggle('active', index === page);
+        });
+      }
+    }
+
+    function scrollByStep(direction) {
+      viewport.scrollBy({ left: direction * stepSize(), behavior: 'smooth' });
+    }
+
+    prevBtn?.addEventListener('click', () => scrollByStep(-1));
+    nextBtn?.addEventListener('click', () => scrollByStep(1));
+
+    let scrollFrame = null;
+    viewport.addEventListener('scroll', () => {
+      if (scrollFrame) return;
+      scrollFrame = requestAnimationFrame(() => {
+        scrollFrame = null;
+        updateUi();
+      });
+    }, { passive: true });
+
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        buildDots();
+        updateUi();
+      }, 150);
+    });
+
+    buildDots();
+    updateUi();
+  })();
 </script>

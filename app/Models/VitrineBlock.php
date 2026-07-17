@@ -349,6 +349,16 @@ class VitrineBlock extends Model
             }, $content['items']);
         }
 
+        if ($blockKey === 'temoignages' && isset($content['items']) && is_array($content['items'])) {
+            $content['items'] = array_map(function (array $item) {
+                if (isset($item['image_url'])) {
+                    $item['image_url'] = static::resolveImageAbsoluteUrl($item['image_url']);
+                }
+
+                return $item;
+            }, $content['items']);
+        }
+
         if ($blockKey === 'services' && isset($content['items']) && is_array($content['items'])) {
             $content['items'] = array_map(function (array $item) {
                 if (! empty($item['image_url'])) {
@@ -647,6 +657,18 @@ class VitrineBlock extends Model
     public static function isPartnerItemActive(array $item): bool
     {
         return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Témoignages actifs (avec au minimum un nom ou un commentaire).
+     */
+    public static function activeTemoignageItems(array $items): \Illuminate\Support\Collection
+    {
+        return collect($items)->filter(function (array $item): bool {
+            $isActive = filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+            return $isActive && (filled($item['name'] ?? null) || filled($item['comment'] ?? null));
+        })->values();
     }
 
     /**

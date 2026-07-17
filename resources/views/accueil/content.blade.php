@@ -9,6 +9,8 @@
     $features = $blocks['features'] ?? [];
     $partners = $blocks['partners'] ?? [];
     $partnerItems = VitrineBlock::activePartnerItems($partners['items'] ?? []);
+    $temoignages = $blocks['temoignages'] ?? [];
+    $temoignageItems = VitrineBlock::activeTemoignageItems($temoignages['items'] ?? []);
     $contact = $blocks['contact'] ?? [];
 @endphp
 {{-- Contenu principal : Hero, Gallery, Features, Contact --}}
@@ -219,6 +221,91 @@
         </div>
       </div>
     </div>
+  </div>
+</section>
+@endif
+
+@if(!empty($blocks['temoignages']) && $temoignageItems->isNotEmpty())
+{{-- Témoignages - Avis des dentistes --}}
+<section class="temoignages" id="temoignages">
+  <div class="temoignages__bg" aria-hidden="true">
+    <span class="temoignages__mesh"></span>
+    <span class="temoignages__orb temoignages__orb--1"></span>
+    <span class="temoignages__orb temoignages__orb--2"></span>
+  </div>
+
+  <div class="temoignages__container">
+    <div class="temoignages__head reveal">
+      <div class="temoignages__badge">
+        <i class="fas fa-comment-dots" aria-hidden="true"></i>
+        <span>{{ $temoignages['section_label'] ?? 'Témoignages' }}</span>
+      </div>
+      <h2 class="temoignages__title">{{ $temoignages['section_title'] ?? 'Ils Nous Recommandent' }}</h2>
+      @if(filled($temoignages['section_subtitle'] ?? null))
+        <p class="temoignages__subtitle">{{ $temoignages['section_subtitle'] }}</p>
+      @endif
+    </div>
+
+    <div class="temoignages-slider reveal" data-temoignages-slider>
+      <button type="button" class="temoignages-slider__arrow temoignages-slider__arrow--prev" data-temoignages-prev aria-label="Témoignage précédent">
+        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+      </button>
+
+      <div class="temoignages-slider__viewport" data-temoignages-viewport>
+        <div class="temoignages-slider__track" data-temoignages-track>
+          @foreach($temoignageItems as $item)
+            @php
+              $dentistName = $item['name'] ?? '';
+              $dentistPhoto = filled($item['image_url'] ?? null) ? VitrineBlock::resolveImageUrl($item['image_url']) : null;
+              $dentistInitial = mb_strtoupper(mb_substr(trim(preg_replace('/^dr\.?\s*/iu', '', $dentistName)) ?: 'D', 0, 1));
+            @endphp
+            <article class="temoignage-card" data-temoignage-slide>
+              <span class="temoignage-card__rim" aria-hidden="true"></span>
+              <div class="temoignage-card__quote" aria-hidden="true">
+                <i class="fas fa-quote-right"></i>
+              </div>
+
+              <div class="temoignage-card__stars" role="img" aria-label="Note : 5 étoiles sur 5">
+                @for($i = 0; $i < 5; $i++)
+                  <i class="fas fa-star" aria-hidden="true"></i>
+                @endfor
+              </div>
+
+              @if(filled($item['comment'] ?? null))
+                <p class="temoignage-card__comment">{{ $item['comment'] }}</p>
+              @endif
+
+              <footer class="temoignage-card__author">
+                <div class="temoignage-card__avatar">
+                  @if($dentistPhoto)
+                    <img src="{{ $dentistPhoto }}"
+                         alt="{{ $dentistName ?: 'Dentiste' }}"
+                         loading="lazy"
+                         decoding="async">
+                  @else
+                    <span class="temoignage-card__avatar-fallback">{{ $dentistInitial }}</span>
+                  @endif
+                </div>
+                <div class="temoignage-card__identity">
+                  @if(filled($dentistName))
+                    <span class="temoignage-card__name">{{ $dentistName }}</span>
+                  @endif
+                  @if(filled($item['title'] ?? null))
+                    <span class="temoignage-card__role">{{ $item['title'] }}</span>
+                  @endif
+                </div>
+              </footer>
+            </article>
+          @endforeach
+        </div>
+      </div>
+
+      <button type="button" class="temoignages-slider__arrow temoignages-slider__arrow--next" data-temoignages-next aria-label="Témoignage suivant">
+        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="temoignages-slider__dots" data-temoignages-dots aria-hidden="true"></div>
   </div>
 </section>
 @endif
