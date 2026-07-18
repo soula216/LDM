@@ -25,6 +25,7 @@ class VitrineBlockSeeder extends Seeder
                         ['label' => 'Galerie', 'href' => '/gallery', 'is_active' => true],
                         ['label' => 'LDM Academy', 'href' => '/academy', 'is_active' => true],
                         ['label' => 'FAQ', 'href' => '/faq', 'is_active' => true],
+                        ['label' => 'Vos patients', 'href' => '/vos-patients', 'is_active' => true],
                         ['label' => 'Recrutement', 'href' => '/recrutement', 'is_active' => true],
                         ['label' => 'Contact', 'href' => '#contact', 'is_active' => true],
                     ],
@@ -273,9 +274,25 @@ class VitrineBlockSeeder extends Seeder
                 ],
             ],
             [
+                'key' => 'vos-patients',
+                'label' => 'Vos patients',
+                'sort_order' => 12,
+                'content' => [
+                    'section_label' => 'Vos patients',
+                    'section_title' => 'Des sourires qui parlent',
+                    'section_subtitle' => 'Découvrez des cas cliniques et des témoignages vidéo pour illustrer le résultat de nos collaborations.',
+                    'categories' => [
+                        ['key' => 'esthetique', 'label' => 'Esthétique', 'icon' => 'fas fa-smile'],
+                        ['key' => 'implantologie', 'label' => 'Implantologie', 'icon' => 'fas fa-tooth'],
+                        ['key' => 'prothese', 'label' => 'Prothèse', 'icon' => 'fas fa-teeth'],
+                    ],
+                    'videos' => [],
+                ],
+            ],
+            [
                 'key' => 'recrutement',
                 'label' => 'Recrutement',
-                'sort_order' => 12,
+                'sort_order' => 13,
                 'content' => [
                     'section_label' => 'Recrutement',
                     'section_title' => 'Rejoindre LDM',
@@ -286,7 +303,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'academy',
                 'label' => 'LDM Academy',
-                'sort_order' => 13,
+                'sort_order' => 14,
                 'content' => [
                     'section_label' => 'LDM Academy',
                     'section_title' => 'Ressources pour les praticiens',
@@ -303,7 +320,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'contact',
                 'label' => 'Contact',
-                'sort_order' => 14,
+                'sort_order' => 15,
                 'content' => [
                     'info_is_active' => true,
                     'form_is_active' => true,
@@ -329,7 +346,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'footer',
                 'label' => 'Pied de page',
-                'sort_order' => 15,
+                'sort_order' => 16,
                 'content' => [
                     'logo_url' => 'logo_ldm.png',
                     'logo_source_type' => 'url',
@@ -375,7 +392,7 @@ class VitrineBlockSeeder extends Seeder
             [
                 'key' => 'mentions-legales',
                 'label' => 'Mentions légales',
-                'sort_order' => 16,
+                'sort_order' => 17,
                 'content' => [
                     'section_label' => 'Mentions légales',
                     'section_title' => 'Mentions légales',

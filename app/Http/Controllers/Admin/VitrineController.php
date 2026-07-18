@@ -22,6 +22,8 @@ class VitrineController extends Controller
 
     private const TEMOIGNAGES_STORAGE_PREFIX = 'vitrine/temoignages/';
 
+    private const VOS_PATIENTS_STORAGE_PREFIX = 'vitrine/vos-patients/';
+
     private const LOGO_STORAGE_PREFIX = 'vitrine/logo/';
 
     private const SOCIAL_STORAGE_PREFIX = 'vitrine/social/';
@@ -102,6 +104,11 @@ class VitrineController extends Controller
         if ($vitrineBlock->key === 'academy') {
             $content = $this->processAcademyCategories($content);
             $content = $this->processAcademyDocuments($request, $content, $existingContent);
+        }
+
+        if ($vitrineBlock->key === 'vos-patients') {
+            $content = $this->processVosPatientsCategories($content);
+            $content = $this->processVosPatientsVideos($request, $content, $existingContent);
         }
 
         if ($vitrineBlock->key === 'about') {
@@ -724,6 +731,118 @@ class VitrineController extends Controller
         }
 
         $content['categories'] = $processed;
+
+        return $content;
+    }
+
+    private function processVosPatientsCategories(array $content): array
+    {
+        $incoming = $content['categories'] ?? [];
+        $processed = [];
+        $usedKeys = [];
+
+        foreach ($incoming as $category) {
+            $label = trim((string) ($category['label'] ?? ''));
+            $icon = trim((string) ($category['icon'] ?? ''));
+            $key = Str::slug(trim((string) ($category['key'] ?? '')));
+
+            if ($key === '' && $label !== '') {
+                $key = Str::slug($label);
+            }
+
+            if ($label === '' || $key === '') {
+                continue;
+            }
+
+            $baseKey = $key;
+            $suffix = 2;
+            while (in_array($key, $usedKeys, true)) {
+                $key = $baseKey . '-' . $suffix;
+                $suffix++;
+            }
+            $usedKeys[] = $key;
+
+            $processed[] = [
+                'key' => $key,
+                'label' => $label,
+                'icon' => VitrineBlock::normalizeAcademyCategoryIcon($icon),
+            ];
+        }
+
+        $content['categories'] = $processed;
+
+        return $content;
+    }
+
+    private function processVosPatientsVideos(Request $request, array $content, array $existingContent): array
+    {
+        $incoming = $content['videos'] ?? [];
+        $existing = $existingContent['videos'] ?? [];
+        $processed = [];
+        $categoryList = $content['categories'] ?? [];
+
+        if ($categoryList === []) {
+            $categoryList = collect(VitrineBlock::defaultVosPatientsCategories())
+                ->map(fn (array $meta, string $key) => ['key' => $key, 'label' => $meta['label'], 'icon' => $meta['icon']])
+                ->values()
+                ->all();
+        }
+
+        foreach ($incoming as $index => $item) {
+            $title = trim((string) ($item['title'] ?? ''));
+            $description = trim((string) ($item['description'] ?? ''));
+            $category = VitrineBlock::resolveVosPatientsVideoCategory($item['category'] ?? null, $categoryList);
+            $sourceType = ($item['source_type'] ?? 'url') === 'upload' ? 'upload' : 'url';
+            $videoUrl = trim((string) ($item['video_url'] ?? ''));
+            $existingUrl = trim((string) ($existing[$index]['video_url'] ?? ''));
+
+            if ($request->hasFile("vos_patients_uploads.$index")) {
+                $file = $request->file("vos_patients_uploads.$index");
+                $this->validateVosPatientsUpload($file, $index);
+
+                if ($existingUrl !== '') {
+                    $this->deleteVitrineImageIfStored($existingUrl);
+                }
+
+                $videoUrl = $this->storeVosPatientsVideo($file);
+                $sourceType = 'upload';
+            } elseif ($sourceType === 'upload') {
+                if ($videoUrl === '' && $existingUrl !== '') {
+                    $videoUrl = $existingUrl;
+                }
+            } elseif ($sourceType === 'url' && $existingUrl !== '' && $this->isStoredVitrineImage($existingUrl) && $existingUrl !== $videoUrl) {
+                $this->deleteVitrineImageIfStored($existingUrl);
+            }
+
+            if ($videoUrl === '' && $title === '' && $description === '') {
+                continue;
+            }
+
+            if ($videoUrl === '') {
+                continue;
+            }
+
+            $processed[] = [
+                'title' => $title,
+                'description' => $description,
+                'category' => $category,
+                'video_url' => $sourceType === 'upload'
+                    ? VitrineBlock::resolveImageUrl($videoUrl)
+                    : $videoUrl,
+                'source_type' => $sourceType,
+                'is_active' => filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            ];
+        }
+
+        $newUrls = collect($processed)->pluck('video_url')->filter()->all();
+        foreach ($existing as $oldItem) {
+            $oldUrl = trim((string) ($oldItem['video_url'] ?? ''));
+            if ($oldUrl !== '' && $this->isStoredVitrineImage($oldUrl) && ! in_array(VitrineBlock::resolveImageUrl($oldUrl), $newUrls, true)) {
+                $this->deleteVitrineImageIfStored($oldUrl);
+            }
+        }
+
+        $content['videos'] = array_values($processed);
 
         return $content;
     }
@@ -1796,6 +1915,25 @@ class VitrineController extends Controller
         return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
     }
 
+    private function validateVosPatientsUpload(UploadedFile $file, int $index): void
+    {
+        request()->validate([
+            "vos_patients_uploads.$index" => 'required|file|mimes:mp4,webm,mov,quicktime|max:102400',
+        ], [
+            "vos_patients_uploads.$index.mimes" => 'Formats acceptés : MP4, WebM, MOV.',
+            "vos_patients_uploads.$index.max" => 'La vidéo ne doit pas dépasser 100 Mo.',
+        ]);
+    }
+
+    private function storeVosPatientsVideo(UploadedFile $file): string
+    {
+        $extension = strtolower($file->getClientOriginalExtension() ?: 'mp4');
+        $filename = 'vos_patients_' . time() . '_' . uniqid() . '.' . $extension;
+        $path = $file->storeAs('vitrine/vos-patients', $filename, 'public');
+
+        return VitrineBlock::resolveImageUrl('/storage/' . str_replace('\\', '/', $path));
+    }
+
     private function validateSlideUpload(UploadedFile $file, int $index): void
     {
         request()->validate([
@@ -2061,6 +2199,7 @@ class VitrineController extends Controller
             || str_starts_with($path, self::GALLERY_STORAGE_PREFIX)
             || str_starts_with($path, self::PARTNERS_STORAGE_PREFIX)
             || str_starts_with($path, self::TEMOIGNAGES_STORAGE_PREFIX)
+            || str_starts_with($path, self::VOS_PATIENTS_STORAGE_PREFIX)
             || str_starts_with($path, self::LOGO_STORAGE_PREFIX)
             || str_starts_with($path, self::SOCIAL_STORAGE_PREFIX)
             || str_starts_with($path, self::SERVICE_STORAGE_PREFIX)

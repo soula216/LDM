@@ -150,6 +150,7 @@ class VitrineBlock extends Model
             'services' => 'vitrine.services',
             'gallery' => 'vitrine.gallery',
             'faq' => 'vitrine.faq',
+            'vos-patients' => 'vitrine.vos-patients',
             'recrutement' => 'vitrine.recrutement',
             'mentions-legales' => 'vitrine.mentions-legales',
         ];
@@ -357,6 +358,16 @@ class VitrineBlock extends Model
 
                 return $item;
             }, $content['items']);
+        }
+
+        if ($blockKey === 'vos-patients' && isset($content['videos']) && is_array($content['videos'])) {
+            $content['videos'] = array_map(function (array $item) {
+                if (! empty($item['video_url'])) {
+                    $item['video_url'] = static::resolveImageAbsoluteUrl($item['video_url']);
+                }
+
+                return $item;
+            }, $content['videos']);
         }
 
         if ($blockKey === 'services' && isset($content['items']) && is_array($content['items'])) {
@@ -888,6 +899,93 @@ class VitrineBlock extends Model
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<string, array{label: string, icon: string}>
+     */
+    public static function defaultVosPatientsCategories(): array
+    {
+        return [
+            'esthetique' => ['label' => 'Esthétique', 'icon' => 'fas fa-smile'],
+            'implantologie' => ['label' => 'Implantologie', 'icon' => 'fas fa-tooth'],
+            'prothese' => ['label' => 'Prothèse', 'icon' => 'fas fa-teeth'],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     * @return array<string, array{label: string, icon: string}>
+     */
+    public static function resolveVosPatientsCategories(array $content): array
+    {
+        $stored = $content['categories'] ?? [];
+        $resolved = [];
+
+        if (! is_array($stored)) {
+            return static::defaultVosPatientsCategories();
+        }
+
+        foreach ($stored as $category) {
+            if (! is_array($category)) {
+                continue;
+            }
+
+            $label = trim((string) ($category['label'] ?? ''));
+            $icon = trim((string) ($category['icon'] ?? ''));
+            $key = Str::slug(trim((string) ($category['key'] ?? '')));
+
+            if ($key === '' && $label !== '') {
+                $key = Str::slug($label);
+            }
+
+            if ($key === '' || $label === '') {
+                continue;
+            }
+
+            $resolved[$key] = [
+                'label' => $label,
+                'icon' => static::normalizeAcademyCategoryIcon($icon),
+            ];
+        }
+
+        return $resolved !== [] ? $resolved : static::defaultVosPatientsCategories();
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     * @return list<array{key: string, label: string, icon: string}>
+     */
+    public static function vosPatientsCategoriesList(array $content): array
+    {
+        return collect(static::resolveVosPatientsCategories($content))
+            ->map(fn (array $meta, string $key) => [
+                'key' => $key,
+                'label' => $meta['label'],
+                'icon' => $meta['icon'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<array{key: string, label: string, icon: string}>  $categories
+     */
+    public static function resolveVosPatientsVideoCategory(?string $category, array $categories): string
+    {
+        return static::resolveAcademyDocumentCategory($category, $categories);
+    }
+
+    /**
+     * Vidéos actives avec une URL renseignée.
+     */
+    public static function activeVosPatientsVideos(array $videos): \Illuminate\Support\Collection
+    {
+        return collect($videos)->filter(function (array $item): bool {
+            $isActive = filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+            return $isActive && filled($item['video_url'] ?? null);
+        })->values();
     }
 
     /**

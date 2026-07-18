@@ -189,6 +189,37 @@ class VitrineController extends Controller
         ]);
     }
 
+    public function vosPatients(): View
+    {
+        $blocks = $this->loadBlocks();
+        $page = $blocks['vos-patients'] ?? [
+            'section_label' => 'Vos patients',
+            'section_title' => 'Des sourires qui parlent',
+            'section_subtitle' => '',
+            'categories' => [],
+            'videos' => [],
+        ];
+
+        $videos = VitrineBlock::activeVosPatientsVideos($page['videos'] ?? []);
+        $categories = VitrineBlock::resolveVosPatientsCategories($page);
+        $categoryCounts = [];
+
+        foreach (array_keys($categories) as $categoryKey) {
+            $count = $videos->where('category', $categoryKey)->count();
+            if ($count > 0) {
+                $categoryCounts[$categoryKey] = $count;
+            }
+        }
+
+        return view('accueil.vos-patients', [
+            'blocks' => $blocks,
+            'vosPatients' => $page,
+            'videos' => $videos,
+            'categories' => $categories,
+            'categoryCounts' => $categoryCounts,
+        ]);
+    }
+
     public function recrutement(): View
     {
         $blocks = $this->loadBlocks();
@@ -331,6 +362,7 @@ class VitrineController extends Controller
                 'partners' => ['section_title' => 'Nos Partenaires', 'items' => []],
                 'academy' => ['section_title' => 'LDM Academy', 'documents' => []],
                 'faq' => ['section_title' => 'Foire Aux Questions', 'items' => []],
+                'vos-patients' => ['section_title' => 'Des sourires qui parlent', 'categories' => [], 'videos' => []],
                 'recrutement' => ['section_title' => 'Rejoindre LDM', 'items' => []],
                 'contact' => ['title' => 'Contact', 'items' => []],
                 'footer' => ['brand_description' => '', 'social_links' => [], 'columns' => [], 'copyright' => 'LDM', 'legal_link' => ['label' => 'Mentions légales', 'href' => '/mentions-legales']],

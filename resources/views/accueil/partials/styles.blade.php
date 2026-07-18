@@ -1880,6 +1880,7 @@
     .laboratory-hero,
     .academy-hero,
     .faq-hero,
+    .vos-patients-hero,
     .legal-hero {
       position: relative;
       min-height: 48vh;
@@ -6108,6 +6109,356 @@
       line-height: 1.6;
     }
 
+    /* Vos patients Page */
+    .vos-patients-page {
+      min-height: 100vh;
+    }
+
+    .vos-patients-hero__bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 14% 20%, rgba(20, 184, 166, 0.28) 0%, transparent 42%),
+        radial-gradient(circle at 86% 28%, rgba(14, 165, 233, 0.24) 0%, transparent 40%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.97) 0%, rgba(15, 23, 42, 0.9) 55%, rgba(15, 23, 42, 0.98) 100%),
+        url('https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=1920&q=80') center/cover no-repeat;
+      z-index: 0;
+    }
+
+    .vos-patients-hero__content {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+    }
+
+    .vos-patients-hero__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.5rem 1rem;
+      background: rgba(45, 212, 191, 0.14);
+      border: 1px solid rgba(45, 212, 191, 0.3);
+      border-radius: 999px;
+      color: #ccfbf1;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1.35rem;
+    }
+
+    .vos-patients-hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2.1rem, 5vw, 3.4rem);
+      font-weight: 700;
+      line-height: 1.1;
+      color: #f9fafb;
+      margin-bottom: 1rem;
+    }
+
+    .vos-patients-hero p {
+      font-size: clamp(1rem, 2vw, 1.15rem);
+      color: rgba(241, 245, 249, 0.88);
+      max-width: 560px;
+      line-height: 1.7;
+    }
+
+    .vos-patients-hero__stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      margin-top: 1.75rem;
+    }
+
+    .vos-patients-hero__stat {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding: 0.85rem 1.15rem;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(8px);
+      min-width: 110px;
+    }
+
+    .vos-patients-hero__stat strong {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.45rem;
+      color: #fff;
+      line-height: 1.1;
+    }
+
+    .vos-patients-hero__stat span {
+      font-size: 0.78rem;
+      color: rgba(226, 232, 240, 0.8);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+
+    .vos-patients-body {
+      position: relative;
+      z-index: 1;
+      margin-top: -2rem;
+      padding: 0 5% 5rem;
+      max-width: 1240px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .vos-patients-toolbar {
+      margin-bottom: 1.75rem;
+    }
+
+    .vos-patients-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      padding: 0.75rem;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+    }
+
+    .vos-patients-filter {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.65rem 0.95rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #475569;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .vos-patients-filter i {
+      font-size: 0.85rem;
+      color: #0ea5e9;
+    }
+
+    .vos-patients-filter span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.45rem;
+      height: 1.45rem;
+      padding: 0 0.4rem;
+      border-radius: 999px;
+      background: rgba(14, 165, 233, 0.1);
+      color: #0284c7;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .vos-patients-filter:hover {
+      background: rgba(14, 165, 233, 0.08);
+      color: #0f172a;
+    }
+
+    .vos-patients-filter.is-active {
+      background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(14, 165, 233, 0.28);
+    }
+
+    .vos-patients-filter.is-active i,
+    .vos-patients-filter.is-active span {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .vos-patients-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.5rem;
+    }
+
+    .vos-patients-card {
+      display: flex;
+      flex-direction: column;
+      border-radius: 22px;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07);
+      animation: vosPatientsCardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--delay, 0ms);
+      transition: transform 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .vos-patients-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 26px 52px rgba(14, 165, 233, 0.16);
+    }
+
+    .vos-patients-card[hidden] {
+      display: none !important;
+    }
+
+    .vos-patients-card__media {
+      position: relative;
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      overflow: hidden;
+      background: #0f172a;
+    }
+
+    .vos-patients-card__thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .vos-patients-card__thumb--fallback {
+      display: block;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(45, 212, 191, 0.35), transparent 55%),
+        linear-gradient(135deg, #0f172a 0%, #164e63 100%);
+    }
+
+    .vos-patients-card:hover .vos-patients-card__thumb {
+      transform: scale(1.06);
+    }
+
+    .vos-patients-card__play {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.28);
+      transition: background 0.3s ease;
+    }
+
+    .vos-patients-card__play i {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.95);
+      color: #0284c7;
+      font-size: 1.15rem;
+      padding-left: 3px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
+      transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
+    }
+
+    .vos-patients-card:hover .vos-patients-card__play {
+      background: rgba(15, 23, 42, 0.4);
+    }
+
+    .vos-patients-card:hover .vos-patients-card__play i {
+      transform: scale(1.08);
+      background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%);
+      color: #fff;
+    }
+
+    .vos-patients-card__body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      padding: 1.25rem 1.35rem 1.45rem;
+    }
+
+    .vos-patients-card__category {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      align-self: flex-start;
+      padding: 0.3rem 0.7rem;
+      border-radius: 999px;
+      background: rgba(20, 184, 166, 0.1);
+      color: #0f766e;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .vos-patients-card__body h2 {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.3;
+    }
+
+    .vos-patients-card__body p {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .vos-patients-empty {
+      text-align: center;
+      padding: 4rem 1.5rem;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
+    }
+
+    .vos-patients-empty__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      margin-bottom: 1rem;
+      background: rgba(20, 184, 166, 0.12);
+      color: #0d9488;
+      font-size: 1.45rem;
+    }
+
+    .vos-patients-empty h2 {
+      margin: 0 0 0.5rem;
+      color: var(--text);
+      font-size: 1.35rem;
+    }
+
+    .vos-patients-empty p {
+      margin: 0;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    @@keyframes vosPatientsCardIn {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @@media (max-width: 1024px) {
+      .vos-patients-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @@media (max-width: 640px) {
+      .vos-patients-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     /* FAQ Page */
     .faq-page {
       min-height: 100vh;
@@ -8186,7 +8537,8 @@
       .about-hero,
       .laboratory-hero,
       .academy-hero,
-      .faq-hero {
+      .faq-hero,
+      .vos-patients-hero {
         min-height: auto;
         padding: calc(var(--site-header-offset) + var(--inner-hero-gap)) 1.25rem 3rem;
       }

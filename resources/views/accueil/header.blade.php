@@ -49,6 +49,7 @@
               || (VitrineBlock::isPublicPageActive('process') && str_contains($navHref, '/process'))
               || (VitrineBlock::isPublicPageActive('gallery') && ($navPath === '/gallery' || $navPath === 'gallery'))
               || (VitrineBlock::isPublicPageActive('faq') && str_contains($navHref, '/faq'))
+              || (VitrineBlock::isPublicPageActive('vos-patients') && str_contains($navHref, '/vos-patients'))
               || (VitrineBlock::isPublicPageActive('recrutement') && str_contains($navHref, '/recrutement'))
           );
         @endphp
