@@ -23,6 +23,7 @@ class RecrutementOffersSeeder extends Seeder
                 'gender' => 'Indifférent',
                 'description_html' => '<p>Nous recherchons un(e) technicien(ne) prothésiste motivé(e) pour renforcer notre équipe de fabrication numérique.</p><ul><li>Maîtrise des workflow CAD/CAM</li><li>Esprit d’équipe et rigueur</li><li>Sens du détail esthétique</li></ul>',
                 'is_active' => true,
+                'is_expired' => false,
             ],
             [
                 'title' => 'Responsable qualité & traçabilité',
@@ -34,6 +35,7 @@ class RecrutementOffersSeeder extends Seeder
                 'gender' => 'Indifférent',
                 'description_html' => '<p>Vous pilotez la démarche qualité du laboratoire et garantissez la conformité des dispositifs prothétiques.</p><ul><li>Suivi des non-conformités et actions correctives</li><li>Traçabilité des matériaux et des lots</li><li>Rédaction et mise à jour des procédures internes</li><li>Coordination avec les équipes de production</li></ul><p>Profil organisé, rigoureux et à l’aise avec la documentation qualité.</p>',
                 'is_active' => true,
+                'is_expired' => false,
             ],
         ];
     }

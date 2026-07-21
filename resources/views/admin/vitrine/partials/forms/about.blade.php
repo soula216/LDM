@@ -80,6 +80,29 @@
         ->map(fn ($label, $slug) => ['slug' => $slug, 'label' => $label])
         ->values()
         ->all();
+    $menuVisibility = collect(VitrineBlock::aboutMenuVisibilityDefaults())
+        ->mapWithKeys(fn (bool $default, string $slug) => [
+            $slug => filter_var($c['menu_visibility'][$slug] ?? $default, FILTER_VALIDATE_BOOLEAN),
+        ])
+        ->all();
+    $menuVisibilityGroups = [
+        VitrineBlock::aboutOverviewPageSlug() => [
+            'label' => VitrineBlock::aboutOverviewPageLabel(),
+            'children' => VitrineBlock::aboutOverviewTabs(),
+        ],
+        VitrineBlock::aboutCollaborationPageSlug() => [
+            'label' => VitrineBlock::aboutCollaborationPageLabel(),
+            'children' => VitrineBlock::aboutCollaborationTabs(),
+        ],
+        VitrineBlock::aboutWorkPageSlug() => [
+            'label' => VitrineBlock::aboutWorkPageLabel(),
+            'children' => VitrineBlock::aboutWorkTabs(),
+        ],
+        VitrineBlock::aboutLaboratoryPageSlug() => [
+            'label' => VitrineBlock::aboutLaboratoryPageLabel(),
+            'children' => [],
+        ],
+    ];
 
     $aboutBlock = $aboutBlock ?? null;
     $laboratoryBlock = $laboratoryBlock ?? null;
@@ -94,6 +117,7 @@
      x-data="{
         activeSub: @js($activeAboutSub),
         subMenuItems: @js($subMenuItems),
+        menuVisibility: @js($menuVisibility),
         open: { content: true, photos: true, videos: true, mediaPhotos: true },
         photos: @js($photos),
         videos: @js($videos),
@@ -211,7 +235,7 @@
         <nav class="bg-card/60 backdrop-blur-md border border-border rounded-2xl shadow-sm overflow-hidden" aria-label="Sous-sections Le Laboratoire">
             <div class="px-4 py-3 border-b border-border/70">
                 <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">Sous-menus</p>
-                <p class="text-[11px] text-secondary mt-1">Utilisez les flèches pour modifier l’ordre.</p>
+                <p class="text-[11px] text-secondary mt-1">Gérez l’ordre et la visibilité dans le menu public.</p>
             </div>
             <form action="{{ route('admin.vitrine.about-subpage-order') }}" method="POST" class="p-1.5">
                 @csrf
@@ -264,8 +288,49 @@
                     </template>
                 </div>
 
+                <div class="mt-4 pt-4 border-t border-border/70 space-y-3">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">Visibilité dans le menu</p>
+                        <p class="text-[10px] text-secondary mt-1">Niveau 1 : groupes · Niveau 2 : pages</p>
+                    </div>
+
+                    @foreach($menuVisibilityGroups as $groupSlug => $group)
+                        <div class="rounded-xl border border-border/70 bg-card overflow-hidden">
+                            <label class="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer">
+                                <input type="hidden" name="menu_visibility[{{ $groupSlug }}]" value="0">
+                                <input type="checkbox"
+                                       name="menu_visibility[{{ $groupSlug }}]"
+                                       value="1"
+                                       x-model="menuVisibility['{{ $groupSlug }}']"
+                                       class="rounded border-border text-primary focus:ring-primary/30">
+                                <span class="min-w-0 flex-1">
+                                    <span class="block text-xs font-semibold text-primary truncate">{{ $group['label'] }}</span>
+                                    <span class="block text-[10px] text-secondary">Sous-menu niveau 1</span>
+                                </span>
+                            </label>
+
+                            @if(count($group['children']) > 0)
+                                <div class="border-t border-border/60 bg-neutral-50/60 px-3 py-2 space-y-2"
+                                     :class="menuVisibility['{{ $groupSlug }}'] ? '' : 'opacity-50'">
+                                    @foreach($group['children'] as $childSlug => $child)
+                                        <label class="flex items-center gap-2 pl-3 cursor-pointer">
+                                            <input type="hidden" name="menu_visibility[{{ $childSlug }}]" value="0">
+                                            <input type="checkbox"
+                                                   name="menu_visibility[{{ $childSlug }}]"
+                                                   value="1"
+                                                   x-model="menuVisibility['{{ $childSlug }}']"
+                                                   class="rounded border-border text-primary focus:ring-primary/30">
+                                            <span class="text-[11px] font-medium text-secondary truncate">{{ $child['label'] }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+
                 <button type="submit" class="btn-primary w-full mt-3 px-3 py-2 text-xs font-semibold rounded-xl">
-                    Enregistrer l’ordre
+                    Enregistrer le menu
                 </button>
             </form>
         </nav>

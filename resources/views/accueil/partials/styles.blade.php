@@ -313,7 +313,7 @@
       opacity: 1;
       visibility: visible;
       pointer-events: auto;
-      transform: translateX(-50%) translateY(0);
+      transform: translateX(-50%) translateY(-6%);
     }
 
     .nav-dropdown a {

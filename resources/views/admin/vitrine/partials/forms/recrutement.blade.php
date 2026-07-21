@@ -29,6 +29,7 @@
             'gender' => $gender,
             'description_html' => $item['description_html'] ?? '',
             'is_active' => filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'is_expired' => filter_var($item['is_expired'] ?? false, FILTER_VALIDATE_BOOLEAN),
         ];
     })->values()->all();
 @endphp
@@ -56,6 +57,7 @@
                 gender: 'Indifférent',
                 description_html: '',
                 is_active: true,
+                is_expired: false,
             });
             const newIndex = this.items.length - 1;
             this.$nextTick(() => this.initRecrutementHtmlEditor(newIndex));
@@ -207,7 +209,9 @@
                 <div class="space-y-4" x-show="items.length > 0">
                     <template x-for="(item, index) in items" :key="item._uid">
                         <div class="rounded-xl border bg-card shadow-sm overflow-hidden transition-colors"
-                             :class="item.is_active ? 'border-border' : 'border-amber-200/80 bg-amber-50/20'">
+                             :class="item.is_expired
+                                ? 'border-rose-200/80 bg-rose-50/30'
+                                : (item.is_active ? 'border-border' : 'border-amber-200/80 bg-amber-50/20')">
                             <div class="flex items-center justify-between gap-2 px-4 py-3 bg-neutral-50/80 border-b border-border/60">
                                 <button type="button"
                                         @click="toggleItemOpen(index)"
@@ -215,7 +219,10 @@
                                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-700 text-xs font-bold shrink-0" x-text="index + 1"></span>
                                     <div class="min-w-0 flex-1">
                                         <p class="text-sm font-semibold text-primary truncate" x-text="itemLabel(item, index)"></p>
-                                        <p class="text-xs text-secondary mt-0.5" x-text="item.is_active ? (item.vacancies + ' poste(s) · Visible') : 'Masquée sur le site'"></p>
+                                        <p class="text-xs text-secondary mt-0.5"
+                                           x-text="item.is_expired
+                                              ? 'Offre expirée · Masquée sur le site'
+                                              : (item.is_active ? (item.vacancies + ' poste(s) · Visible') : 'Masquée sur le site')"></p>
                                     </div>
                                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border/70 bg-card text-secondary shrink-0 transition-all duration-200 group-hover:border-primary/30 group-hover:text-primary"
                                           :class="item.open ? 'rotate-180 bg-primary/5 border-primary/20 text-primary' : ''">
@@ -247,6 +254,19 @@
                                     <input type="checkbox" :name="'content[items][' + index + '][is_active]'" value="1" x-model="item.is_active"
                                            class="w-5 h-5 rounded-md border-border text-primary focus:ring-primary/30 transition">
                                     <span class="text-sm font-medium text-secondary group-hover:text-primary transition-colors">Afficher cette offre sur le site</span>
+                                </label>
+
+                                <label class="inline-flex items-start gap-3 cursor-pointer group pb-4 mb-2 border-b border-border/50 w-full">
+                                    <input type="hidden" :name="'content[items][' + index + '][is_expired]'" value="0">
+                                    <input type="checkbox"
+                                           :name="'content[items][' + index + '][is_expired]'"
+                                           value="1"
+                                           x-model="item.is_expired"
+                                           class="w-5 h-5 mt-0.5 rounded-md border-border text-rose-600 focus:ring-rose-500/30 transition">
+                                    <span>
+                                        <span class="block text-sm font-medium text-secondary group-hover:text-primary transition-colors">Offre expirée</span>
+                                        <span class="block text-xs text-secondary mt-1">Une offre expirée est automatiquement masquée sur le site public.</span>
+                                    </span>
                                 </label>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

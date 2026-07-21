@@ -15,13 +15,28 @@
     $footerLogoAlt = $footer['logo_alt'] ?? $headerLogoAlt;
     $footerLogoSrc = VitrineBlock::resolveLogoDisplayUrl($footer['logo_url'] ?? null);
     $homeUrl = route('vitrine');
-    $aboutSubPages = VitrineBlock::orderedAboutSubPages($blocks['about'] ?? []);
-    $aboutOverviewTabs = VitrineBlock::aboutOverviewTabs();
+    $aboutContent = $blocks['about'] ?? [];
+    $aboutSubPages = collect(VitrineBlock::orderedAboutMenuSubPages($aboutContent))
+        ->filter(fn (array $page, string $slug): bool => VitrineBlock::isAboutMenuItemVisible($aboutContent, $slug))
+        ->all();
+    $aboutOverviewTabs = collect(VitrineBlock::aboutOverviewTabs())
+        ->filter(fn (array $tab, string $slug): bool => VitrineBlock::isAboutMenuItemVisible($aboutContent, $slug))
+        ->all();
     $aboutOverviewTabKeys = array_keys($aboutOverviewTabs);
-    $aboutWorkTabs = VitrineBlock::aboutWorkTabs();
+    $aboutWorkTabs = collect(VitrineBlock::aboutWorkTabs())
+        ->filter(fn (array $tab, string $slug): bool => VitrineBlock::isAboutMenuItemVisible($aboutContent, $slug))
+        ->all();
     $aboutWorkTabKeys = array_keys($aboutWorkTabs);
-    $aboutCollaborationTabs = VitrineBlock::aboutCollaborationTabs();
+    $aboutCollaborationTabs = collect(VitrineBlock::aboutCollaborationTabs())
+        ->filter(fn (array $tab, string $slug): bool => VitrineBlock::isAboutMenuItemVisible($aboutContent, $slug))
+        ->all();
     $aboutCollaborationTabKeys = array_keys($aboutCollaborationTabs);
+    $showAboutOverviewMenu = VitrineBlock::isAboutMenuItemVisible($aboutContent, VitrineBlock::aboutOverviewPageSlug())
+        && count($aboutOverviewTabs) > 0;
+    $showAboutWorkMenu = VitrineBlock::isAboutMenuItemVisible($aboutContent, VitrineBlock::aboutWorkPageSlug())
+        && count($aboutWorkTabs) > 0;
+    $showAboutCollaborationMenu = VitrineBlock::isAboutMenuItemVisible($aboutContent, VitrineBlock::aboutCollaborationPageSlug())
+        && count($aboutCollaborationTabs) > 0;
 @endphp
 {{-- Header / Navigation --}}
 <header class="site-header" id="siteHeader">
@@ -80,7 +95,7 @@
               @endphp
               @foreach($aboutSubPages as $key => $subPage)
                 @if(in_array($key, $aboutOverviewTabKeys, true))
-                  @if(! $aboutOverviewRendered)
+                  @if(! $aboutOverviewRendered && $showAboutOverviewMenu)
                     @php
                       $aboutOverviewRendered = true;
                       $isOverviewActive = request()->routeIs('vitrine.about.show')
@@ -118,7 +133,7 @@
                     </li>
                   @endif
                 @elseif(in_array($key, $aboutWorkTabKeys, true))
-                  @if(! $aboutWorkRendered)
+                  @if(! $aboutWorkRendered && $showAboutWorkMenu)
                     @php
                       $aboutWorkRendered = true;
                       $isWorkActive = request()->routeIs('vitrine.about.show')
@@ -156,7 +171,7 @@
                     </li>
                   @endif
                 @elseif(in_array($key, $aboutCollaborationTabKeys, true))
-                  @if(! $aboutCollaborationRendered)
+                  @if(! $aboutCollaborationRendered && $showAboutCollaborationMenu)
                     @php
                       $aboutCollaborationRendered = true;
                       $isCollaborationActive = request()->routeIs('vitrine.about.show')

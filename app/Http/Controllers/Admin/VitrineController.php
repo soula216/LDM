@@ -198,6 +198,16 @@ class VitrineController extends Controller
         $aboutBlock = VitrineBlock::query()->where('key', 'about')->firstOrFail();
         $content = $aboutBlock->content ?? [];
         $content['subpage_order'] = $order->all();
+
+        $submittedVisibility = $request->input('menu_visibility');
+        if (is_array($submittedVisibility)) {
+            $content['menu_visibility'] = collect(VitrineBlock::aboutMenuVisibilityDefaults())
+                ->mapWithKeys(fn (bool $default, string $slug): array => [
+                    $slug => filter_var($submittedVisibility[$slug] ?? false, FILTER_VALIDATE_BOOLEAN),
+                ])
+                ->all();
+        }
+
         $aboutBlock->update(['content' => $content]);
 
         return redirect()
@@ -205,7 +215,7 @@ class VitrineController extends Controller
                 'tab' => 'about',
                 'sub' => $request->input('active_sub', $order->first() ?? 'qui-sommes-nous'),
             ])
-            ->with('success', 'L’ordre des sous-pages a été enregistré.');
+            ->with('success', 'L’ordre et la visibilité des sous-menus ont été enregistrés.');
     }
 
     private function processHeroSlides(Request $request, array $content, array $existingContent): array
@@ -1287,6 +1297,8 @@ class VitrineController extends Controller
     {
         $content['subpage_order'] = $existingContent['subpage_order']
             ?? array_keys(VitrineBlock::aboutSubPages());
+        $content['menu_visibility'] = $existingContent['menu_visibility']
+            ?? VitrineBlock::aboutMenuVisibilityDefaults();
         $content['title'] = trim((string) ($content['title'] ?? ''));
         $content['description'] = trim((string) ($content['description'] ?? ''));
         $content['section_label'] = trim((string) ($content['section_label'] ?? 'À propos'));
@@ -1782,6 +1794,7 @@ class VitrineController extends Controller
                 'gender' => $gender,
                 'description_html' => $descriptionHtml,
                 'is_active' => filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                'is_expired' => filter_var($item['is_expired'] ?? false, FILTER_VALIDATE_BOOLEAN),
             ];
         }
 

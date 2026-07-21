@@ -185,6 +185,7 @@ class VitrineBlockSeeder extends Seeder
                     'certifications_kicker' => 'Qualité certifiée',
                     'certifications_heading' => 'Des standards reconnus, une qualité maîtrisée',
                     'certifications_lead' => 'Nos certifications témoignent de notre engagement pour des processus fiables, des matériaux conformes et une traçabilité rigoureuse.',
+                    'menu_visibility' => VitrineBlock::aboutMenuVisibilityDefaults(),
                     'subpage_order' => [
                         'qui-sommes-nous',
                         'notre-mission',

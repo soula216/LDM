@@ -674,6 +674,7 @@ class VitrineBlock extends Model
         return collect($items)
             ->filter(function (array $item): bool {
                 return filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN)
+                    && ! filter_var($item['is_expired'] ?? false, FILTER_VALIDATE_BOOLEAN)
                     && filled($item['title'] ?? null);
             })
             ->map(function (array $item): array {
@@ -1442,6 +1443,35 @@ class VitrineBlock extends Model
     }
 
     /**
+     * Toutes les entrées configurables des sous-menus Le Laboratoire.
+     *
+     * @return array<string, bool>
+     */
+    public static function aboutMenuVisibilityDefaults(): array
+    {
+        $keys = [
+            static::aboutOverviewPageSlug(),
+            static::aboutCollaborationPageSlug(),
+            static::aboutWorkPageSlug(),
+            static::aboutLaboratoryPageSlug(),
+            ...array_keys(static::aboutOverviewTabs()),
+            ...array_keys(static::aboutCollaborationTabs()),
+            ...array_keys(static::aboutWorkTabs()),
+        ];
+
+        return array_fill_keys(array_unique($keys), true);
+    }
+
+    public static function isAboutMenuItemVisible(array $about, string $slug): bool
+    {
+        $visibility = is_array($about['menu_visibility'] ?? null)
+            ? $about['menu_visibility']
+            : [];
+
+        return filter_var($visibility[$slug] ?? true, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
      * @return array<string, array{label: string, route: string}>
      */
     public static function aboutSubPages(): array
@@ -1511,6 +1541,41 @@ class VitrineBlock extends Model
             if (! array_key_exists($slug, $ordered)) {
                 $ordered[$slug] = $page;
             }
+        }
+
+        return $ordered;
+    }
+
+    /**
+     * Ordre du menu public, avec Services injecté dans son groupe virtuel.
+     *
+     * @param  array<string, mixed>  $about
+     * @return array<string, array{label: string, route: string}>
+     */
+    public static function orderedAboutMenuSubPages(array $about = []): array
+    {
+        $pages = static::orderedAboutSubPages($about);
+        $ordered = [];
+        $servicesAdded = false;
+        $collaborationKeys = array_keys(static::aboutCollaborationTabs());
+
+        foreach ($pages as $slug => $page) {
+            if (! $servicesAdded && in_array($slug, $collaborationKeys, true)) {
+                $ordered['services'] = [
+                    'label' => 'Services',
+                    'route' => 'vitrine.about.show',
+                ];
+                $servicesAdded = true;
+            }
+
+            $ordered[$slug] = $page;
+        }
+
+        if (! $servicesAdded) {
+            $ordered['services'] = [
+                'label' => 'Services',
+                'route' => 'vitrine.about.show',
+            ];
         }
 
         return $ordered;
