@@ -46,7 +46,14 @@ Route::redirect('/process', '/le-laboratoire/process-de-travail', 301)->name('vi
 Route::get('/gallery', [VitrineController::class, 'gallery'])->name('vitrine.gallery');
 Route::get('/le-laboratoire', [VitrineController::class, 'about'])->name('vitrine.about');
 Route::get('/le-laboratoire/{page}', [VitrineController::class, 'aboutShow'])
-    ->where('page', implode('|', array_keys(\App\Models\VitrineBlock::aboutSubPages())))
+    ->where('page', implode('|', array_merge(
+        [
+            \App\Models\VitrineBlock::aboutOverviewPageSlug(),
+            \App\Models\VitrineBlock::aboutWorkPageSlug(),
+            \App\Models\VitrineBlock::aboutCollaborationPageSlug(),
+        ],
+        array_keys(\App\Models\VitrineBlock::aboutSubPages())
+    )))
     ->name('vitrine.about.show');
 Route::permanentRedirect('/about', '/le-laboratoire');
 Route::redirect('/laboratoire', '/le-laboratoire/galerie-equipe-equipement', 301)->name('vitrine.laboratory');

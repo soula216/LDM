@@ -4,11 +4,30 @@
     use App\Models\VitrineBlock;
 
     $aboutPage = $aboutPage ?? 'qui-sommes-nous';
+    $isOverviewPage = VitrineBlock::isAboutOverviewPage($aboutPage);
+    $aboutTabs = VitrineBlock::aboutOverviewTabs();
+    $activeAboutTab = $activeAboutTab ?? 'qui-sommes-nous';
+    $isWorkPage = VitrineBlock::isAboutWorkPage($aboutPage);
+    $workTabs = VitrineBlock::aboutWorkTabs();
+    $activeWorkTab = $activeWorkTab ?? 'processus-de-qualite';
+    $isCollaborationPage = VitrineBlock::isAboutCollaborationPage($aboutPage);
+    $collaborationTabs = VitrineBlock::aboutCollaborationTabs();
+    $activeCollaborationTab = $activeCollaborationTab ?? 'services';
+    $contentPage = match (true) {
+        $isWorkPage => $activeWorkTab,
+        $isCollaborationPage => $activeCollaborationTab,
+        default => $aboutPage,
+    };
     $subPages = VitrineBlock::orderedAboutSubPages($about);
-    $pageLabel = $subPages[$aboutPage]['label'] ?? 'Le Laboratoire';
-    $isInfoPage = VitrineBlock::isAboutInfoPage($aboutPage);
-    $isMediaPage = VitrineBlock::isAboutMediaPage($aboutPage);
-    $infoPage = $isInfoPage ? VitrineBlock::aboutInfoPage($about, $aboutPage) : null;
+    $pageLabel = match (true) {
+        $isOverviewPage => VitrineBlock::aboutOverviewPageLabel(),
+        $isWorkPage => VitrineBlock::aboutWorkPageLabel(),
+        $isCollaborationPage => VitrineBlock::aboutCollaborationPageLabel(),
+        default => $subPages[$contentPage]['label'] ?? 'Le Laboratoire',
+    };
+    $isInfoPage = VitrineBlock::isAboutInfoPage($contentPage);
+    $isMediaPage = VitrineBlock::isAboutMediaPage($contentPage);
+    $infoPage = $isInfoPage ? VitrineBlock::aboutInfoPage($about, $contentPage) : null;
     $mediaPage = $isMediaPage ? VitrineBlock::aboutMediaPage($about) : null;
     $mediaPhotos = $isMediaPage ? VitrineBlock::aboutMediaPagePhotos($about) : collect();
 
@@ -20,13 +39,54 @@
     $hasDescription = filled($about['description'] ?? null);
     $hasBothMediaTypes = $photos->isNotEmpty() && $videos->isNotEmpty();
     $mediaIndex = 0;
+    $isMissionTab = $isOverviewPage && $activeAboutTab === 'notre-mission';
+    $isPrinciplesTab = $isOverviewPage && $activeAboutTab === 'nos-principe';
+    $isCertificationsTab = $isWorkPage && $activeWorkTab === VitrineBlock::aboutMediaPageSlug();
+    $isWarrantyTab = $isWorkPage && $activeWorkTab === 'garantie';
+    $isServicesTab = $isCollaborationPage && $activeCollaborationTab === 'services';
+    $isProcessTab = $isCollaborationPage && $activeCollaborationTab === VitrineBlock::aboutProcessPageSlug();
 
     $heroBadge = match (true) {
+        $isMissionTab => filled($about['sections_kicker'] ?? null)
+            ? $about['sections_kicker']
+            : 'En détail',
+        $isPrinciplesTab => filled($about['principles_kicker'] ?? null)
+            ? $about['principles_kicker']
+            : 'Nos valeurs',
+        $isCertificationsTab => filled($about['certifications_kicker'] ?? null)
+            ? $about['certifications_kicker']
+            : 'Qualité certifiée',
+        $isWarrantyTab => filled($infoPage['hero_kicker'] ?? null)
+            ? $infoPage['hero_kicker']
+            : 'Votre sérénité',
+        $isServicesTab => $services['section_label'] ?? 'Nos Services',
+        $isProcessTab => $process['section_label'] ?? 'Notre Process',
+        $isCollaborationPage => VitrineBlock::aboutCollaborationPageLabel(),
+        $isWorkPage => VitrineBlock::aboutWorkPageLabel(),
         $isMediaPage => $mediaPage['section_label'] ?? 'Certifications',
+        $isOverviewPage => VitrineBlock::aboutOverviewPageLabel(),
         default => $about['section_label'] ?? 'Le Laboratoire',
     };
 
     $heroTitle = match (true) {
+        $isMissionTab => filled($about['sections_heading'] ?? null)
+            ? $about['sections_heading']
+            : ($mission['title'] ?? 'Notre mission'),
+        $isPrinciplesTab => filled($about['principles_heading'] ?? null)
+            ? $about['principles_heading']
+            : ($principles['title'] ?? 'Nos principe'),
+        $isCertificationsTab => filled($about['certifications_heading'] ?? null)
+            ? $about['certifications_heading']
+            : ($mediaPage['title'] ?? 'Certifications'),
+        $isWarrantyTab => filled($infoPage['hero_heading'] ?? null)
+            ? $infoPage['hero_heading']
+            : ($infoPage['title'] ?? 'Garantie'),
+        $isServicesTab => $services['section_title'] ?? 'Solutions Complètes',
+        $isProcessTab => $process['section_title'] ?? 'Comment Nous Travaillons',
+        $isCollaborationPage && $isInfoPage => $infoPage['title'] ?? $pageLabel,
+        $isWorkPage && $isInfoPage => $infoPage['title'] ?? $pageLabel,
+        $isWorkPage && $isMediaPage => $mediaPage['title'] ?? $pageLabel,
+        $isOverviewPage => $about['title'] ?? 'À propos de LDM',
         $aboutPage === 'notre-mission' => $mission['title'] ?? 'Notre mission',
         $aboutPage === 'nos-principe' => $principles['title'] ?? 'Nos principe',
         $isInfoPage => $infoPage['title'] ?? $pageLabel,
@@ -34,7 +94,35 @@
         default => $about['title'] ?? 'Notre laboratoire',
     };
 
+    $heroDescription = match (true) {
+        $isMissionTab => trim((string) ($about['sections_lead'] ?? '')),
+        $isPrinciplesTab => trim((string) ($about['principles_lead'] ?? '')),
+        $isCertificationsTab => trim((string) ($about['certifications_lead'] ?? '')),
+        $isWarrantyTab => trim((string) ($infoPage['hero_lead'] ?? '')),
+        $isServicesTab => trim((string) ($services['section_subtitle'] ?? '')),
+        $isProcessTab => trim((string) ($process['section_subtitle'] ?? '')),
+        default => '',
+    };
+
+    $heroIcon = match (true) {
+        $isWorkPage && $activeWorkTab === 'processus-de-qualite' => 'fa-list-check',
+        $isWorkPage && $activeWorkTab === VitrineBlock::aboutMediaPageSlug() => 'fa-certificate',
+        $isWorkPage && $activeWorkTab === 'garantie' => 'fa-shield-alt',
+        $isServicesTab => 'fa-tooth',
+        $isProcessTab => 'fa-project-diagram',
+        $isCollaborationPage => 'fa-handshake',
+        $isMediaPage => 'fa-images',
+        $isOverviewPage && $activeAboutTab === 'notre-mission' => 'fa-bullseye',
+        $isOverviewPage && $activeAboutTab === 'nos-principe' => 'fa-compass',
+        $isOverviewPage => 'fa-users',
+        default => 'fa-building',
+    };
+
     $documentTitle = match (true) {
+        $isOverviewPage => VitrineBlock::aboutOverviewPageLabel(),
+        $isWorkPage => VitrineBlock::aboutWorkPageLabel(),
+        $isCollaborationPage => $collaborationTabs[$activeCollaborationTab]['label']
+            ?? VitrineBlock::aboutCollaborationPageLabel(),
         $isInfoPage => $infoPage['title'] ?? $pageLabel,
         $isMediaPage => $mediaPage['title'] ?? $pageLabel,
         default => $pageLabel,
@@ -54,16 +142,64 @@
     <div class="about-hero__mesh" aria-hidden="true"></div>
     <div class="about-hero__content">
       <div class="about-hero__badge">
-        <i class="fas {{ $isMediaPage ? 'fa-images' : 'fa-building' }}" aria-hidden="true"></i>
+        <i class="fas {{ $heroIcon }}" aria-hidden="true"></i>
         <span>{{ $heroBadge }}</span>
       </div>
       <h1>{{ $heroTitle }}</h1>
+      @if(filled($heroDescription))
+        <p class="about-hero__description">{{ $heroDescription }}</p>
+      @endif
       <div class="about-hero__line" aria-hidden="true"></div>
     </div>
   </section>
 
-  <section @class(['about-body', 'about-body--standalone' => $aboutPage !== 'qui-sommes-nous'])>
-    @if($aboutPage === 'qui-sommes-nous')
+  <section @class([
+      'about-body',
+      'about-body--standalone' => $aboutPage !== 'qui-sommes-nous' && ! $isOverviewPage && ! $isWorkPage && ! $isCollaborationPage,
+  ])>
+    @if($isOverviewPage)
+      <nav class="about-overview-tabs reveal" role="tablist" aria-label="Rubriques À propos">
+        @foreach($aboutTabs as $tabKey => $tab)
+          <a href="{{ route('vitrine.about.show', ['page' => VitrineBlock::aboutOverviewPageSlug(), 'tab' => $tabKey]) }}"
+             role="tab"
+             aria-selected="{{ $activeAboutTab === $tabKey ? 'true' : 'false' }}"
+             @class(['about-overview-tab', 'is-active' => $activeAboutTab === $tabKey])>
+            <span class="about-overview-tab__index">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+            <span>{{ $tab['label'] }}</span>
+          </a>
+        @endforeach
+      </nav>
+    @endif
+
+    @if($isWorkPage)
+      <nav class="about-overview-tabs reveal" role="tablist" aria-label="Rubriques Qualité et Certifications">
+        @foreach($workTabs as $tabKey => $tab)
+          <a href="{{ route('vitrine.about.show', ['page' => VitrineBlock::aboutWorkPageSlug(), 'tab' => $tabKey]) }}"
+             role="tab"
+             aria-selected="{{ $activeWorkTab === $tabKey ? 'true' : 'false' }}"
+             @class(['about-overview-tab', 'is-active' => $activeWorkTab === $tabKey])>
+            <span class="about-overview-tab__index">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+            <span>{{ $tab['label'] }}</span>
+          </a>
+        @endforeach
+      </nav>
+    @endif
+
+    @if($isCollaborationPage)
+      <nav class="about-overview-tabs about-overview-tabs--wide reveal" role="tablist" aria-label="Rubriques Travailler avec LDM">
+        @foreach($collaborationTabs as $tabKey => $tab)
+          <a href="{{ route('vitrine.about.show', ['page' => VitrineBlock::aboutCollaborationPageSlug(), 'tab' => $tabKey]) }}"
+             role="tab"
+             aria-selected="{{ $activeCollaborationTab === $tabKey ? 'true' : 'false' }}"
+             @class(['about-overview-tab', 'is-active' => $activeCollaborationTab === $tabKey])>
+            <span class="about-overview-tab__index">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+            <span>{{ $tab['label'] }}</span>
+          </a>
+        @endforeach
+      </nav>
+    @endif
+
+    @if($aboutPage === 'qui-sommes-nous' || ($isOverviewPage && $activeAboutTab === 'qui-sommes-nous'))
       <div class="about-layout @if(!$hasMedia) about-layout--solo @endif">
         <article class="about-main reveal">
           <div class="about-main__card">
@@ -201,19 +337,25 @@
         </div>
       @endif
 
-    @elseif($aboutPage === 'notre-mission')
+    @elseif($aboutPage === 'notre-mission' || ($isOverviewPage && $activeAboutTab === 'notre-mission'))
       @include('accueil.partials.about-section-page', [
           'section' => $mission,
           'emptyTitle' => 'Mission à venir',
           'emptyText' => 'Notre mission sera bientôt détaillée ici.',
       ])
 
-    @elseif($aboutPage === 'nos-principe')
+    @elseif($aboutPage === 'nos-principe' || ($isOverviewPage && $activeAboutTab === 'nos-principe'))
       @include('accueil.partials.about-section-page', [
           'section' => $principles,
           'emptyTitle' => 'Principes à venir',
           'emptyText' => 'Nos principes seront bientôt détaillés ici.',
       ])
+
+    @elseif($isServicesTab)
+      @include('accueil.partials.about-services-page', ['services' => $services])
+
+    @elseif($isProcessTab)
+      @include('accueil.partials.about-process-page', ['process' => $process])
 
     @elseif($isInfoPage)
       @include('accueil.partials.about-info-page', [
@@ -232,7 +374,7 @@
   </section>
 </main>
 
-@if($aboutPage === 'qui-sommes-nous' || $isMediaPage)
+@if($aboutPage === 'qui-sommes-nous' || $isOverviewPage || $isMediaPage)
   @include('accueil.partials.about-media-modals')
 
   <script>

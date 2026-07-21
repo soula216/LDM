@@ -1,5 +1,13 @@
 @php
     $c = $content;
+    $galleryCategories = collect($c['categories'] ?? [])->map(function ($category) {
+        return [
+            'key' => trim((string) ($category['key'] ?? '')),
+            'label' => trim((string) ($category['label'] ?? '')),
+        ];
+    })->filter(fn (array $category): bool => $category['key'] !== '' || $category['label'] !== '')
+      ->values()
+      ->all();
     $galleryItems = collect($c['items'] ?? [])->map(function ($item) {
         return array_merge($item, [
             'image_url' => \App\Models\VitrineBlock::resolveImageAbsoluteUrl($item['image_url'] ?? ''),
@@ -9,6 +17,7 @@
             ),
             'is_active' => filter_var($item['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'is_favorite' => filter_var($item['is_favorite'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'category' => trim((string) ($item['category'] ?? '')),
         ]);
     })->values()->all();
     $showAllOnSite = count($galleryItems) > 0
@@ -17,9 +26,10 @@
 
 <div class="vitrine-tab-form space-y-6 sm:space-y-8"
      x-data="{
-        open: { header: true, items: true },
+        open: { header: true, categories: true, items: true },
         showAllOnSite: @js($showAllOnSite),
         lightbox: null,
+        categories: @js($galleryCategories),
         items: @js($galleryItems),
         itemPreview(item) { return item.preview_url || item.image_url || ''; },
         updateShowAllFromItems() {
@@ -65,6 +75,27 @@
             this.items.splice(index, 1);
             this.updateShowAllFromItems();
         },
+        categoryKey(index) {
+            return 'categorie-' + (index + 1);
+        },
+        addCategory() {
+            let index = this.categories.length;
+            let key = this.categoryKey(index);
+            while (this.categories.some(category => category.key === key)) {
+                index++;
+                key = this.categoryKey(index);
+            }
+            this.categories.push({ key, label: '' });
+        },
+        removeCategory(index) {
+            const key = this.categories[index]?.key || '';
+            this.categories.splice(index, 1);
+            if (key !== '') {
+                this.items.forEach(item => {
+                    if (item.category === key) item.category = '';
+                });
+            }
+        },
         addItem() {
             this.items.push({
                 image_url: '',
@@ -74,6 +105,7 @@
                 preview_url: null,
                 is_active: this.showAllOnSite,
                 is_favorite: false,
+                category: this.categories[0]?.key || '',
             });
             this.updateShowAllFromItems();
         },
@@ -104,6 +136,65 @@
         <div x-show="open.header" x-cloak x-transition.opacity.duration.200ms>
             <div class="p-4 sm:p-6">
                 @include('admin.vitrine.partials.section-en-tete', ['c' => $c])
+            </div>
+        </div>
+    </section>
+
+    <section class="rounded-2xl border border-border bg-gradient-to-b from-neutral-50/50 to-card overflow-hidden">
+        @component('admin.vitrine.partials.collapsible-header', [
+            'section' => 'categories',
+            'title' => 'Catégories',
+            'subtitle' => 'Créez les catégories proposées pour chaque réalisation',
+            'headerClass' => 'border-b border-border/60 bg-card/80',
+        ])
+            @slot('icon')
+                <div class="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-sky-500/10 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M3 3h7l11 11-7 7L3 10V3z"></path>
+                    </svg>
+                </div>
+            @endslot
+        @endcomponent
+
+        <div x-show="open.categories" x-cloak x-transition.opacity.duration.200ms>
+            <div class="p-4 sm:p-6">
+                <template x-if="categories.length === 0">
+                    <div class="text-center py-8 px-4 rounded-xl border-2 border-dashed border-border bg-neutral-50/50 mb-4">
+                        <p class="text-sm text-secondary font-medium">Aucune catégorie configurée</p>
+                    </div>
+                </template>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="categories.length > 0">
+                    <template x-for="(category, index) in categories" :key="category.key">
+                        <div class="rounded-xl border border-border bg-card p-4 shadow-sm">
+                            <input type="hidden"
+                                   :name="'content[categories][' + index + '][key]'"
+                                   x-model="category.key">
+                            <div class="flex items-end gap-3">
+                                <div class="flex-1 min-w-0">
+                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Nom de la catégorie</label>
+                                    <input type="text"
+                                           :name="'content[categories][' + index + '][label]'"
+                                           x-model="category.label"
+                                           class="input-field w-full text-sm"
+                                           placeholder="Ex. Implantologie">
+                                </div>
+                                <button type="button"
+                                        @click="removeCategory(index)"
+                                        class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-danger hover:bg-danger/10 border border-border hover:border-danger/20 transition-colors shrink-0"
+                                        title="Supprimer la catégorie">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-border/60">
+                    @include('admin.vitrine.partials.btn-add', ['label' => 'Ajouter une catégorie', 'click' => 'addCategory()'])
+                </div>
             </div>
         </div>
     </section>
@@ -242,6 +333,22 @@
                                         </label>
                                     </div>
                                 </template>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Catégorie</label>
+                                    <select :name="'content[items][' + index + '][category]'"
+                                            x-model="item.category"
+                                            class="input-field w-full text-sm">
+                                        <option value="">Sans catégorie</option>
+                                        <template x-for="category in categories" :key="category.key">
+                                            <option :value="category.key"
+                                                    x-text="(category.label || '').trim() !== '' ? category.label : 'Catégorie sans nom'"></option>
+                                        </template>
+                                    </select>
+                                    <p class="mt-1.5 text-xs text-secondary" x-show="categories.length === 0">
+                                        Ajoutez d’abord une catégorie dans le bloc « Catégories ».
+                                    </p>
+                                </div>
 
                                 <div>
                                     <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>

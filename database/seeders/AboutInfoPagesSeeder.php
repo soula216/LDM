@@ -163,6 +163,9 @@ HTML,
             ],
             'garantie' => [
                 'title' => 'Garantie',
+                'hero_kicker' => 'Votre sérénité',
+                'hero_heading' => 'Une garantie fondée sur la qualité et la confiance',
+                'hero_lead' => 'Nous nous engageons durablement sur la qualité de nos réalisations afin de sécuriser chaque collaboration avec votre cabinet.',
                 'content_html' => <<<'HTML'
 <h2>Engagement qualité LDM</h2>
 <p>LDM s’engage sur la qualité de fabrication de ses dispositifs, dans le respect des prescriptions transmises et des matériaux sélectionnés. La garantie couvre les défauts de conception ou de fabrication imputables au laboratoire.</p>

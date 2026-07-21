@@ -16,6 +16,12 @@
     $footerLogoSrc = VitrineBlock::resolveLogoDisplayUrl($footer['logo_url'] ?? null);
     $homeUrl = route('vitrine');
     $aboutSubPages = VitrineBlock::orderedAboutSubPages($blocks['about'] ?? []);
+    $aboutOverviewTabs = VitrineBlock::aboutOverviewTabs();
+    $aboutOverviewTabKeys = array_keys($aboutOverviewTabs);
+    $aboutWorkTabs = VitrineBlock::aboutWorkTabs();
+    $aboutWorkTabKeys = array_keys($aboutWorkTabs);
+    $aboutCollaborationTabs = VitrineBlock::aboutCollaborationTabs();
+    $aboutCollaborationTabKeys = array_keys($aboutCollaborationTabs);
 @endphp
 {{-- Header / Navigation --}}
 <header class="site-header" id="siteHeader">
@@ -43,7 +49,10 @@
           $isAboutNav = str_contains($navHref, '/le-laboratoire')
               || preg_match('#/(about)/?$#', $navPath) === 1;
           $isActive = (
-              ($isAboutNav && VitrineBlock::isPublicPageActive('about'))
+              ($isAboutNav && (
+                  VitrineBlock::isPublicPageActive('about')
+                  || request()->routeIs('vitrine.services.show')
+              ))
               || (VitrineBlock::isPublicPageActive('academy') && str_contains($navHref, '/academy'))
               || (VitrineBlock::isPublicPageActive('services') && str_contains($navHref, '/services'))
               || (VitrineBlock::isPublicPageActive('process') && str_contains($navHref, '/process'))
@@ -64,14 +73,135 @@
               <i class="fas fa-chevron-down" aria-hidden="true"></i>
             </button>
             <ul class="nav-dropdown" role="menu">
+              @php
+                $aboutOverviewRendered = false;
+                $aboutWorkRendered = false;
+                $aboutCollaborationRendered = false;
+              @endphp
               @foreach($aboutSubPages as $key => $subPage)
-                <li role="none">
-                  <a href="{{ route($subPage['route'], ['page' => $key]) }}"
-                     role="menuitem"
-                     @class(['is-active' => request()->routeIs('vitrine.about.show') && request()->route('page') === $key])>
-                    {{ $subPage['label'] }}
-                  </a>
-                </li>
+                @if(in_array($key, $aboutOverviewTabKeys, true))
+                  @if(! $aboutOverviewRendered)
+                    @php
+                      $aboutOverviewRendered = true;
+                      $isOverviewActive = request()->routeIs('vitrine.about.show')
+                          && (
+                              request()->route('page') === VitrineBlock::aboutOverviewPageSlug()
+                              || in_array(request()->route('page'), $aboutOverviewTabKeys, true)
+                          );
+                    @endphp
+                    <li class="nav-dropdown__item nav-dropdown__item--nested @if($isOverviewActive) is-active @endif"
+                        data-nav-submenu
+                        role="none">
+                      <button type="button"
+                              class="nav-dropdown__submenu-toggle"
+                              data-nav-submenu-toggle
+                              role="menuitem"
+                              aria-expanded="false"
+                              aria-haspopup="true">
+                        <span>{{ VitrineBlock::aboutOverviewPageLabel() }}</span>
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                      </button>
+                      <ul class="nav-dropdown nav-dropdown--level-2" role="menu">
+                        @foreach($aboutOverviewTabs as $tabKey => $tab)
+                          <li role="none">
+                            <a href="{{ route('vitrine.about.show', ['page' => VitrineBlock::aboutOverviewPageSlug(), 'tab' => $tabKey]) }}"
+                               role="menuitem"
+                               @class([
+                                   'is-active' => $isOverviewActive
+                                       && (request()->query('tab', 'qui-sommes-nous') === $tabKey),
+                               ])>
+                              {{ $tab['label'] }}
+                            </a>
+                          </li>
+                        @endforeach
+                      </ul>
+                    </li>
+                  @endif
+                @elseif(in_array($key, $aboutWorkTabKeys, true))
+                  @if(! $aboutWorkRendered)
+                    @php
+                      $aboutWorkRendered = true;
+                      $isWorkActive = request()->routeIs('vitrine.about.show')
+                          && (
+                              request()->route('page') === VitrineBlock::aboutWorkPageSlug()
+                              || in_array(request()->route('page'), $aboutWorkTabKeys, true)
+                          );
+                    @endphp
+                    <li class="nav-dropdown__item nav-dropdown__item--nested @if($isWorkActive) is-active @endif"
+                        data-nav-submenu
+                        role="none">
+                      <button type="button"
+                              class="nav-dropdown__submenu-toggle"
+                              data-nav-submenu-toggle
+                              role="menuitem"
+                              aria-expanded="false"
+                              aria-haspopup="true">
+                        <span>{{ VitrineBlock::aboutWorkPageLabel() }}</span>
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                      </button>
+                      <ul class="nav-dropdown nav-dropdown--level-2" role="menu">
+                        @foreach($aboutWorkTabs as $tabKey => $tab)
+                          <li role="none">
+                            <a href="{{ route('vitrine.about.show', ['page' => VitrineBlock::aboutWorkPageSlug(), 'tab' => $tabKey]) }}"
+                               role="menuitem"
+                               @class([
+                                   'is-active' => $isWorkActive
+                                       && (request()->query('tab', 'processus-de-qualite') === $tabKey),
+                               ])>
+                              {{ $tab['label'] }}
+                            </a>
+                          </li>
+                        @endforeach
+                      </ul>
+                    </li>
+                  @endif
+                @elseif(in_array($key, $aboutCollaborationTabKeys, true))
+                  @if(! $aboutCollaborationRendered)
+                    @php
+                      $aboutCollaborationRendered = true;
+                      $isCollaborationActive = request()->routeIs('vitrine.about.show')
+                          && (
+                              request()->route('page') === VitrineBlock::aboutCollaborationPageSlug()
+                              || in_array(request()->route('page'), $aboutCollaborationTabKeys, true)
+                          );
+                    @endphp
+                    <li class="nav-dropdown__item nav-dropdown__item--nested @if($isCollaborationActive) is-active @endif"
+                        data-nav-submenu
+                        role="none">
+                      <button type="button"
+                              class="nav-dropdown__submenu-toggle"
+                              data-nav-submenu-toggle
+                              role="menuitem"
+                              aria-expanded="false"
+                              aria-haspopup="true">
+                        <span>{{ VitrineBlock::aboutCollaborationPageLabel() }}</span>
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                      </button>
+                      <ul class="nav-dropdown nav-dropdown--level-2" role="menu">
+                        @foreach($aboutCollaborationTabs as $tabKey => $tab)
+                          <li role="none">
+                            <a href="{{ route('vitrine.about.show', ['page' => VitrineBlock::aboutCollaborationPageSlug(), 'tab' => $tabKey]) }}"
+                               role="menuitem"
+                               @class([
+                                   'is-active' => $isCollaborationActive
+                                       && (request()->query('tab', 'services') === $tabKey),
+                               ])>
+                              {{ $tab['label'] }}
+                            </a>
+                          </li>
+                        @endforeach
+                      </ul>
+                    </li>
+                  @endif
+                @else
+                  <li role="none">
+                    <a href="{{ route($subPage['route'], ['page' => $key]) }}"
+                       role="menuitem"
+                       @class(['is-active' => request()->routeIs('vitrine.about.show') && request()->route('page') === $key])>
+                      {{ $subPage['label'] }}
+                    </a>
+                  </li>
+                @endif
               @endforeach
             </ul>
           </li>

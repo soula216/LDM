@@ -97,6 +97,8 @@
                 @include('admin.vitrine.partials.field', ['label' => 'Description de la marque', 'name' => 'content[brand_description]', 'value' => $c['brand_description'] ?? '', 'type' => 'textarea', 'rows' => 3])
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                     @include('admin.vitrine.partials.field', ['label' => 'Copyright', 'name' => 'content[copyright]', 'value' => $c['copyright'] ?? '', 'placeholder' => 'LDM. Tous droits réservés.'])
+                    @include('admin.vitrine.partials.field', ['label' => 'FAQ — libellé', 'name' => 'content[faq_link][label]', 'value' => $c['faq_link']['label'] ?? 'FAQ'])
+                    @include('admin.vitrine.partials.field', ['label' => 'FAQ — URL', 'name' => 'content[faq_link][href]', 'value' => $c['faq_link']['href'] ?? '/faq'])
                     @include('admin.vitrine.partials.field', ['label' => 'Mentions légales — libellé', 'name' => 'content[legal_link][label]', 'value' => $c['legal_link']['label'] ?? ''])
                     @include('admin.vitrine.partials.field', ['label' => 'Mentions légales — URL', 'name' => 'content[legal_link][href]', 'value' => $c['legal_link']['href'] ?? ''])
                 </div>

@@ -22,19 +22,12 @@ class VitrineController extends Controller
         ]);
     }
 
-    public function services(): View
+    public function services(): RedirectResponse
     {
-        $blocks = $this->loadBlocks();
-
-        return view('accueil.services', [
-            'blocks' => $blocks,
-            'services' => $blocks['services'] ?? [
-                'section_label' => 'Nos Services',
-                'section_title' => 'Solutions Complètes',
-                'section_subtitle' => '',
-                'items' => [],
-            ],
-        ]);
+        return redirect()->route('vitrine.about.show', [
+            'page' => VitrineBlock::aboutCollaborationPageSlug(),
+            'tab' => 'services',
+        ], 301);
     }
 
     public function serviceShow(string $slug): View
@@ -109,14 +102,88 @@ class VitrineController extends Controller
 
     public function about(): RedirectResponse
     {
-        return redirect()->route('vitrine.about.show', ['page' => 'qui-sommes-nous']);
+        return redirect()->route('vitrine.about.show', [
+            'page' => VitrineBlock::aboutOverviewPageSlug(),
+        ]);
     }
 
-    public function aboutShow(string $page): View
+    public function aboutShow(Request $request, string $page): View|RedirectResponse
     {
-        $allowed = array_keys(VitrineBlock::aboutSubPages());
+        $overviewTabs = VitrineBlock::aboutOverviewTabs();
+        $workTabs = VitrineBlock::aboutWorkTabs();
+        $collaborationTabs = VitrineBlock::aboutCollaborationTabs();
+
+        if (array_key_exists($page, $overviewTabs)) {
+            return redirect()->route('vitrine.about.show', [
+                'page' => VitrineBlock::aboutOverviewPageSlug(),
+                'tab' => $page,
+            ], 301);
+        }
+
+        if (array_key_exists($page, $workTabs)) {
+            return redirect()->route('vitrine.about.show', [
+                'page' => VitrineBlock::aboutWorkPageSlug(),
+                'tab' => $page,
+            ], 301);
+        }
+
+        if (array_key_exists($page, $collaborationTabs)) {
+            return redirect()->route('vitrine.about.show', [
+                'page' => VitrineBlock::aboutCollaborationPageSlug(),
+                'tab' => $page,
+            ], 301);
+        }
+
+        $allowed = array_merge(
+            [
+                VitrineBlock::aboutOverviewPageSlug(),
+                VitrineBlock::aboutWorkPageSlug(),
+                VitrineBlock::aboutCollaborationPageSlug(),
+            ],
+            array_keys(VitrineBlock::aboutSubPages())
+        );
+
         if (! in_array($page, $allowed, true)) {
             throw new NotFoundHttpException();
+        }
+
+        if (VitrineBlock::isAboutOverviewPage($page)) {
+            $activeTab = trim((string) $request->query('tab', 'qui-sommes-nous'));
+
+            if (! array_key_exists($activeTab, $overviewTabs)) {
+                $activeTab = 'qui-sommes-nous';
+            }
+
+            return $this->aboutPage($page, $activeTab);
+        }
+
+        if (VitrineBlock::isAboutWorkPage($page)) {
+            $activeTab = trim((string) $request->query('tab', 'processus-de-qualite'));
+
+            if (! array_key_exists($activeTab, $workTabs)) {
+                $activeTab = 'processus-de-qualite';
+            }
+
+            return $this->aboutPage($page, 'qui-sommes-nous', $activeTab);
+        }
+
+        if (VitrineBlock::isAboutCollaborationPage($page)) {
+            $activeTab = trim((string) $request->query('tab', 'services'));
+
+            // Compatibilité avec les liens créés avant que ce slug ne devienne
+            // le groupe « Travailler avec LDM ».
+            if (array_key_exists($activeTab, $workTabs)) {
+                return redirect()->route('vitrine.about.show', [
+                    'page' => VitrineBlock::aboutWorkPageSlug(),
+                    'tab' => $activeTab,
+                ], 301);
+            }
+
+            if (! array_key_exists($activeTab, $collaborationTabs)) {
+                $activeTab = 'services';
+            }
+
+            return $this->aboutPage($page, 'qui-sommes-nous', 'processus-de-qualite', $activeTab);
         }
 
         if (VitrineBlock::isAboutLaboratoryPage($page)) {
@@ -130,13 +197,33 @@ class VitrineController extends Controller
         return $this->aboutPage($page);
     }
 
-    private function aboutPage(string $page): View
+    private function aboutPage(
+        string $page,
+        string $activeAboutTab = 'qui-sommes-nous',
+        string $activeWorkTab = 'processus-de-qualite',
+        string $activeCollaborationTab = 'services'
+    ): View
     {
         $blocks = $this->loadBlocks();
 
         return view('accueil.about', [
             'blocks' => $blocks,
             'aboutPage' => $page,
+            'activeAboutTab' => $activeAboutTab,
+            'activeWorkTab' => $activeWorkTab,
+            'activeCollaborationTab' => $activeCollaborationTab,
+            'services' => $blocks['services'] ?? [
+                'section_label' => 'Nos Services',
+                'section_title' => 'Solutions Complètes',
+                'section_subtitle' => '',
+                'items' => [],
+            ],
+            'process' => $blocks['process'] ?? [
+                'section_label' => 'Notre Process',
+                'section_title' => 'Comment Nous Travaillons',
+                'section_subtitle' => '',
+                'steps' => [],
+            ],
             'about' => $blocks['about'] ?? [
                 'section_label' => 'Le Laboratoire',
                 'title' => 'Notre laboratoire',

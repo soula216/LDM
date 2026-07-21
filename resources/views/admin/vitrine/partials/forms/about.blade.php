@@ -50,6 +50,9 @@
         $infoPages[$slug] = [
             'title' => $stored['title'] ?? $defaultTitle,
             'content_html' => $stored['content_html'] ?? '',
+            'hero_kicker' => $stored['hero_kicker'] ?? '',
+            'hero_heading' => $stored['hero_heading'] ?? '',
+            'hero_lead' => $stored['hero_lead'] ?? '',
         ];
     }
 
@@ -550,6 +553,27 @@
                     <p class="text-xs text-secondary mt-0.5">Contenu affiché dans le bloc secondaire de la page publique</p>
                 </div>
                 <div class="p-4 sm:p-6 space-y-4">
+                    <div class="rounded-xl border border-border bg-neutral-50/60 p-4 sm:p-5 space-y-4">
+                        <div>
+                            <h5 class="text-sm font-semibold text-primary">En-tête du bloc secondaire</h5>
+                            <p class="text-xs text-secondary mt-1">Badge, titre et sous-titre affichés dans le hero de la page Nos principe.</p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Badge</label>
+                                <input type="text" name="content[principles_kicker]" value="{{ $c['principles_kicker'] ?? 'Nos valeurs' }}" class="input-field w-full text-sm" placeholder="Nos valeurs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>
+                                <input type="text" name="content[principles_heading]" value="{{ $c['principles_heading'] ?? '' }}" class="input-field w-full text-sm" placeholder="Les principes qui guident notre exigence">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Sous-titre</label>
+                            <textarea name="content[principles_lead]" rows="2" class="input-field w-full text-sm resize-y min-h-[72px]" placeholder="Précision, qualité et confiance au cœur de chaque collaboration…">{{ $c['principles_lead'] ?? '' }}</textarea>
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>
                         <input type="text" name="content[sections][1][title]" value="{{ $principles['title'] }}" class="input-field w-full text-sm" placeholder="Nos principe">
@@ -567,6 +591,43 @@
             <div x-show="activeSub === '{{ $slug }}'"
                  x-cloak
                  class="space-y-6">
+                @if($slug === 'garantie')
+                    <section class="rounded-2xl border border-border bg-card overflow-hidden">
+                        <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-border/60 bg-gradient-to-r from-emerald-500/5 to-transparent">
+                            <h4 class="text-sm sm:text-base font-bold text-primary">En-tête du bloc secondaire</h4>
+                            <p class="text-xs text-secondary mt-0.5">Badge, titre et sous-titre affichés dans le hero de la page Garantie</p>
+                        </div>
+                        <div class="p-4 sm:p-6 space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Badge</label>
+                                    <input type="text"
+                                           name="content[info_pages][{{ $slug }}][hero_kicker]"
+                                           x-model="infoPages['{{ $slug }}'].hero_kicker"
+                                           class="input-field w-full text-sm"
+                                           placeholder="Votre sérénité">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>
+                                    <input type="text"
+                                           name="content[info_pages][{{ $slug }}][hero_heading]"
+                                           x-model="infoPages['{{ $slug }}'].hero_heading"
+                                           class="input-field w-full text-sm"
+                                           placeholder="Une garantie fondée sur la qualité et la confiance">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Sous-titre</label>
+                                <textarea name="content[info_pages][{{ $slug }}][hero_lead]"
+                                          x-model="infoPages['{{ $slug }}'].hero_lead"
+                                          rows="2"
+                                          class="input-field w-full text-sm resize-y min-h-[72px]"
+                                          placeholder="Nous nous engageons durablement sur la qualité de nos réalisations…"></textarea>
+                            </div>
+                        </div>
+                    </section>
+                @endif
+
                 <section class="rounded-2xl border border-border bg-card overflow-hidden">
                     <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-border/60 bg-gradient-to-r from-sky-500/5 to-transparent">
                         <h4 class="text-sm sm:text-base font-bold text-primary">{{ $defaultTitle }}</h4>
@@ -597,6 +658,40 @@
 
         {{-- Certifications --}}
         <div x-show="activeSub === '{{ $mediaPageSlug }}'" x-cloak class="space-y-6 sm:space-y-8">
+            <section class="rounded-2xl border border-border bg-card overflow-hidden">
+                <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-border/60 bg-gradient-to-r from-emerald-500/5 to-transparent">
+                    <h4 class="text-sm sm:text-base font-bold text-primary">En-tête du bloc secondaire</h4>
+                    <p class="text-xs text-secondary mt-0.5">Badge, titre et sous-titre affichés dans le hero de la page {{ $mediaPageLabel }}</p>
+                </div>
+                <div class="p-4 sm:p-6 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Badge</label>
+                            <input type="text"
+                                   name="content[certifications_kicker]"
+                                   value="{{ $c['certifications_kicker'] ?? 'Qualité certifiée' }}"
+                                   class="input-field w-full text-sm"
+                                   placeholder="Qualité certifiée">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Titre</label>
+                            <input type="text"
+                                   name="content[certifications_heading]"
+                                   value="{{ $c['certifications_heading'] ?? '' }}"
+                                   class="input-field w-full text-sm"
+                                   placeholder="Des standards reconnus, une qualité maîtrisée">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Sous-titre</label>
+                        <textarea name="content[certifications_lead]"
+                                  rows="2"
+                                  class="input-field w-full text-sm resize-y min-h-[72px]"
+                                  placeholder="Nos certifications témoignent de notre engagement qualité…">{{ $c['certifications_lead'] ?? '' }}</textarea>
+                    </div>
+                </div>
+            </section>
+
             <section class="rounded-2xl border border-border bg-card overflow-hidden">
                 <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-border/60 bg-gradient-to-r from-violet-500/5 to-transparent">
                     <h4 class="text-sm sm:text-base font-bold text-primary">Contenu principal</h4>

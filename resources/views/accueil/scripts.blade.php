@@ -45,6 +45,14 @@
       menuToggle.setAttribute('aria-expanded', 'false');
       menuToggle.setAttribute('aria-label', 'Ouvrir le menu');
     }
+    document.querySelectorAll('[data-nav-submenu].is-open').forEach((item) => {
+      item.classList.remove('is-open');
+      item.querySelector('[data-nav-submenu-toggle]')?.setAttribute('aria-expanded', 'false');
+    });
+    document.querySelectorAll('[data-nav-dropdown].is-open').forEach((item) => {
+      item.classList.remove('is-open');
+      item.querySelector('[data-nav-dropdown-toggle]')?.setAttribute('aria-expanded', 'false');
+    });
   }
 
   function toggleMenu() {
@@ -180,11 +188,36 @@
     });
   });
 
+  document.querySelectorAll('[data-nav-submenu]').forEach((item) => {
+    const toggle = item.querySelector('[data-nav-submenu-toggle]');
+    if (!toggle) return;
+
+    toggle.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const willOpen = !item.classList.contains('is-open');
+      item.parentElement?.querySelectorAll('[data-nav-submenu].is-open').forEach((openItem) => {
+        if (openItem !== item) {
+          openItem.classList.remove('is-open');
+          openItem.querySelector('[data-nav-submenu-toggle]')?.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      item.classList.toggle('is-open', willOpen);
+      toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    });
+  });
+
   document.addEventListener('click', (event) => {
     if (event.target.closest('[data-nav-dropdown]')) return;
     document.querySelectorAll('[data-nav-dropdown].is-open').forEach((item) => {
       item.classList.remove('is-open');
       item.querySelector('[data-nav-dropdown-toggle]')?.setAttribute('aria-expanded', 'false');
+    });
+    document.querySelectorAll('[data-nav-submenu].is-open').forEach((item) => {
+      item.classList.remove('is-open');
+      item.querySelector('[data-nav-submenu-toggle]')?.setAttribute('aria-expanded', 'false');
     });
   });
 
@@ -193,6 +226,10 @@
     document.querySelectorAll('[data-nav-dropdown].is-open').forEach((item) => {
       item.classList.remove('is-open');
       item.querySelector('[data-nav-dropdown-toggle]')?.setAttribute('aria-expanded', 'false');
+    });
+    document.querySelectorAll('[data-nav-submenu].is-open').forEach((item) => {
+      item.classList.remove('is-open');
+      item.querySelector('[data-nav-submenu-toggle]')?.setAttribute('aria-expanded', 'false');
     });
   });
 

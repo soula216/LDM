@@ -262,6 +262,8 @@ class VitrineController extends Controller
 
     private function processGalleryItems(Request $request, array $content, array $existingContent): array
     {
+        $categories = $this->processGalleryCategories($content['categories'] ?? []);
+        $categoryKeys = collect($categories)->pluck('key')->all();
         $incomingItems = $content['items'] ?? [];
         $existingItems = $existingContent['items'] ?? [];
         $processed = [];
@@ -299,6 +301,9 @@ class VitrineController extends Controller
             $processed[] = [
                 'image_url' => $imageUrl !== '' ? VitrineBlock::resolveImageUrl($imageUrl) : '',
                 'source_type' => $sourceType,
+                'category' => in_array(trim((string) ($item['category'] ?? '')), $categoryKeys, true)
+                    ? trim((string) $item['category'])
+                    : '',
                 'title' => trim((string) ($item['title'] ?? '')),
                 'description' => trim((string) ($item['description'] ?? '')),
                 'is_active' => $isActive,
@@ -314,11 +319,49 @@ class VitrineController extends Controller
             }
         }
 
+        $content['categories'] = $categories;
         $content['items'] = array_values($processed);
         $content['show_all_on_site'] = count($processed) > 0
             && collect($processed)->every(fn (array $item): bool => $item['is_active']);
 
         return $content;
+    }
+
+    /**
+     * @param  array<int, mixed>  $incoming
+     * @return array<int, array{key: string, label: string}>
+     */
+    private function processGalleryCategories(array $incoming): array
+    {
+        $processed = [];
+        $usedKeys = [];
+
+        foreach ($incoming as $index => $category) {
+            if (! is_array($category)) {
+                continue;
+            }
+
+            $label = trim((string) ($category['label'] ?? ''));
+            if ($label === '') {
+                continue;
+            }
+
+            $baseKey = Str::slug((string) ($category['key'] ?? ''));
+            if ($baseKey === '') {
+                $baseKey = Str::slug($label) ?: 'categorie-' . ($index + 1);
+            }
+
+            $key = $baseKey;
+            $suffix = 2;
+            while (in_array($key, $usedKeys, true)) {
+                $key = $baseKey . '-' . $suffix++;
+            }
+
+            $usedKeys[] = $key;
+            $processed[] = ['key' => $key, 'label' => $label];
+        }
+
+        return $processed;
     }
 
     private function processPartnerItems(Request $request, array $content, array $existingContent): array
@@ -1250,6 +1293,12 @@ class VitrineController extends Controller
         $content['sections_kicker'] = trim((string) ($content['sections_kicker'] ?? ''));
         $content['sections_heading'] = trim((string) ($content['sections_heading'] ?? ''));
         $content['sections_lead'] = trim((string) ($content['sections_lead'] ?? ''));
+        $content['principles_kicker'] = trim((string) ($content['principles_kicker'] ?? ''));
+        $content['principles_heading'] = trim((string) ($content['principles_heading'] ?? ''));
+        $content['principles_lead'] = trim((string) ($content['principles_lead'] ?? ''));
+        $content['certifications_kicker'] = trim((string) ($content['certifications_kicker'] ?? ''));
+        $content['certifications_heading'] = trim((string) ($content['certifications_heading'] ?? ''));
+        $content['certifications_lead'] = trim((string) ($content['certifications_lead'] ?? ''));
         $content['sections'] = $this->processAboutSections($content['sections'] ?? []);
         $content['info_pages'] = $this->processAboutInfoPages(
             $content['info_pages'] ?? [],
@@ -1347,7 +1396,7 @@ class VitrineController extends Controller
     /**
      * @param  array<string, mixed>  $incoming
      * @param  array<string, mixed>  $existing
-     * @return array<string, array{title: string, content_html?: string}>
+     * @return array<string, array{title: string, content_html?: string, hero_kicker?: string, hero_heading?: string, hero_lead?: string}>
      */
     private function processAboutInfoPages(array $incoming, array $existing): array
     {
@@ -1357,6 +1406,9 @@ class VitrineController extends Controller
             $page = is_array($incoming[$slug] ?? null) ? $incoming[$slug] : [];
             $title = trim((string) ($page['title'] ?? $defaultTitle));
             $contentHtml = trim((string) ($page['content_html'] ?? ''));
+            $heroKicker = trim((string) ($page['hero_kicker'] ?? ($existing[$slug]['hero_kicker'] ?? '')));
+            $heroHeading = trim((string) ($page['hero_heading'] ?? ($existing[$slug]['hero_heading'] ?? '')));
+            $heroLead = trim((string) ($page['hero_lead'] ?? ($existing[$slug]['hero_lead'] ?? '')));
 
             if ($contentHtml === '') {
                 $contentHtml = trim((string) (($existing[$slug]['content_html'] ?? '') ?: ''));
@@ -1369,6 +1421,15 @@ class VitrineController extends Controller
             $processedPage = ['title' => $title];
             if ($contentHtml !== '') {
                 $processedPage['content_html'] = $contentHtml;
+            }
+            if ($heroKicker !== '') {
+                $processedPage['hero_kicker'] = $heroKicker;
+            }
+            if ($heroHeading !== '') {
+                $processedPage['hero_heading'] = $heroHeading;
+            }
+            if ($heroLead !== '') {
+                $processedPage['hero_lead'] = $heroLead;
             }
 
             $processed[$slug] = $processedPage;

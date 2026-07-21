@@ -130,6 +130,39 @@ class VitrineBlock extends Model
                 $subPage = static::aboutLaboratoryPageSlug();
             }
 
+            if (is_string($subPage) && static::isAboutOverviewPage($subPage)) {
+                return route('vitrine.about.show', ['page' => static::aboutOverviewPageSlug()]);
+            }
+
+            if (is_string($subPage) && array_key_exists($subPage, static::aboutOverviewTabs())) {
+                return route('vitrine.about.show', [
+                    'page' => static::aboutOverviewPageSlug(),
+                    'tab' => $subPage,
+                ]);
+            }
+
+            if (is_string($subPage) && static::isAboutWorkPage($subPage)) {
+                return route('vitrine.about.show', ['page' => static::aboutWorkPageSlug()]);
+            }
+
+            if (is_string($subPage) && array_key_exists($subPage, static::aboutWorkTabs())) {
+                return route('vitrine.about.show', [
+                    'page' => static::aboutWorkPageSlug(),
+                    'tab' => $subPage,
+                ]);
+            }
+
+            if (is_string($subPage) && static::isAboutCollaborationPage($subPage)) {
+                return route('vitrine.about.show', ['page' => static::aboutCollaborationPageSlug()]);
+            }
+
+            if (is_string($subPage) && array_key_exists($subPage, static::aboutCollaborationTabs())) {
+                return route('vitrine.about.show', [
+                    'page' => static::aboutCollaborationPageSlug(),
+                    'tab' => $subPage,
+                ]);
+            }
+
             if (is_string($subPage) && array_key_exists($subPage, static::aboutSubPages())) {
                 return route('vitrine.about.show', ['page' => $subPage]);
             }
@@ -147,7 +180,6 @@ class VitrineBlock extends Model
 
         $pageRoutes = [
             'academy' => 'vitrine.academy',
-            'services' => 'vitrine.services',
             'gallery' => 'vitrine.gallery',
             'faq' => 'vitrine.faq',
             'vos-patients' => 'vitrine.vos-patients',
@@ -159,6 +191,13 @@ class VitrineBlock extends Model
             if (in_array($normalized, ["#{$slug}", "/{$slug}", $slug], true)) {
                 return route($routeName);
             }
+        }
+
+        if (in_array($normalized, ['#services', '/services', 'services'], true)) {
+            return route('vitrine.about.show', [
+                'page' => static::aboutCollaborationPageSlug(),
+                'tab' => 'services',
+            ]);
         }
 
         if ($normalized === '#accueil') {
@@ -1228,6 +1267,9 @@ class VitrineBlock extends Model
         return [
             'title' => $title !== '' ? $title : $definitions[$slug],
             'content_html' => $contentHtml,
+            'hero_kicker' => trim((string) ($page['hero_kicker'] ?? '')),
+            'hero_heading' => trim((string) ($page['hero_heading'] ?? '')),
+            'hero_lead' => trim((string) ($page['hero_lead'] ?? '')),
         ];
     }
 
@@ -1314,6 +1356,89 @@ class VitrineBlock extends Model
             ])
             ->filter(fn (array $photo): bool => filled($photo['image_url']))
             ->values();
+    }
+
+    /**
+     * @return array<string, array{label: string, route: string}>
+     */
+    public static function aboutOverviewTabs(): array
+    {
+        return [
+            'qui-sommes-nous' => ['label' => 'Qui sommes-nous'],
+            'notre-mission' => ['label' => 'Notre mission'],
+            'nos-principe' => ['label' => 'Nos principe'],
+        ];
+    }
+
+    public static function aboutOverviewPageSlug(): string
+    {
+        return 'a-propos';
+    }
+
+    public static function aboutOverviewPageLabel(): string
+    {
+        return 'À propos';
+    }
+
+    public static function isAboutOverviewPage(string $slug): bool
+    {
+        return $slug === static::aboutOverviewPageSlug();
+    }
+
+    /**
+     * @return array<string, array{label: string}>
+     */
+    public static function aboutWorkTabs(): array
+    {
+        return [
+            'processus-de-qualite' => ['label' => 'Processus de qualité'],
+            static::aboutMediaPageSlug() => ['label' => static::aboutMediaPageLabel()],
+            'garantie' => ['label' => 'Garantie'],
+        ];
+    }
+
+    public static function aboutWorkPageSlug(): string
+    {
+        return 'qualite-certifications';
+    }
+
+    public static function aboutWorkPageLabel(): string
+    {
+        return 'Qualité & Certifications';
+    }
+
+    public static function isAboutWorkPage(string $slug): bool
+    {
+        return $slug === static::aboutWorkPageSlug();
+    }
+
+    /**
+     * @return array<string, array{label: string}>
+     */
+    public static function aboutCollaborationTabs(): array
+    {
+        return [
+            'services' => ['label' => 'Services'],
+            'conditions-de-service' => ['label' => 'Conditions de service'],
+            'conditions-de-paiement' => ['label' => 'Conditions de paiement'],
+            'delais-de-fabrication' => ['label' => 'Délais de fabrication'],
+            static::aboutProcessPageSlug() => ['label' => static::aboutProcessPageLabel()],
+        ];
+    }
+
+    public static function aboutCollaborationPageSlug(): string
+    {
+        return 'travailler-avec-ldm';
+    }
+
+    public static function aboutCollaborationPageLabel(): string
+    {
+        return 'Travailler avec LDM';
+    }
+
+    public static function isAboutCollaborationPage(string $slug): bool
+    {
+        return $slug === static::aboutCollaborationPageSlug();
     }
 
     /**
