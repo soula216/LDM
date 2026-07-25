@@ -15,7 +15,7 @@
             <div class="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
                 <div class="flex items-center justify-between gap-3 px-4 py-3 bg-neutral-50/80 border-b border-border/60">
                     <button type="button"
-                            @click="section.open = !section.open"
+                            @click="toggleServiceSectionOpen(index, sectionIndex)"
                             class="flex items-center gap-3 min-w-0 flex-1 text-left group">
                         <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 text-xs font-bold shrink-0"
                               x-text="sectionIndex + 1"></span>
@@ -33,7 +33,7 @@
                         </span>
                     </button>
                     <button type="button"
-                            @click="removeServiceSection(item, sectionIndex)"
+                            @click="removeServiceSection(index, sectionIndex)"
                             class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 transition-colors shrink-0"
                             title="Supprimer la section">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,14 +52,26 @@
                                class="input-field w-full text-sm">
                     </div>
 
-                    <div>
+                    <div
+                        class="service-html-editor-field"
+                        x-init="
+                            $watch('section.open', (isOpen) => {
+                                if (isOpen) {
+                                    $nextTick(() => initServiceSectionHtmlEditor(index, sectionIndex));
+                                }
+                            });
+                            if (section.open) {
+                                $nextTick(() => initServiceSectionHtmlEditor(index, sectionIndex));
+                            }
+                        "
+                    >
                         <label class="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Explication</label>
-                        <textarea :name="'content[items][' + index + '][sections][' + sectionIndex + '][description]'"
-                                  x-model="section.description"
-                                  rows="4"
-                                  placeholder="Décrivez cette partie du service…"
-                                  class="input-field w-full text-sm resize-y min-h-[100px]"></textarea>
-                        <p class="mt-1.5 text-xs text-secondary">Séparez les paragraphes par une ligne vide.</p>
+                        <textarea
+                            :id="'service-section-html-' + index + '-' + sectionIndex"
+                            :name="'content[items][' + index + '][sections][' + sectionIndex + '][description]'"
+                            class="service-section-html-textarea"
+                        ></textarea>
+                        <p class="mt-1.5 text-xs text-secondary">Éditeur visuel : titres, listes, liens, images, tableaux, etc.</p>
                     </div>
 
                     <div class="pt-2 border-t border-border/50 space-y-4">
@@ -170,6 +182,6 @@
     </div>
 
     <div class="pt-2">
-        @include('admin.vitrine.partials.btn-add', ['label' => 'Ajouter une section', 'click' => 'addServiceSection(item)'])
+        @include('admin.vitrine.partials.btn-add', ['label' => 'Ajouter une section', 'click' => 'addServiceSection(index)'])
     </div>
 </div>

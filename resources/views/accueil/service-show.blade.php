@@ -70,13 +70,24 @@
             @php
               $sectionPhotos = VitrineBlock::serviceSectionPhotos($section);
               $sectionDescription = trim((string) ($section['description'] ?? ''));
-              $sectionParagraphs = preg_split('/\R{2,}/', $sectionDescription) ?: [];
-              $sectionParagraphs = array_values(array_filter(array_map('trim', $sectionParagraphs)));
+              $isRichHtml = (bool) preg_match('/<\s*(?:p|h[1-6]|ul|ol|li|table|div|br|strong|em|a|img|blockquote|figure)\b/i', $sectionDescription);
+              if ($isRichHtml) {
+                  $sectionHtml = $sectionDescription;
+              } elseif ($sectionDescription !== '') {
+                  $sectionParagraphs = preg_split('/\R{2,}/', $sectionDescription) ?: [];
+                  $sectionParagraphs = array_values(array_filter(array_map('trim', $sectionParagraphs)));
+                  $sectionHtml = collect($sectionParagraphs)
+                      ->map(fn (string $paragraph): string => '<p>'.e($paragraph).'</p>')
+                      ->implode('');
+              } else {
+                  $sectionHtml = '';
+              }
+              $plainText = trim(preg_replace('/\s+/u', ' ', strip_tags($sectionDescription)) ?? '');
+              $blockCount = preg_match_all('/<\s*(?:p|h[1-6]|ul|ol|table|blockquote)\b/i', $sectionHtml) ?: 0;
               $photoCount = $sectionPhotos->count();
               $galleryGroup = 'service-section-' . $index;
               $sectionTitle = trim((string) ($section['title'] ?? ''));
-              $descriptionLength = mb_strlen($sectionDescription);
-              $isLongDescription = $descriptionLength > 260 || count($sectionParagraphs) > 2;
+              $isLongDescription = mb_strlen($plainText) > 260 || $blockCount > 2;
               $mosaicClass = match (true) {
                 $photoCount <= 1 => 'service-showcase__mosaic--1',
                 $photoCount === 2 => 'service-showcase__mosaic--2',
@@ -99,14 +110,13 @@
                     <h3 class="service-showcase__title">{{ $sectionTitle }}</h3>
                   @endif
 
-                  @if($sectionParagraphs !== [])
+                  @if($sectionHtml !== '')
                     <div @class([
                       'service-showcase__text',
+                      'prose-vitrine',
                       'service-showcase__text--clamp' => $isLongDescription,
                     ]) data-service-section-text>
-                      @foreach($sectionParagraphs as $paragraph)
-                        <p>{{ $paragraph }}</p>
-                      @endforeach
+                      {!! $sectionHtml !!}
                     </div>
 
                     @if($isLongDescription)
@@ -119,10 +129,8 @@
                         <span>Lire la suite</span>
                         <i class="fas fa-arrow-right" aria-hidden="true"></i>
                       </button>
-                      <div class="service-showcase__full-text" hidden data-service-section-full-text>
-                        @foreach($sectionParagraphs as $paragraph)
-                          <p>{{ $paragraph }}</p>
-                        @endforeach
+                      <div class="service-showcase__full-text prose-vitrine" hidden data-service-section-full-text>
+                        {!! $sectionHtml !!}
                       </div>
                     @endif
                   @endif
@@ -196,7 +204,7 @@
 
           <div class="service-section-modal__body">
             <h2 id="serviceSectionTextModalTitle" class="service-section-modal__title"></h2>
-            <div id="serviceSectionTextModalContent" class="service-section-modal__content"></div>
+            <div id="serviceSectionTextModalContent" class="service-section-modal__content prose-vitrine"></div>
           </div>
         </div>
       </div>

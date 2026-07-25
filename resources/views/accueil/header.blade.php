@@ -229,12 +229,22 @@
         @endif
       @endforeach
       @if($clientSpaceIsActive)
-        <li class="nav-espace-client-desktop"><a href="{{ route('login') }}">{{ $clientLabel }}</a></li>
+        @auth
+          <li class="nav-espace-client-desktop nav-user-avatar-item">
+            @include('accueil.partials.nav-user-menu')
+          </li>
+        @else
+          <li class="nav-espace-client-desktop"><a href="{{ route('login') }}">{{ $clientLabel }}</a></li>
+        @endauth
       @endif
     </ul>
     <div class="nav-mobile-right">
       @if($clientSpaceIsActive)
-        <a href="{{ route('login') }}" class="nav-espace-client-mobile">{{ $clientLabel }}</a>
+        @auth
+          @include('accueil.partials.nav-user-menu', ['wrapperClass' => 'nav-espace-client-mobile'])
+        @else
+          <a href="{{ route('login') }}" class="nav-espace-client-mobile">{{ $clientLabel }}</a>
+        @endauth
       @endif
       <button type="button" class="menu-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Ouvrir le menu" aria-expanded="false">
         <span></span>

@@ -104,4 +104,16 @@ class User extends Authenticatable
     {
         return trim(($this->nom ?? '') . ' ' . ($this->prénom ?? ''));
     }
+
+    /**
+     * URL de la photo de profil (chemin relatif, indépendant de APP_URL / du port).
+     */
+    public function getProfilePhotoUrlAttribute(): string
+    {
+        if ($this->profile_photo_path) {
+            return '/storage/'.ltrim($this->profile_photo_path, '/');
+        }
+
+        return $this->defaultProfilePhotoUrl();
+    }
 }

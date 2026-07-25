@@ -166,7 +166,10 @@
         toggleItemOpen(index) {
             this.items[index].open = !this.items[index].open;
             if (this.items[index].open) {
-                this.$nextTick(() => this.initServiceHtmlEditor(index));
+                this.$nextTick(() => {
+                    this.initServiceHtmlEditor(index);
+                    this.initServiceSectionHtmlEditors(index);
+                });
             }
         },
         itemLabel(item, index) {
@@ -174,6 +177,9 @@
             return title !== '' ? title : 'Service ' + (index + 1);
         },
         htmlEditors: {},
+        serviceSectionEditorId(serviceIndex, sectionIndex) {
+            return 'service-section-html-' + serviceIndex + '-' + sectionIndex;
+        },
         initServiceHtmlEditor(index) {
             if (!this.items[index]?.open) return;
             const editorId = 'service-content-html-' + index;
@@ -213,6 +219,87 @@
 
             this.$nextTick(() => start());
         },
+        initServiceSectionHtmlEditors(serviceIndex) {
+            const item = this.items[serviceIndex];
+            if (!item?.open || !item.sections) return;
+
+            item.sections.forEach((section, sectionIndex) => {
+                if (section.open) {
+                    this.initServiceSectionHtmlEditor(serviceIndex, sectionIndex);
+                }
+            });
+        },
+        initServiceSectionHtmlEditor(serviceIndex, sectionIndex) {
+            const item = this.items[serviceIndex];
+            const section = item?.sections?.[sectionIndex];
+            if (!item?.open || !section?.open) return;
+
+            const editorId = this.serviceSectionEditorId(serviceIndex, sectionIndex);
+            if (this.htmlEditors[editorId]) return;
+
+            const start = async () => {
+                const tinymce = await (window.__vitrineServiceHtmlEditorReady || Promise.resolve(window.tinymce));
+                if (!tinymce) return;
+
+                const existing = tinymce.get(editorId);
+                if (existing) {
+                    this.htmlEditors[editorId] = existing;
+                    return;
+                }
+
+                const textarea = document.getElementById(editorId);
+                if (!textarea || textarea.dataset.tinymceInit === '1') return;
+
+                textarea.value = section.description || '';
+                textarea.dataset.tinymceInit = '1';
+
+                tinymce.init({
+                    ...window.__vitrineServiceHtmlEditorConfig,
+                    selector: '#' + editorId,
+                    height: 280,
+                    min_height: 220,
+                    setup: (editor) => {
+                        editor.on('change input undo redo SetContent', () => {
+                            const current = this.items[serviceIndex]?.sections?.[sectionIndex];
+                            if (current) {
+                                current.description = editor.getContent();
+                            }
+                        });
+                    },
+                    init_instance_callback: (editor) => {
+                        this.htmlEditors[editorId] = editor;
+                    },
+                });
+            };
+
+            this.$nextTick(() => start());
+        },
+        destroyServiceSectionHtmlEditors(serviceIndex = null) {
+            if (!window.tinymce) return;
+
+            Object.keys(this.htmlEditors).forEach((editorId) => {
+                const isSectionEditor = editorId.startsWith('service-section-html-');
+                if (!isSectionEditor) return;
+
+                if (serviceIndex !== null && !editorId.startsWith('service-section-html-' + serviceIndex + '-')) {
+                    return;
+                }
+
+                const editor = window.tinymce.get(editorId);
+                if (editor) {
+                    editor.remove();
+                }
+                delete this.htmlEditors[editorId];
+            });
+
+            document.querySelectorAll('.service-section-html-textarea').forEach((textarea) => {
+                if (serviceIndex !== null) {
+                    const prefix = 'service-section-html-' + serviceIndex + '-';
+                    if (!textarea.id?.startsWith(prefix)) return;
+                }
+                delete textarea.dataset.tinymceInit;
+            });
+        },
         destroyAllServiceHtmlEditors() {
             if (!window.tinymce) return;
             Object.keys(this.htmlEditors).forEach((editorId) => {
@@ -221,12 +308,22 @@
                     editor.remove();
                 }
             });
-            document.querySelectorAll('.service-content-html-textarea').forEach((textarea) => {
+            document.querySelectorAll('.service-content-html-textarea, .service-section-html-textarea').forEach((textarea) => {
                 delete textarea.dataset.tinymceInit;
             });
             this.htmlEditors = {};
         },
-        addServiceSection(item) {
+        toggleServiceSectionOpen(serviceIndex, sectionIndex) {
+            const section = this.items[serviceIndex]?.sections?.[sectionIndex];
+            if (!section) return;
+            section.open = !section.open;
+            if (section.open) {
+                this.$nextTick(() => this.initServiceSectionHtmlEditor(serviceIndex, sectionIndex));
+            }
+        },
+        addServiceSection(serviceIndex) {
+            const item = this.items[serviceIndex];
+            if (!item) return;
             if (!item.sections) item.sections = [];
             item.sections.push({
                 title: '',
@@ -236,8 +333,13 @@
                 pendingPreviews: [],
                 photoDropActive: false,
             });
+            const sectionIndex = item.sections.length - 1;
+            this.$nextTick(() => this.initServiceSectionHtmlEditor(serviceIndex, sectionIndex));
         },
-        removeServiceSection(item, sectionIndex) {
+        removeServiceSection(serviceIndex, sectionIndex) {
+            const item = this.items[serviceIndex];
+            if (!item?.sections?.[sectionIndex]) return;
+
             const section = item.sections[sectionIndex];
             if (section?.pendingPreviews) {
                 section.pendingPreviews.forEach((pending) => {
@@ -246,7 +348,10 @@
                     }
                 });
             }
+
+            this.destroyServiceSectionHtmlEditors(serviceIndex);
             item.sections.splice(sectionIndex, 1);
+            this.$nextTick(() => this.initServiceSectionHtmlEditors(serviceIndex));
         },
         removeServiceItem(index) {
             this.destroyAllServiceHtmlEditors();
@@ -255,11 +360,44 @@
                 this.items.forEach((item, itemIndex) => {
                     if (item.open) {
                         this.initServiceHtmlEditor(itemIndex);
+                        this.initServiceSectionHtmlEditors(itemIndex);
                     }
                 });
             });
         },
-     }">
+        syncServiceHtmlEditors() {
+            Object.keys(this.htmlEditors).forEach((editorId) => {
+                const editor = this.htmlEditors[editorId];
+                if (!editor) return;
+
+                if (editorId.startsWith('service-content-html-')) {
+                    const index = Number(editorId.replace('service-content-html-', ''));
+                    if (this.items[index]) {
+                        this.items[index].content_html = editor.getContent();
+                    }
+                    return;
+                }
+
+                const match = editorId.match(/^service-section-html-(\d+)-(\d+)$/);
+                if (!match) return;
+                const serviceIndex = Number(match[1]);
+                const sectionIndex = Number(match[2]);
+                const section = this.items[serviceIndex]?.sections?.[sectionIndex];
+                if (section) {
+                    section.description = editor.getContent();
+                }
+            });
+        },
+     }"
+     @vitrine-services-tab-open.window="$nextTick(() => {
+        items.forEach((item, itemIndex) => {
+            if (item.open) {
+                initServiceHtmlEditor(itemIndex);
+                initServiceSectionHtmlEditors(itemIndex);
+            }
+        });
+     })"
+     @submit.document="if ($event.target.closest('form')?.contains($el)) syncServiceHtmlEditors()">
 
     <section class="rounded-2xl border border-border bg-card overflow-hidden">
         @component('admin.vitrine.partials.collapsible-header', [
