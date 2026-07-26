@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
@@ -41,13 +40,15 @@ class DentistRegistrationController extends Controller
 
         $data = $validator->validated();
         $data['role'] = 'dentist';
+        $data['requires_approval'] = true;
 
-        $user = $this->userService->createUser($data);
-
-        Auth::login($user);
+        $this->userService->createUser($data);
 
         return redirect()
-            ->route('dashboard')
-            ->with('status', 'Votre compte dentiste a été créé avec succès.');
+            ->route('login')
+            ->with(
+                'status',
+                'Votre compte a été créé. Il sera activé après validation par un administrateur.'
+            );
     }
 }

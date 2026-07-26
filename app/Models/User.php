@@ -43,6 +43,7 @@ class User extends Authenticatable
         'tél',
         'num_ordinaire',
         'groupe_id',
+        'approved_at',
     ];
 
     /**
@@ -75,8 +76,32 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'approved_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Un dentiste non approuvé ne peut pas utiliser son compte.
+     */
+    public function needsApproval(): bool
+    {
+        return $this->hasRole('dentist') && $this->approved_at === null;
+    }
+
+    public function isApproved(): bool
+    {
+        return ! $this->needsApproval();
+    }
+
+    public function approve(): void
+    {
+        $this->forceFill(['approved_at' => now()])->save();
+    }
+
+    public function revokeApproval(): void
+    {
+        $this->forceFill(['approved_at' => null])->save();
     }
 
     /**

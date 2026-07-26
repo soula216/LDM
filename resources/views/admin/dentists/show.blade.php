@@ -13,6 +13,27 @@
             </div>
             <div class="flex flex-row gap-2">
                 @can('edit_users')
+                    @if(!$user->approved_at)
+                        <form method="POST" action="{{ route('admin.dentists.approve', $user) }}">
+                            @csrf
+                            <button type="submit" class="btn-primary inline-flex items-center justify-center" style="background-color: #10B981; border-color: #10B981;">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Approuver
+                            </button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ route('admin.dentists.revoke', $user) }}" onsubmit="return confirm('Révoquer l\'accès de ce dentiste ?');">
+                            @csrf
+                            <button type="submit" class="btn-primary inline-flex items-center justify-center" style="background-color: #F59E0B; border-color: #F59E0B;">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                </svg>
+                                Révoquer
+                            </button>
+                        </form>
+                    @endif
                 <a href="{{ route('admin.dentists.edit', $user) }}" class="btn-primary inline-flex items-center justify-center" style="background-color: #F59E0B; border-color: #F59E0B;">
                     <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -45,6 +66,16 @@
                             <div>
                                 <p class="text-sm text-secondary mb-1">Email</p>
                                 <p class="font-medium text-primary">{{ $user->email }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary mb-1">Statut du compte</p>
+                                @if($user->approved_at)
+                                    <p class="font-medium text-accent-secondary">
+                                        Approuvé le {{ $user->approved_at->format('d/m/Y H:i') }}
+                                    </p>
+                                @else
+                                    <p class="font-medium text-warning">En attente d'approbation</p>
+                                @endif
                             </div>
                             <div>
                                 <p class="text-sm text-secondary mb-1">Téléphone</p>

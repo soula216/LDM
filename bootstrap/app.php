@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin.access' => \App\Http\Middleware\CheckAdminAccess::class,
+            'dentist.approved' => \App\Http\Middleware\EnsureDentistApproved::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

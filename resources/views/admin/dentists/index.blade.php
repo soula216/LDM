@@ -45,11 +45,48 @@
                     </div>
                 @endif
 
+                <form method="GET" action="{{ route('admin.dentists.index') }}" class="mb-4 sm:mb-6">
+                    <div class="flex flex-nowrap items-end gap-3 overflow-x-auto">
+                        <div class="flex-1 min-w-[180px]">
+                            <label for="filter-search" class="block text-sm font-medium text-primary mb-2">Recherche</label>
+                            <input
+                                id="filter-search"
+                                type="search"
+                                name="search"
+                                value="{{ request('search') }}"
+                                placeholder="Nom, prénom, n°, tél, ville…"
+                                class="block w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm input-field h-10 sm:h-11"
+                            />
+                        </div>
+                        <div class="w-[200px] shrink-0">
+                            <label for="filter-approval" class="block text-sm font-medium text-primary mb-2">Statut</label>
+                            <select
+                                id="filter-approval"
+                                name="approval"
+                                class="block w-full input-field h-10 sm:h-11"
+                            >
+                                <option value="">Tous les statuts</option>
+                                <option value="approved" {{ request('approval') === 'approved' ? 'selected' : '' }}>Approuvé</option>
+                                <option value="pending" {{ request('approval') === 'pending' ? 'selected' : '' }}>Non approuvé</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary h-10 sm:h-11 px-4 shrink-0 whitespace-nowrap">
+                            Filtrer
+                        </button>
+                        @if(request()->filled('search') || request()->filled('approval'))
+                            <a href="{{ route('admin.dentists.index') }}" class="inline-flex items-center justify-center h-10 sm:h-11 px-4 shrink-0 whitespace-nowrap rounded-lg border border-border bg-card text-secondary hover:bg-neutral-100 font-medium text-sm transition-colors duration-200">
+                                Réinitialiser
+                            </a>
+                        @endif
+                    </div>
+                </form>
+
                 <div class="overflow-x-visible">
                     <table class="w-full divide-y divide-border">
                         <thead class="bg-neutral-100">
                             <tr>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Nom</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Statut</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider">Numéro</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden md:table-cell">Téléphone</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-primary uppercase tracking-wider hidden lg:table-cell">Gouvernorat</th>
@@ -72,6 +109,17 @@
                                                 <div class="text-xs text-secondary sm:hidden mt-1">{{ $user->email }}</div>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                        @if($user->approved_at)
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent-secondary/10 text-accent-secondary">
+                                                Approuvé
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
+                                                En attente
+                                            </span>
+                                        @endif
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-primary font-medium">{{ $user->num_dentist ?? '-' }}</div>
@@ -100,6 +148,25 @@
                                                 </svg>
                                             </a>
                                             @can('edit_users')
+                                                @if(!$user->approved_at)
+                                                    <form method="POST" action="{{ route('admin.dentists.approve', $user) }}" class="inline">
+                                                        @csrf
+                                                        <button type="submit" class="text-accent-secondary hover:text-accent-secondary/80 transition-colors" title="Approuver">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <form method="POST" action="{{ route('admin.dentists.revoke', $user) }}" class="inline" onsubmit="return confirm('Révoquer l\'accès de ce dentiste ?');">
+                                                        @csrf
+                                                        <button type="submit" class="text-warning hover:text-warning/80 transition-colors" title="Révoquer l'accès">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             <a href="{{ route('admin.dentists.edit', $user) }}" class="text-warning hover:text-warning/80 transition-colors" title="Modifier">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -123,7 +190,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="px-6 py-12 text-center">
+                                    <td colspan="9" class="px-6 py-12 text-center">
                                         <div class="flex flex-col items-center">
                                             <svg class="w-16 h-16 text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>

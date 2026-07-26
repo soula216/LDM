@@ -65,11 +65,11 @@ Route::get('/vos-patients', [VitrineController::class, 'vosPatients'])->name('vi
 Route::get('/recrutement', [VitrineController::class, 'recrutement'])->name('vitrine.recrutement');
 Route::get('/mentions-legales', [VitrineController::class, 'mentionsLegales'])->name('vitrine.mentions-legales');
 Route::get('/dashboard', [DashboardController::class, 'userDashboard'])
-    ->middleware('auth')
+    ->middleware(['auth', 'dentist.approved'])
     ->name('dashboard');
 
 // 🔐 ADMIN ROUTES (sous auth + admin.access)
-Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'dentist.approved', 'admin.access'])->prefix('admin')->group(function () {
     
     // Gestion utilisateurs
     Route::resource('users', UserController::class)
@@ -108,6 +108,14 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
     
     Route::patch('dentists/{user}', [UserController::class, 'updateDentist'])
         ->name('admin.dentists.update')
+        ->middleware('can:edit_users');
+
+    Route::post('dentists/{user}/approve', [UserController::class, 'approveDentist'])
+        ->name('admin.dentists.approve')
+        ->middleware('can:edit_users');
+
+    Route::post('dentists/{user}/revoke', [UserController::class, 'revokeDentist'])
+        ->name('admin.dentists.revoke')
         ->middleware('can:edit_users');
 
     Route::get('dentists/{user}/commandes', [CommandeController::class, 'dentistCommandes'])
@@ -435,7 +443,7 @@ Route::middleware(['auth', 'admin.access'])->prefix('admin')->group(function () 
 });
 
 // /app routes (interne permissionné)
-Route::middleware(['auth'])->prefix('app')->group(function () {
+Route::middleware(['auth', 'dentist.approved'])->prefix('app')->group(function () {
 
     // Calendrier
     Route::get('commandes/calendar', [CommandeCalendarController::class, 'index'])

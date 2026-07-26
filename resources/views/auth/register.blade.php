@@ -2,10 +2,13 @@
     <x-authentication-card
         wide
         title="Créer un compte"
-        subtitle="Inscription réservée aux dentistes"
+        subtitle="Inscription réservée aux dentistes — activation après validation admin"
     >
         <x-validation-errors class="mb-4" />
 
+        <div class="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-sm text-amber-100">
+            Après inscription, votre compte sera activé uniquement une fois approuvé par un administrateur.
+        </div>
         <form method="POST" action="{{ route('register.store') }}" class="login-form-new login-form-register" novalidate>
             @csrf
 

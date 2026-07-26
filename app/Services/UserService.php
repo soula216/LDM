@@ -14,6 +14,8 @@ class UserService
      */
     public function createUser(array $data): User
     {
+        $requiresApproval = (bool) ($data['requires_approval'] ?? false);
+
         $user = User::create([
             'name' => $data['name'] ?? ($data['nom'] . ' ' . $data['prénom']),
             'nom' => $data['nom'] ?? null,
@@ -28,6 +30,8 @@ class UserService
             'tél' => $data['tél'] ?? null,
             'num_ordinaire' => $data['num_ordinaire'] ?? null,
             'groupe_id' => $data['groupe_id'] ?? null,
+            // Inscription publique dentiste → en attente ; création admin → approuvé
+            'approved_at' => $requiresApproval ? null : ($data['approved_at'] ?? now()),
         ]);
 
         // Assigner rôle (pas admin)
@@ -40,6 +44,28 @@ class UserService
         $this->invalidateUserCaches();
 
         return $user;
+    }
+
+    /**
+     * Approuver un compte dentiste
+     */
+    public function approveUser(User $user): User
+    {
+        $user->approve();
+        $this->invalidateUserCaches($user->id);
+
+        return $user->fresh();
+    }
+
+    /**
+     * Révoquer l'approbation d'un compte dentiste
+     */
+    public function revokeApproval(User $user): User
+    {
+        $user->revokeApproval();
+        $this->invalidateUserCaches($user->id);
+
+        return $user->fresh();
     }
 
     /**

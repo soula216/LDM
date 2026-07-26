@@ -38,18 +38,41 @@ class UserController extends Controller
      * GET /admin/dentists
      * Affiche uniquement les utilisateurs avec le rôle "dentist"
      */
-    public function dentists()
+    public function dentists(Request $request)
     {
         $this->authorize('view_users');
+
+        $search = trim((string) $request->input('search', ''));
+        $approval = $request->input('approval');
 
         $users = User::query()
             ->whereNull('deleted_at')
             ->whereHas('roles', function ($q) {
                 $q->where('name', 'dentist');
             })
+            ->when($search !== '', function ($query) use ($search) {
+                $like = '%' . $search . '%';
+                $query->where(function ($q) use ($like) {
+                    $q->where('nom', 'like', $like)
+                        ->orWhere('prénom', 'like', $like)
+                        ->orWhere('name', 'like', $like)
+                        ->orWhere('num_dentist', 'like', $like)
+                        ->orWhere('tél', 'like', $like)
+                        ->orWhere('gouvernorat', 'like', $like)
+                        ->orWhere('ville', 'like', $like);
+                });
+            })
+            ->when($approval === 'approved', function ($query) {
+                $query->whereNotNull('approved_at');
+            })
+            ->when($approval === 'pending', function ($query) {
+                $query->whereNull('approved_at');
+            })
             ->with('roles', 'groupe')
+            ->orderByRaw('approved_at IS NULL DESC')
             ->orderBy('order', 'asc')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         return view('admin.dentists.index', compact('users'));
     }
@@ -390,6 +413,50 @@ class UserController extends Controller
         return redirect()
             ->route('admin.dentists.index')
             ->with('success', 'Dentiste modifié.');
+    }
+
+    /**
+     * POST /admin/dentists/{user}/approve
+     * Approuver un compte dentiste (inscription publique)
+     */
+    public function approveDentist(User $user)
+    {
+        $this->authorize('edit_users');
+
+        if (! $user->hasRole('dentist')) {
+            abort(404);
+        }
+
+        if ($user->approved_at) {
+            return redirect()
+                ->route('admin.dentists.index')
+                ->with('success', "Le dentiste {$user->full_name} est déjà approuvé.");
+        }
+
+        $this->userService->approveUser($user);
+
+        return redirect()
+            ->route('admin.dentists.index')
+            ->with('success', "Le dentiste {$user->full_name} a été approuvé.");
+    }
+
+    /**
+     * POST /admin/dentists/{user}/revoke
+     * Révoquer l'accès d'un dentiste
+     */
+    public function revokeDentist(User $user)
+    {
+        $this->authorize('edit_users');
+
+        if (! $user->hasRole('dentist')) {
+            abort(404);
+        }
+
+        $this->userService->revokeApproval($user);
+
+        return redirect()
+            ->route('admin.dentists.index')
+            ->with('success', "L'accès du dentiste {$user->full_name} a été révoqué.");
     }
 
     /**

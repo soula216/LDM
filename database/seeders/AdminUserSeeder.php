@@ -71,10 +71,14 @@ class AdminUserSeeder extends Seeder
                 'gouvernorat' => 'Sousse',
                 'ville' => 'Sousse',
                 'email_verified_at' => now(),
+                'approved_at' => now(),
             ]
         );
         if (!$dentist->hasRole('dentist')) {
             $dentist->assignRole('dentist');
+        }
+        if (!$dentist->approved_at) {
+            $dentist->update(['approved_at' => now()]);
         }
 
         // Employer de test (nécessite un groupe)
